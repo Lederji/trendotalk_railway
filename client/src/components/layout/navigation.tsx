@@ -16,58 +16,30 @@ export function Navigation() {
   const { user } = useAuth();
 
   return (
-    <>
-      {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="flex items-center justify-around py-2">
-          {navigationItems.map((item) => {
-            const isActive = location === item.href || 
-              (item.href === "/profile" && location.startsWith("/profile"));
-            
-            return (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`p-3 ${
-                    isActive 
-                      ? "text-purple-600" 
-                      : "text-gray-600 hover:text-purple-600"
-                  }`}
-                >
-                  <item.icon className="h-6 w-6" />
-                </Button>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* Desktop Navigation */}
-      <nav className="hidden md:block fixed left-4 top-1/2 transform -translate-y-1/2 z-50">
-        <div className="bg-white rounded-lg shadow-sm p-2 space-y-2">
-          {navigationItems.map((item) => {
-            const isActive = location === item.href || 
-              (item.href === "/profile" && location.startsWith("/profile"));
-            
-            return (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`p-3 ${
-                    isActive
-                      ? "gradient-bg text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                </Button>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-    </>
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <div className="flex items-center justify-around py-2 px-2">
+        {navigationItems.map((item) => {
+          const isActive = location === item.href || 
+            (item.href === "/profile" && location.startsWith("/profile"));
+          
+          return (
+            <Link key={item.href} href={item.href} className="flex-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`w-full flex flex-col items-center gap-1 py-2 px-2 rounded-lg ${
+                  isActive 
+                    ? "gradient-bg text-white" 
+                    : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-xs font-medium">{item.label}</span>
+              </Button>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

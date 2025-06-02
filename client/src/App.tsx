@@ -10,6 +10,7 @@ import Create from "@/pages/create";
 import Circle from "@/pages/circle";
 import Profile from "@/pages/profile";
 import Auth from "@/pages/auth";
+import SearchPage from "@/pages/search";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/create" component={Create} />
       <Route path="/circle" component={Circle} />
       <Route path="/profile/:username?" component={Profile} />
+      <Route path="/search" component={SearchPage} />
       <Route path="/auth" component={Auth} />
       <Route component={NotFound} />
     </Switch>

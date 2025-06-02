@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -12,13 +12,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Check, X } from "lucide-react";
 import { z } from "zod";
 
 export default function Auth() {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
   const { login } = useAuth();
   const { toast } = useToast();
 
@@ -31,9 +34,21 @@ export default function Auth() {
     },
   });
 
+  // Create modified schema for signup that doesn't require tp- prefix in input
+  const modifiedSignupSchema = z.object({
+    username: z.string().min(1, "Username is required"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+    bio: z.string().optional(),
+    isAdmin: z.boolean().optional(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
   // Signup form
   const signupForm = useForm({
-    resolver: zodResolver(insertUserSchema),
+    resolver: zodResolver(modifiedSignupSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -41,6 +56,29 @@ export default function Auth() {
       bio: "",
     },
   });
+
+  // Check username availability with debounce
+  useEffect(() => {
+    if (!usernameInput.trim()) {
+      setIsUsernameAvailable(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setIsCheckingUsername(true);
+      try {
+        const response = await fetch(`/api/check/tp-${usernameInput}`);
+        const data = await response.json();
+        setIsUsernameAvailable(data.available);
+      } catch (error) {
+        setIsUsernameAvailable(null);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [usernameInput]);
 
   const loginMutation = useMutation({
     mutationFn: async (data: z.infer<typeof loginSchema>) => {
@@ -65,8 +103,13 @@ export default function Auth() {
   });
 
   const signupMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertUserSchema>) => {
-      const response = await apiRequest("POST", "/api/signup", data);
+    mutationFn: async (data: z.infer<typeof modifiedSignupSchema>) => {
+      // Add tp- prefix to username before sending to API
+      const signupData = {
+        ...data,
+        username: `tp-${data.username}`,
+      };
+      const response = await apiRequest("POST", "/api/signup", signupData);
       return response.json();
     },
     onSuccess: (data) => {
@@ -90,7 +133,7 @@ export default function Auth() {
     loginMutation.mutate(data);
   };
 
-  const onSignup = (data: z.infer<typeof insertUserSchema>) => {
+  const onSignup = (data: z.infer<typeof modifiedSignupSchema>) => {
     signupMutation.mutate(data);
   };
 
