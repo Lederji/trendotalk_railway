@@ -17,7 +17,7 @@ export interface IStorage {
   // Post methods
   createPost(post: InsertPost & { userId: number }): Promise<Post>;
   getPostById(id: number): Promise<PostWithUser | undefined>;
-  getPosts(category?: string, isAdminOnly?: boolean): Promise<PostWithUser[]>;
+  getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]>;
   getUserPosts(userId: number): Promise<PostWithUser[]>;
   deletePost(id: number, userId: number): Promise<boolean>;
   
@@ -163,7 +163,7 @@ export class MemStorage implements IStorage {
       caption: postData.caption,
       imageUrl: postData.imageUrl || null,
       videoUrl: postData.videoUrl || null,
-      category: postData.category || "all",
+      link: postData.link || null,
       likesCount: 0,
       commentsCount: 0,
       isAdminPost: postData.isAdminPost || false,
@@ -191,12 +191,8 @@ export class MemStorage implements IStorage {
     };
   }
 
-  async getPosts(category?: string, isAdminOnly?: boolean): Promise<PostWithUser[]> {
+  async getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]> {
     let filteredPosts = Array.from(this.posts.values());
-    
-    if (category && category !== "all") {
-      filteredPosts = filteredPosts.filter(post => post.category === category);
-    }
     
     if (isAdminOnly !== undefined) {
       filteredPosts = filteredPosts.filter(post => post.isAdminPost === isAdminOnly);

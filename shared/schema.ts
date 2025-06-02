@@ -20,7 +20,7 @@ export const posts = pgTable("posts", {
   caption: text("caption").notNull(),
   imageUrl: text("image_url"),
   videoUrl: text("video_url"),
-  category: text("category").notNull().default("all"),
+  link: text("link"),
   likesCount: integer("likes_count").notNull().default(0),
   commentsCount: integer("comments_count").notNull().default(0),
   isAdminPost: boolean("is_admin_post").notNull().default(false),

@@ -8,22 +8,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { z } from "zod";
-
-const CATEGORIES = [
-  { id: "all", label: "General" },
-  { id: "youtube", label: "YouTube" },
-  { id: "instagram", label: "Instagram" },
-  { id: "ipl", label: "IPL" },
-  { id: "film", label: "Film" },
-  { id: "songs", label: "Songs" },
-  { id: "model", label: "Model" },
-];
 
 export function CreatePost() {
   const { user } = useAuth();
@@ -39,7 +29,7 @@ export function CreatePost() {
     })),
     defaultValues: {
       caption: "",
-      category: "all",
+      link: "",
       isAdminPost: false,
     },
   });

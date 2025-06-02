@@ -235,8 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const posts = await storage.getPosts(
-        category as string, 
-        adminOnly === 'true' ? true : undefined
+        adminOnly === 'true' ? true : adminOnly === 'false' ? false : undefined
       );
       
       // Check if posts are liked by current user (if authenticated)
