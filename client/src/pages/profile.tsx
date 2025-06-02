@@ -85,110 +85,133 @@ export default function Profile() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="max-w-4xl mx-auto px-4 py-6 pb-20 md:pb-6">
+      <div className="px-4 py-4 pb-20">
         {/* Profile Header */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
-              {/* Avatar */}
-              <div className="flex-shrink-0">
-                <Avatar className="w-24 h-24 md:w-32 md:h-32">
-                  <AvatarImage src={profileData.avatar} alt={profileData.username} />
-                  <AvatarFallback className="text-2xl">
-                    {profileData.username[3]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+        <div className="bg-white rounded-lg p-4 mb-4">
+          <div className="flex items-start space-x-4 mb-4">
+            {/* Avatar */}
+            <Avatar className="w-20 h-20">
+              <AvatarImage src={profileData.avatar} alt={profileData.username} />
+              <AvatarFallback className="text-xl">
+                {profileData.username[3]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
 
-              {/* Profile Info */}
-              <div className="flex-1 text-center md:text-left">
-                <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-4">
-                  <h1 className="text-2xl font-bold flex items-center justify-center md:justify-start gap-2">
-                    {profileData.username}
-                    {profileData.isAdmin && (
-                      <Badge variant="secondary" className="gradient-bg text-white">
-                        <i className="fas fa-check-circle mr-1"></i>
-                        Admin
-                      </Badge>
-                    )}
-                  </h1>
-                  
-                  {isOwnProfile ? (
-                    <div className="flex gap-2 justify-center md:justify-start mt-2 md:mt-0">
-                      <Button variant="outline" size="sm">
-                        <Settings className="h-4 w-4 mr-1" />
-                        Edit Profile
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={logout}>
-                        Logout
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2 justify-center md:justify-start mt-2 md:mt-0">
-                      <Button size="sm" className="gradient-bg text-white hover:opacity-90">
-                        {profileData.isFollowing ? "Unfollow" : "Follow"}
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        Message
-                      </Button>
-                    </div>
+            {/* Profile Info */}
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-3">
+                <h1 className="text-lg font-semibold flex items-center gap-2">
+                  {profileData.username}
+                  {profileData.isAdmin && (
+                    <Badge variant="secondary" className="gradient-bg text-white text-xs">
+                      Admin
+                    </Badge>
                   )}
-                </div>
-
-                {/* Stats */}
-                <div className="flex justify-center md:justify-start space-x-8 mb-4">
-                  <div className="text-center">
-                    <span className="font-bold text-lg">{profileData.posts?.length || 0}</span>
-                    <p className="text-gray-600 text-sm">Posts</p>
+                </h1>
+                
+                {isOwnProfile ? (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="text-xs px-3">
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={logout} className="text-xs px-3">
+                      <Settings className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <div className="text-center">
-                    <span className="font-bold text-lg">{profileData.followersCount}</span>
-                    <p className="text-gray-600 text-sm">Followers</p>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button size="sm" className="gradient-bg text-white hover:opacity-90 text-xs px-4">
+                      {profileData.isFollowing ? "Unfollow" : "Follow"}
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs px-3">
+                      <MessageCircle className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <div className="text-center">
-                    <span className="font-bold text-lg">{profileData.followingCount}</span>
-                    <p className="text-gray-600 text-sm">Following</p>
-                  </div>
-                </div>
-
-                {/* Bio */}
-                {profileData.bio && (
-                  <p className="text-gray-700">{profileData.bio}</p>
                 )}
               </div>
+
+              {/* Stats */}
+              <div className="flex space-x-6 mb-3">
+                <div className="text-center">
+                  <div className="font-semibold text-sm">{profileData.posts?.length || 0}</div>
+                  <div className="text-xs text-gray-500">posts</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold text-sm">{profileData.followersCount}</div>
+                  <div className="text-xs text-gray-500">followers</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold text-sm">{profileData.followingCount}</div>
+                  <div className="text-xs text-gray-500">following</div>
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Bio */}
+          {profileData.bio && (
+            <p className="text-sm text-gray-700">{profileData.bio}</p>
+          )}
+        </div>
 
         {/* Posts Grid */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-center border-b border-gray-200">
-            <Button variant="ghost" className="flex items-center gap-2 border-b-2 border-gray-800 rounded-none pb-2">
+        <div className="border-t border-gray-200 bg-white">
+          <div className="flex items-center justify-center py-3 border-b border-gray-200">
+            <Button variant="ghost" className="flex items-center gap-2 border-b-2 border-gray-800 rounded-none pb-1">
               <Grid className="h-4 w-4" />
-              Posts
+              <span className="text-sm font-medium">Posts</span>
             </Button>
           </div>
 
           {profileData.posts && profileData.posts.length > 0 ? (
-            <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-1">
               {profileData.posts.map((post: any) => (
-                <PostCard key={post.id} post={{...post, user: profileData}} />
+                <div key={post.id} className="aspect-square relative group cursor-pointer overflow-hidden">
+                  {post.imageUrl ? (
+                    <img
+                      src={post.imageUrl}
+                      alt={post.caption}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : post.videoUrl ? (
+                    <video
+                      src={post.videoUrl}
+                      className="w-full h-full object-cover"
+                      muted
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <span className="text-gray-400 text-xs">No media</span>
+                    </div>
+                  )}
+                  
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+                    <div className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center space-x-3">
+                      <div className="flex items-center">
+                        <Heart className="w-4 h-4 mr-1" />
+                        <span className="font-semibold text-sm">{post.likesCount}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <MessageCircle className="w-4 h-4 mr-1" />
+                        <span className="font-semibold text-sm">{post.commentsCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Grid className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">No posts yet</h3>
-                <p className="text-gray-500">
-                  {isOwnProfile 
-                    ? "Share your first trend to get started!" 
-                    : `${profileData.username} hasn't posted anything yet.`
-                  }
-                </p>
-              </CardContent>
-            </Card>
+            <div className="p-8 text-center">
+              <Grid className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No posts yet</h3>
+              <p className="text-gray-500 text-sm">
+                {isOwnProfile 
+                  ? "Share your first trend to get started!" 
+                  : `${profileData.username} hasn't posted anything yet.`
+                }
+              </p>
+            </div>
           )}
         </div>
       </div>

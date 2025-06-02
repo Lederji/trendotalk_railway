@@ -222,10 +222,45 @@ export default function Auth() {
                       <FormItem>
                         <FormLabel>Username</FormLabel>
                         <FormControl>
-                          <Input placeholder="tp-yourusername" {...field} />
+                          <div className="relative">
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                              tp-
+                            </div>
+                            <Input 
+                              placeholder="yourusername" 
+                              className="pl-12 pr-10"
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                setUsernameInput(e.target.value);
+                              }}
+                            />
+                            {usernameInput && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                {isCheckingUsername ? (
+                                  <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                                ) : isUsernameAvailable === true ? (
+                                  <Check className="w-4 h-4 text-green-500" />
+                                ) : isUsernameAvailable === false ? (
+                                  <X className="w-4 h-4 text-red-500" />
+                                ) : null}
+                              </div>
+                            )}
+                          </div>
                         </FormControl>
                         <FormMessage />
-                        <p className="text-sm text-gray-500">Must start with "tp-"</p>
+                        {usernameInput && isUsernameAvailable === true && (
+                          <p className="text-sm text-green-600 flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            tp-{usernameInput} is available
+                          </p>
+                        )}
+                        {usernameInput && isUsernameAvailable === false && (
+                          <p className="text-sm text-red-600 flex items-center gap-1">
+                            <X className="w-3 h-3" />
+                            tp-{usernameInput} is already taken
+                          </p>
+                        )}
                       </FormItem>
                     )}
                   />
