@@ -38,7 +38,9 @@ export function CreatePost() {
     mutationFn: async (data: any) => {
       const formData = new FormData();
       formData.append("caption", data.caption);
-      formData.append("category", data.category);
+      if (data.link) {
+        formData.append("link", data.link);
+      }
       if (user?.isAdmin) {
         formData.append("isAdminPost", data.isAdminPost.toString());
       }
@@ -149,27 +151,19 @@ export function CreatePost() {
           )}
         />
 
-        {/* Category */}
+        {/* Link */}
         <FormField
           control={form.control}
-          name="category"
+          name="link"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {CATEGORIES.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormLabel>Link (Optional)</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="https://example.com" 
+                  {...field} 
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

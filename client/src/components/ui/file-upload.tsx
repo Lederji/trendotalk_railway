@@ -42,11 +42,7 @@ export function FileUpload({
   }, []);
 
   const handleFileSelection = (file: File) => {
-    if (file.size > maxSize) {
-      alert(`File size must be less than ${maxSize / 1024 / 1024}MB`);
-      return;
-    }
-
+    // Removed file size limit as requested
     const acceptedTypes = accept.split(',').map(type => type.trim());
     const isValidType = acceptedTypes.some(type => {
       if (type === "image/*") return file.type.startsWith("image/");

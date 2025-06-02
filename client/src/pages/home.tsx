@@ -25,12 +25,9 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("all");
 
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ["/api/posts", activeCategory],
+    queryKey: ["/api/posts", "admin"],
     queryFn: async () => {
-      const url = activeCategory === "all" 
-        ? "/api/posts?adminOnly=true" 
-        : `/api/posts?category=${activeCategory}&adminOnly=true`;
-      const response = await fetch(url, {
+      const response = await fetch("/api/posts?adminOnly=true", {
         headers: isAuthenticated ? {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         } : {}
