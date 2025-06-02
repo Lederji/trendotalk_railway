@@ -97,11 +97,14 @@ export class MemStorage implements IStorage {
       }
     ];
 
+    // Hash password for sample users
+    const hashedSamplePassword = await bcrypt.hash("password123", 10);
+    
     sampleUsers.forEach(userData => {
       const user: User = {
         id: this.currentUserId++,
         username: userData.username,
-        password: "password123",
+        password: hashedSamplePassword,
         isAdmin: false,
         avatar: userData.avatar,
         bio: userData.bio,

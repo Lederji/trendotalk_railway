@@ -11,7 +11,7 @@ import { useState } from "react";
 import Auth from "@/pages/auth";
 
 const CATEGORIES = [
-  { id: "all", label: "All Trends" },
+  { id: "all", label: "Top Trends" },
   { id: "youtube", label: "YouTube" },
   { id: "instagram", label: "Instagram" },
   { id: "ipl", label: "IPL" },
@@ -28,8 +28,8 @@ export default function Home() {
     queryKey: ["/api/posts", activeCategory],
     queryFn: async () => {
       const url = activeCategory === "all" 
-        ? "/api/posts" 
-        : `/api/posts?category=${activeCategory}`;
+        ? "/api/posts?adminOnly=true" 
+        : `/api/posts?category=${activeCategory}&adminOnly=true`;
       const response = await fetch(url, {
         headers: isAuthenticated ? {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`

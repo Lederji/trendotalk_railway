@@ -2,15 +2,24 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, MessageCircle, Heart } from "lucide-react";
+import { Search, MessageCircle, Heart, Menu } from "lucide-react";
 
 export function Header() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const handleSearchClick = () => {
     setLocation("/search");
   };
+
+  // Hide header on certain pages
+  const hideHeader = ["/trends", "/create", "/circle"].includes(location);
+  if (hideHeader) {
+    return null;
+  }
+
+  // Show menu icon only on profile page
+  const isProfilePage = location.startsWith("/profile");
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -24,36 +33,50 @@ export function Header() {
         
         {/* Right Icons */}
         <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-2 hover:bg-gray-100 rounded-full"
-            onClick={handleSearchClick}
-          >
-            <Search className="h-5 w-5 text-gray-600" />
-          </Button>
+          {!isProfilePage && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-gray-100 rounded-full"
+                onClick={handleSearchClick}
+              >
+                <Search className="h-5 w-5 text-gray-600" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-gray-100 rounded-full relative"
+              >
+                <MessageCircle className="h-5 w-5 text-gray-600" />
+                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
+                  3
+                </Badge>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-gray-100 rounded-full relative"
+              >
+                <Heart className="h-5 w-5 text-gray-600" />
+                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
+                  7
+                </Badge>
+              </Button>
+            </>
+          )}
           
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-2 hover:bg-gray-100 rounded-full relative"
-          >
-            <MessageCircle className="h-5 w-5 text-gray-600" />
-            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
-              3
-            </Badge>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-2 hover:bg-gray-100 rounded-full relative"
-          >
-            <Heart className="h-5 w-5 text-gray-600" />
-            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
-              7
-            </Badge>
-          </Button>
+          {isProfilePage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <Menu className="h-5 w-5 text-gray-600" />
+            </Button>
+          )}
         </div>
       </div>
     </header>
