@@ -4,6 +4,7 @@ import {
   type Comment, type InsertComment, type Like, type Story, 
   type InsertStory, type Follow, type PostWithUser, type StoryWithUser, type UserProfile 
 } from "@shared/schema";
+import bcrypt from "bcryptjs";
 
 export interface IStorage {
   // User methods
@@ -61,12 +62,13 @@ export class MemStorage implements IStorage {
     this.seedData();
   }
 
-  private seedData() {
-    // Create admin user
+  private async seedData() {
+    // Create admin user with hashed password
+    const hashedAdminPassword = await bcrypt.hash("IpjDr620911@TrendoTalk", 10);
     const admin: User = {
       id: this.currentUserId++,
-      username: "tp-admin",
-      password: "admin123",
+      username: "ipj.trendotalk",
+      password: hashedAdminPassword,
       isAdmin: true,
       avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
       bio: "Official TrendoTalk Account",
@@ -120,10 +122,13 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    
     const user: User = {
       id: this.currentUserId++,
       username: insertUser.username,
-      password: insertUser.password,
+      password: hashedPassword,
       isAdmin: insertUser.isAdmin || false,
       avatar: insertUser.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100`,
       bio: insertUser.bio || "",
