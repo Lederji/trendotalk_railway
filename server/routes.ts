@@ -1,4 +1,5 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema } from "@shared/schema";
@@ -128,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/logout', authenticateUser, (req, res) => {
+  app.post('/api/logout', authenticateUser, (req: any, res: any) => {
     const sessionId = req.headers.authorization?.replace('Bearer ', '');
     if (sessionId) {
       sessions.delete(sessionId);
@@ -136,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: 'Logged out successfully' });
   });
 
-  app.get('/api/me', authenticateUser, async (req, res) => {
+  app.get('/api/me', authenticateUser, async (req: any, res: any) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user) {
@@ -169,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Post routes
-  app.post('/api/posts', authenticateUser, upload.single('media'), async (req, res) => {
+  app.post('/api/posts', authenticateUser, upload.single('media'), async (req: any, res: any) => {
     try {
       const postData = insertPostSchema.parse(req.body);
       const user = await storage.getUser(req.user.userId);
@@ -274,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/posts/:id', authenticateUser, async (req, res) => {
+  app.delete('/api/posts/:id', authenticateUser, async (req: any, res: any) => {
     try {
       const success = await storage.deletePost(Number(req.params.id), req.user.userId);
       if (!success) {
@@ -287,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Like routes
-  app.post('/api/posts/:id/like', authenticateUser, async (req, res) => {
+  app.post('/api/posts/:id/like', authenticateUser, async (req: any, res: any) => {
     try {
       const result = await storage.toggleLike(Number(req.params.id), req.user.userId);
       res.json(result);
@@ -297,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Comment routes
-  app.post('/api/posts/:id/comments', authenticateUser, async (req, res) => {
+  app.post('/api/posts/:id/comments', authenticateUser, async (req: any, res: any) => {
     try {
       const commentData = insertCommentSchema.parse({
         ...req.body,
@@ -329,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Story routes
-  app.post('/api/stories', authenticateUser, upload.single('media'), async (req, res) => {
+  app.post('/api/stories', authenticateUser, upload.single('media'), async (req: any, res: any) => {
     try {
       const storyData = insertStorySchema.parse(req.body);
       
@@ -399,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users/:id/follow', authenticateUser, async (req, res) => {
+  app.post('/api/users/:id/follow', authenticateUser, async (req: any, res: any) => {
     try {
       const success = await storage.followUser(req.user.userId, Number(req.params.id));
       if (!success) {
@@ -411,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/users/:id/follow', authenticateUser, async (req, res) => {
+  app.delete('/api/users/:id/follow', authenticateUser, async (req: any, res: any) => {
     try {
       const success = await storage.unfollowUser(req.user.userId, Number(req.params.id));
       if (!success) {
@@ -423,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/users/suggested', authenticateUser, async (req, res) => {
+  app.get('/api/users/suggested', authenticateUser, async (req: any, res: any) => {
     try {
       const suggested = await storage.getSuggestedUsers(req.user.userId);
       res.json(suggested.map(user => ({
