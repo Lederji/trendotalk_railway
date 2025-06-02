@@ -1,0 +1,199 @@
+✅ TrendoTalk – Final Project Script (Web-Only Version)
+
+🔷 Project Summary:
+
+Name: TrendoTalk
+
+Type: Social Media Web App (like Instagram)
+
+Goal: Handle 10,000+ active users
+
+Built with: Node.js + PostgreSQL
+
+Frontend: HTML, CSS, JavaScript
+
+Development Platform: Replit.com
+
+Deployment: Backend deployed on Render.com
+
+
+
+---
+
+🧩 Core Features
+
+👤 User Authentication
+
+Signup with:
+
+Username
+
+Password
+
+Confirm Password
+
+
+No email required
+
+All usernames must follow format: tp-username (e.g., tp-abc)
+
+Username availability checked in tp-username format before account creation
+
+
+📸 Posts & Uploads
+
+Users can upload images and videos under "Trends"
+
+Admin can upload content for the Home page only
+
+Posts include:
+
+Image or video
+
+Caption
+
+Likes and comments
+
+
+
+📖 Stories
+
+Users can upload 24-hour stories (image or video)
+
+View other users’ stories
+
+
+💬 Messaging & Video Calls
+
+Real-time 1-on-1 messaging
+
+User-to-user video calling with PeerJS/WebRTC
+
+Message and follower notification icons at the top
+
+
+
+---
+
+🏠 Homepage Structure
+
+Top Section (Tags Bar)
+
+Like YouTube, show:
+
+All Trends | YouTube | Instagram | IPL | Film | Songs | Model
+
+Feed:
+
+Only admins can post to homepage
+
+Admin content appears on homepage feed
+
+Users post under “Trends” instead
+
+
+
+---
+
+🧭 Navigation Bar (5 Buttons)
+
+1. Home
+
+
+2. Trends
+
+
+3. Create Trends
+
+
+4. Circle
+
+
+5. Profile
+
+
+
+
+---
+
+🔍 Top Header Bar
+
+Left: TrendoTalk in Canva-style theme color (magenta/blue/violet)
+
+Right Icons:
+
+🔍 Search icon
+
+💬 Message icon
+
+❤ Follower notification icon
+
+
+
+
+---
+
+🎨 Theme and UI
+
+Color Palette: Canva-style combination:
+
+Magenta
+
+Blue
+
+Violet
+
+
+Clean, modern layout
+
+Fully responsive for desktop and mobile browsers
+
+
+
+---
+
+⚙ Tech Stack Overview
+
+Layer	Technology
+
+Frontend	HTML, CSS, JavaScript
+Backend	Node.js + Express.js
+Database	PostgreSQL (via Render.com)
+Auth	Custom JWT with username/password
+Uploads	Multer (for image/video files)
+Hosting	Render.com
+Dev Platform	Replit.com
+
+
+
+---
+
+🌐 Key API Endpoints
+
+Endpoint	Purpose
+
+POST /api/signup	Create user with tp-username
+POST /api/login	Login with username & password
+GET /api/check/:username	Check availability of tp-username
+POST /api/post	Upload image/video
+GET /api/feed	View feed (admin or trends)
+POST /api/comment	Add comment to a post
+POST /api/like	Like a post
+POST /api/story	Upload story
+GET /api/stories	View stories
+POST /api/chat	Send chat message
+POST /api/videocall	Initiate video call
+
+
+
+---
+
+🚀 Hosting & Deployment
+
+Backend is hosted on Render.com
+
+Code is developed and tested on Replit
+
+Database (PostgreSQL) hosted on Render (or Neon.tech as backup)
+
+Project is designed to support 10,000+ active users
