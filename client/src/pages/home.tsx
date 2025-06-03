@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Search, Hash, User } from "lucide-react";
 import { useState } from "react";
 import Auth from "@/pages/auth";
 
@@ -23,6 +25,8 @@ const CATEGORIES = [
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "admin"],

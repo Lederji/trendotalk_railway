@@ -46,6 +46,7 @@ export interface IStorage {
   
   // Search methods
   searchUsers(query: string): Promise<User[]>;
+  searchPosts(query: string): Promise<PostWithUser[]>;
   
   // Friend request methods
   sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean>;
@@ -1201,6 +1202,34 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;
+    }
+  }
+
+  async searchPosts(query: string): Promise<PostWithUser[]> {
+    try {
+      const searchResults = await db
+        .select({
+          post: posts,
+          user: {
+            id: users.id,
+            username: users.username,
+            avatar: users.avatar,
+            isAdmin: users.isAdmin,
+          },
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .where(ilike(posts.caption, `%${query}%`))
+        .orderBy(desc(posts.createdAt))
+        .limit(20);
+
+      return searchResults.map(row => ({
+        ...row.post,
+        user: row.user,
+      }));
+    } catch (error) {
+      console.error('Error searching posts:', error);
+      return [];
     }
   }
 

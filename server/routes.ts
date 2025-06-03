@@ -391,6 +391,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User search endpoint - MUST be before /api/users/:username
+  app.get('/api/users/search', authenticateUser, async (req: any, res: any) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim().length < 2) {
+        return res.json([]);
+      }
+      
+      const users = await storage.searchUsers(query.trim());
+      res.json(users);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Search posts and hashtags endpoint for home page
+  app.get('/api/search', authenticateUser, async (req: any, res: any) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim().length < 1) {
+        return res.json({ users: [], posts: [] });
+      }
+      
+      const users = await storage.searchUsers(query.trim());
+      const posts = await storage.searchPosts(query.trim());
+      
+      res.json({ users, posts });
+    } catch (error) {
+      console.error('Error searching:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Profile update endpoint
+  app.patch('/api/users/profile', authenticateUser, async (req: any, res: any) => {
+    try {
+      const updates = req.body;
+      const updatedUser = await storage.updateUser(req.user.userId, updates);
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // User routes
   app.get('/api/users/:username', async (req, res) => {
     try {
@@ -450,21 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User search endpoint
-  app.get('/api/users/search', authenticateUser, async (req: any, res: any) => {
-    try {
-      const query = req.query.q as string;
-      if (!query || query.trim().length < 2) {
-        return res.json([]);
-      }
-      
-      const users = await storage.searchUsers(query.trim());
-      res.json(users);
-    } catch (error) {
-      console.error('Error searching users:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
+
 
   // Friend request routes
   app.get('/api/friend-requests', authenticateUser, async (req: any, res: any) => {
