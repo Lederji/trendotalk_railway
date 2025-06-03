@@ -433,10 +433,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedUser) {
         return res.status(404).json({ message: 'User not found' });
       }
-      res.json(updatedUser);
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error('Error updating profile:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Upload avatar
+  app.post('/api/upload/avatar', authenticateUser, upload.single('file'), async (req: any, res: any) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+      
+      const cloudinaryUrl = await uploadToCloudinary(req.file);
+      
+      const updatedUser = await storage.updateUser(req.user.userId, {
+        avatar: cloudinaryUrl,
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      res.json({ url: cloudinaryUrl });
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      res.status(500).json({ message: 'Avatar upload failed' });
     }
   });
 
