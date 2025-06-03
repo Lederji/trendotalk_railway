@@ -562,7 +562,130 @@ export class VideoCleanupService implements IVideoCleanup {
 
 export class DatabaseStorage implements IStorage {
   constructor() {
-    this.seedData();
+    this.initializeDatabase();
+  }
+
+  private async initializeDatabase() {
+    try {
+      // Ensure tables exist before seeding data
+      await this.createTablesIfNotExists();
+      await this.seedData();
+    } catch (error) {
+      console.error('Database initialization failed:', error);
+    }
+  }
+
+  private async createTablesIfNotExists() {
+    try {
+      // Create users table
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255) NOT NULL,
+          name VARCHAR(255),
+          bio TEXT,
+          website VARCHAR(255),
+          phone VARCHAR(255),
+          email VARCHAR(255),
+          avatar VARCHAR(255),
+          is_admin BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Create other tables
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS posts (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          caption TEXT,
+          image_url VARCHAR(255),
+          video_url VARCHAR(255),
+          likes_count INTEGER DEFAULT 0,
+          comments_count INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS comments (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS likes (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(post_id, user_id)
+        );
+      `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS stories (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          image_url VARCHAR(255),
+          video_url VARCHAR(255),
+          caption TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          expires_at TIMESTAMP NOT NULL
+        );
+      `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS follows (
+          id SERIAL PRIMARY KEY,
+          follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          following_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(follower_id, following_id)
+        );
+      `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS friend_requests (
+          id SERIAL PRIMARY KEY,
+          from_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          to_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          status VARCHAR(20) DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(from_user_id, to_user_id)
+        );
+      `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS chats (
+          id SERIAL PRIMARY KEY,
+          user1_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          user2_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user1_id, user2_id)
+        );
+      `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS messages (
+          id SERIAL PRIMARY KEY,
+          chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+          sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      console.log('Database tables created successfully');
+    } catch (error) {
+      console.error('Error creating tables:', error);
+      throw error;
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
