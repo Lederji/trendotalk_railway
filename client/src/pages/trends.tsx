@@ -1,41 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
-import { Header } from "@/components/layout/header";
-import { Navigation } from "@/components/layout/navigation";
-import { PostCard } from "@/components/post/post-card";
-import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
-import Auth from "./auth";
-
-const CATEGORIES = [
-  { id: "all", label: "All Trends" },
-  { id: "youtube", label: "YouTube" },
-  { id: "instagram", label: "Instagram" },
-  { id: "ipl", label: "IPL" },
-  { id: "film", label: "Film" },
-  { id: "songs", label: "Songs" },
-  { id: "model", label: "Model" },
-];
+import { useQuery } from "@tanstack/react-query";
+import { Navigation } from "@/components/layout/navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Heart, MessageCircle, Share, Link as LinkIcon, MoreVertical } from "lucide-react";
+import Auth from "@/pages/auth";
 
 export default function Trends() {
   const { isAuthenticated } = useAuth();
-  const [activeCategory, setActiveCategory] = useState("all");
 
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ["/api/posts", activeCategory, "user"],
+    queryKey: ["/api/posts", "videos"],
     queryFn: async () => {
-      // Get user posts only (not admin posts)
-      const url = activeCategory === "all" 
-        ? "/api/posts?adminOnly=false" 
-        : `/api/posts?category=${activeCategory}&adminOnly=false`;
-      const response = await fetch(url, {
+      // Get only video posts from users (not admin posts)
+      const response = await fetch("/api/posts?adminOnly=false", {
         headers: isAuthenticated ? {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         } : {}
       });
       if (!response.ok) throw new Error('Failed to fetch trends');
-      return response.json();
+      const allPosts = await response.json();
+      // Filter only video posts
+      return allPosts.filter((post: any) => post.videoUrl);
     },
   });
 
@@ -44,82 +31,152 @@ export default function Trends() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="min-h-screen bg-black relative">
+      {/* Header */}
+      <div className="absolute top-0 left-0 right-0 z-50 p-4">
+        <h1 className="text-white text-xl font-bold">Trends</h1>
+      </div>
       
-      <div className="max-w-4xl mx-auto px-4 pb-20 md:pb-4">
-        {/* Page Title */}
-        <div className="my-6">
-          <h1 className="text-2xl font-bold gradient-text">Trending Now</h1>
-          <p className="text-gray-600 mt-1">Discover what's trending in the community</p>
-        </div>
-
-        {/* Category Filter */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide">
-              {CATEGORIES.map((category) => (
-                <Button
-                  key={category.id}
-                  variant={activeCategory === category.id ? "default" : "outline"}
-                  size="sm"
-                  className={`whitespace-nowrap ${
-                    activeCategory === category.id
-                      ? "gradient-bg text-white hover:opacity-90"
-                      : "hover:bg-gray-100"
-                  }`}
-                  onClick={() => setActiveCategory(category.id)}
-                >
-                  {category.label}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Trends Feed */}
+      {/* Video Feed */}
+      <div className="h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide">
         {isLoading ? (
-          <div className="space-y-6">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                    <div className="space-y-1">
-                      <div className="w-24 h-4 bg-gray-200 rounded"></div>
-                      <div className="w-16 h-3 bg-gray-200 rounded"></div>
-                    </div>
-                  </div>
-                  <div className="w-full h-64 bg-gray-200 rounded mb-4"></div>
-                  <div className="space-y-2">
-                    <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
-                    <div className="w-1/2 h-4 bg-gray-200 rounded"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="h-screen flex items-center justify-center">
+            <div className="text-white">Loading trends...</div>
           </div>
         ) : posts.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <div className="text-center">
-                <i className="fas fa-fire text-4xl text-gray-300 mb-4"></i>
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">No trends found</h3>
-                <p className="text-gray-500">
-                  {activeCategory === "all" 
-                    ? "Be the first to create a trend!" 
-                    : `No trends found in ${CATEGORIES.find(c => c.id === activeCategory)?.label}`
-                  }
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            {posts.map((post: any) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+          <div className="h-screen flex items-center justify-center text-center px-4">
+            <div>
+              <h3 className="text-white text-lg font-semibold mb-2">No video trends yet</h3>
+              <p className="text-gray-400">Be the first to upload a video trend!</p>
+            </div>
           </div>
+        ) : (
+          posts.map((post: any, index: number) => (
+            <div key={post.id} className="relative h-screen snap-start overflow-hidden">
+              {/* Video Background */}
+              <video
+                src={post.videoUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+              
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+              
+              {/* Right Side Actions */}
+              <div className="absolute right-3 bottom-20 flex flex-col items-center space-y-6">
+                {/* Profile Avatar */}
+                <div className="relative">
+                  <Avatar className="w-12 h-12 ring-2 ring-white">
+                    <AvatarImage src={post.user.avatar} alt={post.user.username} />
+                    <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                      {post.user.username[3]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold hover:bg-red-600 p-0">
+                    +
+                  </Button>
+                </div>
+                
+                {/* Like Button */}
+                <div className="flex flex-col items-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                  >
+                    <Heart className="w-7 h-7" />
+                  </Button>
+                  <span className="text-white text-xs font-semibold mt-1">
+                    {post.likesCount > 999 
+                      ? `${(post.likesCount / 1000).toFixed(1)}k` 
+                      : post.likesCount
+                    }
+                  </span>
+                </div>
+                
+                {/* Comment Button */}
+                <div className="flex flex-col items-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                  >
+                    <MessageCircle className="w-7 h-7" />
+                  </Button>
+                  <span className="text-white text-xs font-semibold mt-1">
+                    {post.commentsCount > 999 
+                      ? `${(post.commentsCount / 1000).toFixed(1)}k` 
+                      : post.commentsCount
+                    }
+                  </span>
+                </div>
+                
+                {/* Share Button */}
+                <div className="flex flex-col items-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                  >
+                    <Share className="w-6 h-6" />
+                  </Button>
+                </div>
+                
+                {/* Link Button (if link exists) */}
+                {post.link && (
+                  <div className="flex flex-col items-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                      onClick={() => window.open(post.link, '_blank')}
+                    >
+                      <LinkIcon className="w-6 h-6" />
+                    </Button>
+                  </div>
+                )}
+                
+                {/* More Options */}
+                <div className="flex flex-col items-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                  >
+                    <MoreVertical className="w-6 h-6" />
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Bottom Content */}
+              <div className="absolute bottom-4 left-4 right-20">
+                {/* Username and Follow Button */}
+                <div className="flex items-center space-x-3 mb-3">
+                  <span className="text-white font-bold text-base">{post.user.username}</span>
+                  <Button className="px-4 py-1 bg-transparent border border-white text-white text-sm font-semibold rounded hover:bg-white hover:text-black transition-colors">
+                    Follow
+                  </Button>
+                </div>
+                
+                {/* Caption */}
+                <p className="text-white text-sm mb-2 line-clamp-2">{post.caption}</p>
+                
+                {/* Link indicator with music note styling */}
+                {post.link && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <div className="w-4 h-4 bg-white rounded-sm flex items-center justify-center">
+                      <LinkIcon className="w-3 h-3 text-black" />
+                    </div>
+                    <span className="text-white text-xs">Link attached</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
         )}
       </div>
 

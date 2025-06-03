@@ -8,6 +8,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
+import { uploadToCloudinary } from "./cloudinary";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');

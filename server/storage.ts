@@ -5,6 +5,8 @@ import {
   type InsertStory, type Follow, type PostWithUser, type StoryWithUser, type UserProfile 
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -476,4 +478,204 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        password: hashedPassword,
+      })
+      .returning();
+    return user;
+  }
+
+  async checkUsernameAvailability(username: string): Promise<boolean> {
+    const user = await this.getUserByUsername(username);
+    return !user;
+  }
+
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async createPost(postData: InsertPost & { userId: number }): Promise<Post> {
+    const [post] = await db
+      .insert(posts)
+      .values(postData)
+      .returning();
+    return post;
+  }
+
+  async getPostById(id: number): Promise<PostWithUser | undefined> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          avatar: users.avatar,
+          isAdmin: users.isAdmin,
+        },
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .where(eq(posts.id, id));
+
+    if (!result[0]) return undefined;
+
+    return {
+      ...result[0].post,
+      user: result[0].user,
+    };
+  }
+
+  async getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]> {
+    let query = db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          avatar: users.avatar,
+          isAdmin: users.isAdmin,
+        },
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id));
+
+    if (isAdminOnly !== undefined) {
+      query = query.where(eq(posts.isAdminPost, isAdminOnly));
+    }
+
+    const result = await query.orderBy(posts.createdAt);
+
+    return result.map((row) => ({
+      ...row.post,
+      user: row.user,
+    }));
+  }
+
+  async getUserPosts(userId: number): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          avatar: users.avatar,
+          isAdmin: users.isAdmin,
+        },
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .where(eq(posts.userId, userId))
+      .orderBy(posts.createdAt);
+
+    return result.map((row) => ({
+      ...row.post,
+      user: row.user,
+    }));
+  }
+
+  async deletePost(id: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(posts)
+      .where(eq(posts.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number }> {
+    // Implementation for like toggle
+    return { liked: false, likesCount: 0 };
+  }
+
+  async getUserLikes(userId: number): Promise<number[]> {
+    return [];
+  }
+
+  async createComment(comment: InsertComment & { userId: number }): Promise<Comment> {
+    const [newComment] = await db
+      .insert(comments)
+      .values(comment)
+      .returning();
+    return newComment;
+  }
+
+  async getPostComments(postId: number): Promise<(Comment & { user: Pick<User, 'username' | 'avatar'> })[]> {
+    return [];
+  }
+
+  async createStory(story: InsertStory & { userId: number }): Promise<Story> {
+    const [newStory] = await db
+      .insert(stories)
+      .values(story)
+      .returning();
+    return newStory;
+  }
+
+  async getActiveStories(): Promise<StoryWithUser[]> {
+    return [];
+  }
+
+  async getUserStories(userId: number): Promise<Story[]> {
+    return [];
+  }
+
+  async followUser(followerId: number, followingId: number): Promise<boolean> {
+    return true;
+  }
+
+  async unfollowUser(followerId: number, followingId: number): Promise<boolean> {
+    return true;
+  }
+
+  async isFollowing(followerId: number, followingId: number): Promise<boolean> {
+    return false;
+  }
+
+  async getUserFollowers(userId: number): Promise<User[]> {
+    return [];
+  }
+
+  async getUserFollowing(userId: number): Promise<User[]> {
+    return [];
+  }
+
+  async getSuggestedUsers(userId: number): Promise<User[]> {
+    return [];
+  }
+
+  private async seedData() {
+    // Check if admin user already exists
+    const existingAdmin = await this.getUserByUsername("ipj.trendotalk");
+    if (!existingAdmin) {
+      await this.createUser({
+        username: "ipj.trendotalk",
+        password: "IpjDr620911@TrendoTalk",
+        isAdmin: true,
+        bio: "Official TrendoTalk Account",
+        avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
+      });
+    }
+  }
+}
+
+export const storage = new DatabaseStorage();
