@@ -28,7 +28,6 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchResults, setShowSearchResults] = useState(false);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "admin"],
@@ -52,33 +51,20 @@ export default function Home() {
     },
   });
 
-  const { data: suggestedUsers = [] } = useQuery({
-    queryKey: ["/api/users/suggested"],
-    queryFn: async () => {
-      const response = await fetch("/api/users/suggested", {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch suggested users');
-      return response.json();
-    },
-    enabled: isAuthenticated,
-  });
-
-  const { data: searchResults, isLoading: searchLoading } = useQuery({
+  const { data: searchUsers = [] } = useQuery({
     queryKey: ["/api/search", searchQuery],
     queryFn: async () => {
-      if (!searchQuery.trim()) return { users: [], posts: [] };
+      if (!searchQuery.trim()) return [];
       const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`, {
-        headers: {
+        headers: isAuthenticated ? {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        }
+        } : {}
       });
       if (!response.ok) throw new Error('Failed to search');
-      return response.json();
+      const data = await response.json();
+      return data.users || [];
     },
-    enabled: isAuthenticated && searchQuery.trim().length > 0,
+    enabled: !!searchQuery.trim(),
   });
 
   if (!isAuthenticated) {
@@ -90,6 +76,56 @@ export default function Home() {
       <Header />
       
       <div className="px-4 pb-20">
+        {/* Search Bar */}
+        <Card className="my-4">
+          <CardContent className="p-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Search Results */}
+        {searchQuery.trim() && (
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-3">Search Results for "{searchQuery}"</h3>
+              {searchUsers.length > 0 ? (
+                <div className="space-y-3">
+                  {searchUsers.map((searchUser: any) => (
+                    <div 
+                      key={searchUser.id} 
+                      className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                      onClick={() => setLocation(`/profile/${searchUser.username}`)}
+                    >
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={searchUser.avatar} alt={searchUser.username} />
+                        <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                          {searchUser.username[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-medium">{searchUser.username}</p>
+                        {searchUser.bio && (
+                          <p className="text-sm text-gray-500 truncate">{searchUser.bio}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No users found</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tags Bar */}
         <Card className="my-4">
           <CardContent className="p-3">
@@ -113,10 +149,6 @@ export default function Home() {
           </CardContent>
         </Card>
 
-
-
-
-
         {/* Posts Feed */}
         {isLoading ? (
           <div className="space-y-4">
@@ -132,8 +164,8 @@ export default function Home() {
                   </div>
                   <div className="w-full h-64 bg-gray-200 rounded mb-4"></div>
                   <div className="space-y-2">
+                    <div className="w-full h-4 bg-gray-200 rounded"></div>
                     <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
-                    <div className="w-1/2 h-4 bg-gray-200 rounded"></div>
                   </div>
                 </CardContent>
               </Card>
@@ -141,8 +173,10 @@ export default function Home() {
           </div>
         ) : posts.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-gray-500">No posts found for this category.</p>
+            <CardContent className="p-6 text-center">
+              <Hash className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No trending posts yet</h3>
+              <p className="text-gray-500">Be the first to create trending content!</p>
             </CardContent>
           </Card>
         ) : (
