@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: trendotalk
+    runtime: node
+    plan: free
+    buildCommand: npm install && node migrate.js && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trendotalk-db
+          property: connectionString
+    autoDeploy: false
+
+databases:
+  - name: trendotalk-db
+    plan: free
+    databaseName: trendotalk
+    user: trendotalk

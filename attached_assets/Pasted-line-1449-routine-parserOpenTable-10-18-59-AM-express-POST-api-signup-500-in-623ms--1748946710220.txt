@@ -1,0 +1,54 @@
+line: '1449',
+  routine: 'parserOpenTable'
+}
+10:18:59 AM [express] POST /api/signup 500 in 623ms :: {"message":"Internal server error"}
+Error getting user by username: error: relation "users" does not exist
+    at file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (file:///opt/render/project/src/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.getUserByUsername (file:///opt/render/project/src/dist/index.js:224:22)
+    at async DatabaseStorage.checkUsernameAvailability (file:///opt/render/project/src/dist/index.js:246:20)
+    at async file:///opt/render/project/src/dist/index.js:789:27 {
+  length: 105,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '123',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+Error creating user: error: relation "users" does not exist
+    at file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (file:///opt/render/project/src/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.createUser (file:///opt/render/project/src/dist/index.js:234:22)
+    at async file:///opt/render/project/src/dist/index.js:793:20 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '13',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+10:19:31 AM [express] POST /api/signup 500 in 642ms :: {"message":"Internal server error"}
