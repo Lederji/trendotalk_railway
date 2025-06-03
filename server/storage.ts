@@ -839,6 +839,26 @@ export class DatabaseStorage implements IStorage {
 
   async createStory(story: InsertStory & { userId: number }): Promise<Story> {
     try {
+      // Clean up existing stories for this user if they're posting within 24 hours
+      const existingStories = await db
+        .select()
+        .from(stories)
+        .where(eq(stories.userId, story.userId))
+        .orderBy(desc(stories.createdAt));
+      
+      // Delete old stories from the same user (keep only the latest one per 24 hours)
+      for (const existingStory of existingStories) {
+        const storyAge = Date.now() - new Date(existingStory.createdAt).getTime();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        
+        if (storyAge < twentyFourHours) {
+          // Delete the old story if posting within 24 hours
+          await db
+            .delete(stories)
+            .where(eq(stories.id, existingStory.id));
+        }
+      }
+      
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
       

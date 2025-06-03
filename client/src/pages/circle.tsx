@@ -205,36 +205,87 @@ export default function Circle() {
           </CardContent>
         </Card>
 
-        {/* Friend Status */}
-        {friendStatus.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Friend Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-32">
-                <div className="flex space-x-4">
-                  {friendStatus.map((friend: any) => (
-                    <div key={friend.id} className="flex flex-col items-center space-y-2 min-w-[80px]">
-                      <div className="relative">
-                        <Avatar className="w-16 h-16 ring-2 ring-blue-500">
-                          <AvatarImage src={friend.avatar} alt={friend.username} />
-                          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                            {friend.username[3]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        {friend.hasStory && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
-                        )}
-                      </div>
-                      <p className="text-xs text-center font-medium truncate w-full">{friend.username}</p>
+        {/* Circle's Vibe */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Circle's Vibe</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-32">
+              <div className="flex space-x-4">
+                {/* Add Your Status */}
+                <div className="flex flex-col items-center space-y-2 min-w-[80px]">
+                  <div className="relative">
+                    <Avatar className="w-16 h-16 ring-2 ring-gray-300 cursor-pointer hover:ring-blue-500 transition-colors">
+                      <AvatarImage src={user?.avatar} alt="Your status" />
+                      <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                        {user?.username?.[3]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div 
+                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center cursor-pointer hover:bg-blue-600"
+                      onClick={() => document.getElementById('status-upload')?.click()}
+                    >
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
                     </div>
-                  ))}
+                    <input
+                      id="status-upload"
+                      type="file"
+                      accept="image/*,video/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            const formData = new FormData();
+                            formData.append('media', file);
+                            formData.append('caption', '');
+                            
+                            const response = await fetch('/api/stories', {
+                              method: 'POST',
+                              headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
+                              },
+                              body: formData,
+                            });
+                            
+                            if (response.ok) {
+                              // Refresh stories
+                              window.location.reload();
+                            }
+                          } catch (error) {
+                            console.error('Error uploading status:', error);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-center font-medium">Your vibe</p>
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
+
+                {/* Friends' Status */}
+                {friendStatus.map((friend: any) => (
+                  <div key={friend.id} className="flex flex-col items-center space-y-2 min-w-[80px]">
+                    <div className="relative">
+                      <Avatar className={`w-16 h-16 ring-2 cursor-pointer ${friend.hasStory ? 'ring-gradient-to-r from-pink-500 to-purple-600' : 'ring-gray-300'}`}>
+                        <AvatarImage src={friend.avatar} alt={friend.username} />
+                        <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                          {friend.username[3]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {friend.hasStory && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                      )}
+                    </div>
+                    <p className="text-xs text-center font-medium truncate w-full">{friend.username}</p>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
 
         {/* Tabs for Chats and Requests */}
         <Tabs defaultValue="chats" className="w-full">
@@ -276,14 +327,20 @@ export default function Circle() {
                     <p className="text-sm text-green-500">Online</p>
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm" className="rounded-full">
+                    <Button variant="ghost" size="sm" className="rounded-full" title="Voice Call">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                     </Button>
-                    <Button variant="ghost" size="sm" className="rounded-full">
+                    <Button variant="ghost" size="sm" className="rounded-full" title="Video Call">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </Button>
+                    <Button variant="ghost" size="sm" className="rounded-full" title="Settings">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </Button>
                   </div>
@@ -333,38 +390,85 @@ export default function Circle() {
 
                 {/* Message Input */}
                 <div className="p-4 bg-white border-t">
-                  <div className="flex items-center space-x-3">
-                    <Button variant="ghost" size="sm" className="rounded-full">
+                  <div className="flex items-center space-x-2">
+                    {/* File Upload Button */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="rounded-full p-2"
+                      onClick={() => document.getElementById('chat-file-upload')?.click()}
+                    >
                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                       </svg>
                     </Button>
-                    <div className="flex-1 bg-gray-100 rounded-full px-4 py-2">
+                    <input
+                      id="chat-file-upload"
+                      type="file"
+                      accept="image/*,video/*,audio/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Handle file upload
+                          console.log('File selected:', file.name);
+                        }
+                      }}
+                    />
+
+                    {/* Camera Button */}
+                    <Button variant="ghost" size="sm" className="rounded-full p-2">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </Button>
+
+                    {/* Message Input Field */}
+                    <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 flex items-center">
                       <Input
                         placeholder="Message..."
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        className="border-none bg-transparent focus:ring-0 focus:outline-none"
+                        className="border-none bg-transparent focus:ring-0 focus:outline-none text-sm"
                       />
+                      
+                      {/* Emoji Button */}
+                      <Button variant="ghost" size="sm" className="p-1 ml-2">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="sm" className="rounded-full">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                      </svg>
-                    </Button>
-                    <Button variant="ghost" size="sm" className="rounded-full">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </Button>
-                    <Button 
-                      onClick={handleSendMessage} 
-                      disabled={!messageText.trim()}
-                      className={`rounded-full ${messageText.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-300'} text-white`}
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
+
+                    {/* Audio Record or Send Button */}
+                    {messageText.trim() ? (
+                      <Button 
+                        onClick={handleSendMessage}
+                        className="rounded-full bg-blue-500 hover:bg-blue-600 text-white p-2"
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="rounded-full p-2"
+                        onMouseDown={() => {
+                          // Start audio recording
+                          console.log('Start recording');
+                        }}
+                        onMouseUp={() => {
+                          // Stop audio recording
+                          console.log('Stop recording');
+                        }}
+                      >
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
