@@ -6,7 +6,7 @@ import {
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, desc, sql, notInArray } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -46,8 +46,8 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User> = new Map();
-  private posts: Map<number, Post> = new Map();
+  public users: Map<number, User> = new Map();
+  public posts: Map<number, Post> = new Map();
   private comments: Map<number, Comment> = new Map();
   private likes: Map<number, Like> = new Map();
   private stories: Map<number, Story> = new Map();
@@ -478,355 +478,83 @@ export class MemStorage implements IStorage {
   }
 }
 
-export class DatabaseStorage implements IStorage {
-  constructor() {
-    this.seedData();
-  }
 
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
-  }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
+// Add video expiration and cleanup functionality
+export interface IVideoCleanup {
+  cleanupExpiredVideos(): Promise<void>;
+  deleteVideoFromCloudinary(url: string): Promise<void>;
+}
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
-    const [user] = await db
-      .insert(users)
-      .values({
-        ...insertUser,
-        password: hashedPassword,
-      })
-      .returning();
-    return user;
-  }
+export class VideoCleanupService implements IVideoCleanup {
+  async cleanupExpiredVideos(): Promise<void> {
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-  async checkUsernameAvailability(username: string): Promise<boolean> {
-    const user = await this.getUserByUsername(username);
-    return !user;
-  }
+    // Get all video posts older than 3 days from MemStorage
+    const memStorage = storage as MemStorage;
+    const allPosts = Array.from(memStorage.posts.values());
+    const oldVideos = allPosts.filter(post => 
+      post.videoUrl && 
+      new Date(post.createdAt) < threeDaysAgo
+    );
 
-  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
-      .returning();
-    return user || undefined;
-  }
-
-  async createPost(postData: InsertPost & { userId: number }): Promise<Post> {
-    const [post] = await db
-      .insert(posts)
-      .values(postData)
-      .returning();
-    return post;
-  }
-
-  async getPostById(id: number): Promise<PostWithUser | undefined> {
-    const result = await db
-      .select({
-        post: posts,
-        user: {
-          id: users.id,
-          username: users.username,
-          avatar: users.avatar,
-          isAdmin: users.isAdmin,
-        },
-      })
-      .from(posts)
-      .innerJoin(users, eq(posts.userId, users.id))
-      .where(eq(posts.id, id));
-
-    if (!result[0] || !result[0].user) return undefined;
-
-    return {
-      ...result[0].post,
-      user: result[0].user,
-      likesCount: result[0].post.likesCount || 0,
-      commentsCount: result[0].post.commentsCount || 0,
-    } as PostWithUser;
-  }
-
-  async getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]> {
-    let query = db
-      .select({
-        post: posts,
-        user: {
-          id: users.id,
-          username: users.username,
-          avatar: users.avatar,
-          isAdmin: users.isAdmin,
-        },
-      })
-      .from(posts)
-      .innerJoin(users, eq(posts.userId, users.id));
-
-    if (isAdminOnly !== undefined) {
-      query = query.where(eq(posts.isAdminPost, isAdminOnly));
-    }
-
-    const result = await query.orderBy(desc(posts.createdAt));
-
-    return result
-      .filter(row => row.user)
-      .map((row) => ({
-        ...row.post,
-        user: row.user,
-        likesCount: row.post.likesCount || 0,
-        commentsCount: row.post.commentsCount || 0,
-      } as PostWithUser));
-  }
-
-  async getUserPosts(userId: number): Promise<PostWithUser[]> {
-    const result = await db
-      .select({
-        post: posts,
-        user: {
-          id: users.id,
-          username: users.username,
-          avatar: users.avatar,
-          isAdmin: users.isAdmin,
-        },
-      })
-      .from(posts)
-      .innerJoin(users, eq(posts.userId, users.id))
-      .where(eq(posts.userId, userId))
-      .orderBy(desc(posts.createdAt));
-
-    return result
-      .filter(row => row.user)
-      .map((row) => ({
-        ...row.post,
-        user: row.user,
-        likesCount: row.post.likesCount || 0,
-        commentsCount: row.post.commentsCount || 0,
-      } as PostWithUser));
-  }
-
-  async deletePost(id: number, userId: number): Promise<boolean> {
-    const result = await db
-      .delete(posts)
-      .where(and(eq(posts.id, id), eq(posts.userId, userId)))
-      .returning();
-    return result.length > 0;
-  }
-
-  async toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number }> {
-    // Check if like exists
-    const [existingLike] = await db
-      .select()
-      .from(likes)
-      .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
-
-    if (existingLike) {
-      // Remove like
-      await db
-        .delete(likes)
-        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
-      
-      // Update post likes count
-      await db
-        .update(posts)
-        .set({ likesCount: sql`${posts.likesCount} - 1` })
-        .where(eq(posts.id, postId));
-        
-      const [post] = await db.select().from(posts).where(eq(posts.id, postId));
-      return { liked: false, likesCount: post?.likesCount || 0 };
-    } else {
-      // Add like
-      await db
-        .insert(likes)
-        .values({ postId, userId });
-      
-      // Update post likes count
-      await db
-        .update(posts)
-        .set({ likesCount: sql`${posts.likesCount} + 1` })
-        .where(eq(posts.id, postId));
-        
-      const [post] = await db.select().from(posts).where(eq(posts.id, postId));
-      return { liked: true, likesCount: post?.likesCount || 1 };
-    }
-  }
-
-  async getUserLikes(userId: number): Promise<number[]> {
-    const userLikes = await db
-      .select({ postId: likes.postId })
-      .from(likes)
-      .where(eq(likes.userId, userId));
-    return userLikes.map(like => like.postId);
-  }
-
-  async createComment(comment: InsertComment & { userId: number }): Promise<Comment> {
-    const [newComment] = await db
-      .insert(comments)
-      .values(comment)
-      .returning();
+    // Group by user to keep top 3 most viewed videos per user
+    const userVideos = new Map<number, Post[]>();
     
-    // Update post comments count
-    await db
-      .update(posts)
-      .set({ commentsCount: sql`${posts.commentsCount} + 1` })
-      .where(eq(posts.id, comment.postId));
-      
-    return newComment;
-  }
-
-  async getPostComments(postId: number): Promise<(Comment & { user: Pick<User, 'username' | 'avatar'> })[]> {
-    const result = await db
-      .select({
-        comment: comments,
-        user: {
-          username: users.username,
-          avatar: users.avatar,
-        },
-      })
-      .from(comments)
-      .innerJoin(users, eq(comments.userId, users.id))
-      .where(eq(comments.postId, postId))
-      .orderBy(desc(comments.createdAt));
-
-    return result.map(row => ({
-      ...row.comment,
-      user: row.user,
-    }));
-  }
-
-  async createStory(story: InsertStory & { userId: number }): Promise<Story> {
-    // Add expiration date (24 hours from now)
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
-    
-    const [newStory] = await db
-      .insert(stories)
-      .values({
-        ...story,
-        expiresAt,
-      })
-      .returning();
-    return newStory;
-  }
-
-  async getActiveStories(): Promise<StoryWithUser[]> {
-    const now = new Date();
-    const result = await db
-      .select({
-        story: stories,
-        user: {
-          username: users.username,
-          avatar: users.avatar,
-        },
-      })
-      .from(stories)
-      .innerJoin(users, eq(stories.userId, users.id))
-      .where(sql`${stories.expiresAt} > ${now}`)
-      .orderBy(desc(stories.createdAt));
-
-    return result.map(row => ({
-      ...row.story,
-      user: row.user,
-    }));
-  }
-
-  async getUserStories(userId: number): Promise<Story[]> {
-    const result = await db
-      .select()
-      .from(stories)
-      .where(eq(stories.userId, userId))
-      .orderBy(desc(stories.createdAt));
-    return result;
-  }
-
-  async followUser(followerId: number, followingId: number): Promise<boolean> {
-    try {
-      await db
-        .insert(follows)
-        .values({ followerId, followingId });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async unfollowUser(followerId: number, followingId: number): Promise<boolean> {
-    const result = await db
-      .delete(follows)
-      .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
-      .returning();
-    return result.length > 0;
-  }
-
-  async isFollowing(followerId: number, followingId: number): Promise<boolean> {
-    const [follow] = await db
-      .select()
-      .from(follows)
-      .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
-    return !!follow;
-  }
-
-  async getUserFollowers(userId: number): Promise<User[]> {
-    const result = await db
-      .select({
-        user: users,
-      })
-      .from(follows)
-      .innerJoin(users, eq(follows.followerId, users.id))
-      .where(eq(follows.followingId, userId));
-    return result.map(row => row.user);
-  }
-
-  async getUserFollowing(userId: number): Promise<User[]> {
-    const result = await db
-      .select({
-        user: users,
-      })
-      .from(follows)
-      .innerJoin(users, eq(follows.followingId, users.id))
-      .where(eq(follows.followerId, userId));
-    return result.map(row => row.user);
-  }
-
-  async getSuggestedUsers(userId: number): Promise<User[]> {
-    const following = await db
-      .select({ followingId: follows.followingId })
-      .from(follows)
-      .where(eq(follows.followerId, userId));
-    
-    const followingIds = following.map(f => f.followingId);
-    followingIds.push(userId); // Exclude self
-    
-    const result = await db
-      .select()
-      .from(users)
-      .where(notInArray(users.id, followingIds))
-      .limit(5);
-      
-    return result;
-  }
-
-  private async seedData() {
-    try {
-      // Check if admin user already exists
-      const existingAdmin = await this.getUserByUsername("ipj.trendotalk");
-      if (!existingAdmin) {
-        await this.createUser({
-          username: "ipj.trendotalk",
-          password: "IpjDr620911@TrendoTalk",
-          confirmPassword: "IpjDr620911@TrendoTalk",
-          isAdmin: true,
-          bio: "Official TrendoTalk Account",
-          avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
-        });
+    for (const video of oldVideos) {
+      if (!userVideos.has(video.userId)) {
+        userVideos.set(video.userId, []);
       }
+      userVideos.get(video.userId)!.push(video);
+    }
+
+    // Process each user's videos
+    for (const [userId, videos] of Array.from(userVideos.entries())) {
+      // Sort by likes count (most viewed) and keep top 3
+      videos.sort((a: Post, b: Post) => (b.likesCount || 0) - (a.likesCount || 0));
+      const videosToDelete = videos.slice(3); // Delete all except top 3
+
+      for (const video of videosToDelete) {
+        try {
+          // Delete from Cloudinary
+          if (video.videoUrl) {
+            await this.deleteVideoFromCloudinary(video.videoUrl);
+          }
+          
+          // Delete from MemStorage
+          storage.posts.delete(video.id);
+        } catch (error) {
+          console.error(`Failed to delete video ${video.id}:`, error);
+        }
+      }
+    }
+  }
+
+  async deleteVideoFromCloudinary(url: string): Promise<void> {
+    try {
+      // Extract public_id from Cloudinary URL
+      const urlParts = url.split('/');
+      const publicIdWithExtension = urlParts[urlParts.length - 1];
+      const publicId = `trendotalk/${publicIdWithExtension.split('.')[0]}`;
+      
+      const cloudinary = require('cloudinary').v2;
+      await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
     } catch (error) {
-      console.error('Error seeding data:', error);
+      console.error('Cloudinary deletion error:', error);
     }
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
+export const videoCleanup = new VideoCleanupService();
+
+// Schedule cleanup to run every 24 hours
+setInterval(async () => {
+  try {
+    await videoCleanup.cleanupExpiredVideos();
+    console.log('Video cleanup completed');
+  } catch (error) {
+    console.error('Video cleanup failed:', error);
+  }
+}, 24 * 60 * 60 * 1000); // 24 hours
