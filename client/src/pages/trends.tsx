@@ -1,14 +1,21 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigation } from "@/components/layout/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share, Link as LinkIcon, MoreVertical } from "lucide-react";
+import { Heart, MessageCircle, Share, Link as LinkIcon, MoreVertical, Volume2, VolumeX } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import Auth from "@/pages/auth";
 
 export default function Trends() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isMuted, setIsMuted] = useState(true);
+  const [followingUsers, setFollowingUsers] = useState(new Set<number>());
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "videos"],
@@ -25,6 +32,63 @@ export default function Trends() {
       return allPosts.filter((post: any) => post.videoUrl);
     },
   });
+
+  const likeMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      return apiRequest(`/api/posts/${postId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    },
+  });
+
+  const followMutation = useMutation({
+    mutationFn: async ({ userId, action }: { userId: number; action: 'follow' | 'unfollow' }) => {
+      return apiRequest(`/api/users/${userId}/${action}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      });
+    },
+    onSuccess: (data, variables) => {
+      setFollowingUsers(prev => {
+        const newSet = new Set(prev);
+        if (variables.action === 'follow') {
+          newSet.add(variables.userId);
+        } else {
+          newSet.delete(variables.userId);
+        }
+        return newSet;
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    },
+  });
+
+  const handleVideoTap = (postId: number) => {
+    const video = videoRefs.current.get(postId);
+    if (video) {
+      video.muted = !video.muted;
+      setIsMuted(video.muted);
+    }
+  };
+
+  const handleVideoDoubleTap = (postId: number) => {
+    likeMutation.mutate(postId);
+  };
+
+  const handleFollow = (userId: number) => {
+    const isFollowing = followingUsers.has(userId);
+    followMutation.mutate({
+      userId,
+      action: isFollowing ? 'unfollow' : 'follow'
+    });
+  };
 
   if (!isAuthenticated) {
     return <Auth />;
@@ -53,47 +117,52 @@ export default function Trends() {
         ) : (
           posts.map((post: any, index: number) => (
             <div key={post.id} className="relative h-screen snap-start overflow-hidden">
-              {/* Video Background */}
+              {/* Video Background with tap controls */}
               <video
+                ref={(el) => {
+                  if (el) videoRefs.current.set(post.id, el);
+                }}
                 src={post.videoUrl}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover cursor-pointer"
                 autoPlay
-                muted
+                muted={isMuted}
                 loop
                 playsInline
+                onClick={() => handleVideoTap(post.id)}
+                onDoubleClick={() => handleVideoDoubleTap(post.id)}
               />
+              
+              {/* Audio indicator */}
+              <div className="absolute top-4 right-4 z-50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 p-0"
+                  onClick={() => handleVideoTap(post.id)}
+                >
+                  {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                </Button>
+              </div>
               
               {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
               
               {/* Right Side Actions */}
               <div className="absolute right-3 bottom-20 flex flex-col items-center space-y-6">
-                {/* Profile Avatar */}
-                <div className="relative">
-                  <Avatar className="w-12 h-12 ring-2 ring-white">
-                    <AvatarImage src={post.user.avatar} alt={post.user.username} />
-                    <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                      {post.user.username[3]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold hover:bg-red-600 p-0">
-                    +
-                  </Button>
-                </div>
-                
                 {/* Like Button */}
                 <div className="flex flex-col items-center">
                   <Button
                     variant="ghost"
                     size="sm"
                     className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                    onClick={() => handleVideoDoubleTap(post.id)}
                   >
-                    <Heart className="w-7 h-7" />
+                    <Heart className={`w-7 h-7 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                   </Button>
                   <span className="text-white text-xs font-semibold mt-1">
                     {post.likesCount > 999 
                       ? `${(post.likesCount / 1000).toFixed(1)}k` 
-                      : post.likesCount
+                      : post.likesCount || 0
                     }
                   </span>
                 </div>
@@ -110,7 +179,7 @@ export default function Trends() {
                   <span className="text-white text-xs font-semibold mt-1">
                     {post.commentsCount > 999 
                       ? `${(post.commentsCount / 1000).toFixed(1)}k` 
-                      : post.commentsCount
+                      : post.commentsCount || 0
                     }
                   </span>
                 </div>
@@ -154,18 +223,31 @@ export default function Trends() {
               
               {/* Bottom Content */}
               <div className="absolute bottom-4 left-4 right-20">
-                {/* Username and Follow Button */}
+                {/* Username, Avatar and Follow Button */}
                 <div className="flex items-center space-x-3 mb-3">
+                  <Avatar className="w-8 h-8 ring-2 ring-white">
+                    <AvatarImage src={post.user.avatar} alt={post.user.username} />
+                    <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
+                      {post.user.username[3]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="text-white font-bold text-base">{post.user.username}</span>
-                  <Button className="px-4 py-1 bg-transparent border border-white text-white text-sm font-semibold rounded hover:bg-white hover:text-black transition-colors">
-                    Follow
+                  <Button 
+                    className={`px-3 py-1 text-xs font-semibold rounded-md border transition-colors ${
+                      followingUsers.has(post.user.id) 
+                        ? 'bg-gray-600 border-gray-600 text-white hover:bg-gray-700' 
+                        : 'bg-transparent border-white text-white hover:bg-white hover:text-black'
+                    }`}
+                    onClick={() => handleFollow(post.user.id)}
+                  >
+                    {followingUsers.has(post.user.id) ? 'Following' : 'Follow'}
                   </Button>
                 </div>
                 
                 {/* Caption */}
                 <p className="text-white text-sm mb-2 line-clamp-2">{post.caption}</p>
                 
-                {/* Link indicator with music note styling */}
+                {/* Link indicator */}
                 {post.link && (
                   <div className="flex items-center space-x-2 mt-2">
                     <div className="w-4 h-4 bg-white rounded-sm flex items-center justify-center">

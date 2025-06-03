@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, useLocation } from "wouter";
 import { Header } from "@/components/layout/header";
 import { Navigation } from "@/components/layout/navigation";
 import { PostCard } from "@/components/post/post-card";
@@ -8,8 +9,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Grid, Heart, MessageCircle, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Settings, Grid, Heart, MessageCircle, Users, Search, Menu, Edit, Phone, Mail, Link as LinkIcon, User } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import Auth from "./auth";
+
+const editProfileSchema = z.object({
+  name: z.string().optional(),
+  bio: z.string().optional(),
+  website: z.string().url().optional().or(z.literal("")),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+});
 
 export default function Profile() {
   const { username } = useParams();

@@ -546,7 +546,455 @@ export class VideoCleanupService implements IVideoCleanup {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  constructor() {
+    this.seedData();
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return undefined;
+    }
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user || undefined;
+    } catch (error) {
+      console.error('Error getting user by username:', error);
+      return undefined;
+    }
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    try {
+      const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+      const [user] = await db
+        .insert(users)
+        .values({
+          ...insertUser,
+          password: hashedPassword,
+        })
+        .returning();
+      return user;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  async checkUsernameAvailability(username: string): Promise<boolean> {
+    try {
+      const user = await this.getUserByUsername(username);
+      return !user;
+    } catch (error) {
+      console.error('Error checking username availability:', error);
+      return false;
+    }
+  }
+
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set(updates)
+        .where(eq(users.id, id))
+        .returning();
+      return user || undefined;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return undefined;
+    }
+  }
+
+  async createPost(postData: InsertPost & { userId: number }): Promise<Post> {
+    try {
+      const [post] = await db
+        .insert(posts)
+        .values(postData)
+        .returning();
+      return post;
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
+    }
+  }
+
+  async getPostById(id: number): Promise<PostWithUser | undefined> {
+    try {
+      const result = await db
+        .select({
+          post: posts,
+          user: {
+            id: users.id,
+            username: users.username,
+            avatar: users.avatar,
+            isAdmin: users.isAdmin,
+          },
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .where(eq(posts.id, id));
+
+      if (!result[0] || !result[0].user) return undefined;
+
+      return {
+        ...result[0].post,
+        user: result[0].user,
+      } as PostWithUser;
+    } catch (error) {
+      console.error('Error getting post by id:', error);
+      return undefined;
+    }
+  }
+
+  async getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]> {
+    try {
+      let query = db
+        .select({
+          post: posts,
+          user: {
+            id: users.id,
+            username: users.username,
+            avatar: users.avatar,
+            isAdmin: users.isAdmin,
+          },
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id));
+
+      if (isAdminOnly !== undefined) {
+        query = query.where(eq(posts.isAdminPost, isAdminOnly));
+      }
+
+      const result = await query.orderBy(desc(posts.createdAt));
+
+      return result
+        .filter(row => row.user)
+        .map((row) => ({
+          ...row.post,
+          user: row.user,
+        } as PostWithUser));
+    } catch (error) {
+      console.error('Error getting posts:', error);
+      return [];
+    }
+  }
+
+  async getUserPosts(userId: number): Promise<PostWithUser[]> {
+    try {
+      const result = await db
+        .select({
+          post: posts,
+          user: {
+            id: users.id,
+            username: users.username,
+            avatar: users.avatar,
+            isAdmin: users.isAdmin,
+          },
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .where(eq(posts.userId, userId))
+        .orderBy(desc(posts.createdAt));
+
+      return result
+        .filter(row => row.user)
+        .map((row) => ({
+          ...row.post,
+          user: row.user,
+        } as PostWithUser));
+    } catch (error) {
+      console.error('Error getting user posts:', error);
+      return [];
+    }
+  }
+
+  async deletePost(id: number, userId: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(posts)
+        .where(and(eq(posts.id, id), eq(posts.userId, userId)))
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      return false;
+    }
+  }
+
+  async toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number }> {
+    try {
+      const [existingLike] = await db
+        .select()
+        .from(likes)
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+
+      if (existingLike) {
+        await db
+          .delete(likes)
+          .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+        
+        await db
+          .update(posts)
+          .set({ likesCount: sql`${posts.likesCount} - 1` })
+          .where(eq(posts.id, postId));
+          
+        const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+        return { liked: false, likesCount: post?.likesCount || 0 };
+      } else {
+        await db
+          .insert(likes)
+          .values({ postId, userId });
+        
+        await db
+          .update(posts)
+          .set({ likesCount: sql`${posts.likesCount} + 1` })
+          .where(eq(posts.id, postId));
+          
+        const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+        return { liked: true, likesCount: post?.likesCount || 1 };
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      return { liked: false, likesCount: 0 };
+    }
+  }
+
+  async getUserLikes(userId: number): Promise<number[]> {
+    try {
+      const userLikes = await db
+        .select({ postId: likes.postId })
+        .from(likes)
+        .where(eq(likes.userId, userId));
+      return userLikes.map(like => like.postId);
+    } catch (error) {
+      console.error('Error getting user likes:', error);
+      return [];
+    }
+  }
+
+  async createComment(comment: InsertComment & { userId: number }): Promise<Comment> {
+    try {
+      const [newComment] = await db
+        .insert(comments)
+        .values(comment)
+        .returning();
+      
+      await db
+        .update(posts)
+        .set({ commentsCount: sql`${posts.commentsCount} + 1` })
+        .where(eq(posts.id, comment.postId));
+        
+      return newComment;
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      throw error;
+    }
+  }
+
+  async getPostComments(postId: number): Promise<(Comment & { user: Pick<User, 'username' | 'avatar'> })[]> {
+    try {
+      const result = await db
+        .select({
+          comment: comments,
+          user: {
+            username: users.username,
+            avatar: users.avatar,
+          },
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .where(eq(comments.postId, postId))
+        .orderBy(desc(comments.createdAt));
+
+      return result.map(row => ({
+        ...row.comment,
+        user: row.user,
+      }));
+    } catch (error) {
+      console.error('Error getting post comments:', error);
+      return [];
+    }
+  }
+
+  async createStory(story: InsertStory & { userId: number }): Promise<Story> {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+      
+      const [newStory] = await db
+        .insert(stories)
+        .values({
+          ...story,
+          expiresAt,
+        })
+        .returning();
+      return newStory;
+    } catch (error) {
+      console.error('Error creating story:', error);
+      throw error;
+    }
+  }
+
+  async getActiveStories(): Promise<StoryWithUser[]> {
+    try {
+      const now = new Date();
+      const result = await db
+        .select({
+          story: stories,
+          user: {
+            username: users.username,
+            avatar: users.avatar,
+          },
+        })
+        .from(stories)
+        .innerJoin(users, eq(stories.userId, users.id))
+        .where(sql`${stories.expiresAt} > ${now}`)
+        .orderBy(desc(stories.createdAt));
+
+      return result.map(row => ({
+        ...row.story,
+        user: row.user,
+      }));
+    } catch (error) {
+      console.error('Error getting active stories:', error);
+      return [];
+    }
+  }
+
+  async getUserStories(userId: number): Promise<Story[]> {
+    try {
+      const result = await db
+        .select()
+        .from(stories)
+        .where(eq(stories.userId, userId))
+        .orderBy(desc(stories.createdAt));
+      return result;
+    } catch (error) {
+      console.error('Error getting user stories:', error);
+      return [];
+    }
+  }
+
+  async followUser(followerId: number, followingId: number): Promise<boolean> {
+    try {
+      await db
+        .insert(follows)
+        .values({ followerId, followingId });
+      return true;
+    } catch (error) {
+      console.error('Error following user:', error);
+      return false;
+    }
+  }
+
+  async unfollowUser(followerId: number, followingId: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(follows)
+        .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      return false;
+    }
+  }
+
+  async isFollowing(followerId: number, followingId: number): Promise<boolean> {
+    try {
+      const [follow] = await db
+        .select()
+        .from(follows)
+        .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
+      return !!follow;
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      return false;
+    }
+  }
+
+  async getUserFollowers(userId: number): Promise<User[]> {
+    try {
+      const result = await db
+        .select({
+          user: users,
+        })
+        .from(follows)
+        .innerJoin(users, eq(follows.followerId, users.id))
+        .where(eq(follows.followingId, userId));
+      return result.map(row => row.user);
+    } catch (error) {
+      console.error('Error getting user followers:', error);
+      return [];
+    }
+  }
+
+  async getUserFollowing(userId: number): Promise<User[]> {
+    try {
+      const result = await db
+        .select({
+          user: users,
+        })
+        .from(follows)
+        .innerJoin(users, eq(follows.followingId, users.id))
+        .where(eq(follows.followerId, userId));
+      return result.map(row => row.user);
+    } catch (error) {
+      console.error('Error getting user following:', error);
+      return [];
+    }
+  }
+
+  async getSuggestedUsers(userId: number): Promise<User[]> {
+    try {
+      const following = await db
+        .select({ followingId: follows.followingId })
+        .from(follows)
+        .where(eq(follows.followerId, userId));
+      
+      const followingIds = following.map(f => f.followingId);
+      followingIds.push(userId);
+      
+      const result = await db
+        .select()
+        .from(users)
+        .where(notInArray(users.id, followingIds))
+        .limit(5);
+        
+      return result;
+    } catch (error) {
+      console.error('Error getting suggested users:', error);
+      return [];
+    }
+  }
+
+  private async seedData() {
+    try {
+      const existingAdmin = await this.getUserByUsername("ipj.trendotalk");
+      if (!existingAdmin) {
+        await this.createUser({
+          username: "ipj.trendotalk",
+          password: "IpjDr620911@TrendoTalk",
+          confirmPassword: "IpjDr620911@TrendoTalk",
+          isAdmin: true,
+          bio: "Official TrendoTalk Account",
+          avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
+        });
+      }
+    } catch (error) {
+      console.error('Error seeding data:', error);
+    }
+  }
+}
+
+export const storage = new DatabaseStorage();
 export const videoCleanup = new VideoCleanupService();
 
 // Schedule cleanup to run every 24 hours
