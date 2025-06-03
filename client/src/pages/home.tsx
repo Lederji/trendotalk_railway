@@ -113,12 +113,7 @@ export default function Home() {
 
 
 
-        {/* Stories */}
-        {!showSearchResults && stories.length > 0 && (
-          <div className="mb-4">
-            <StoriesCarousel stories={stories} />
-          </div>
-        )}
+
 
         {/* Posts Feed */}
         {isLoading ? (

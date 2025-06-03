@@ -44,6 +44,11 @@ export interface IStorage {
   getUserFollowing(userId: number): Promise<User[]>;
   getSuggestedUsers(userId: number): Promise<User[]>;
   
+  // Notification methods
+  createNotification(userId: number, type: string, message: string, fromUserId?: number, postId?: number): Promise<void>;
+  getUserNotifications(userId: number): Promise<any[]>;
+  markNotificationAsRead(notificationId: number): Promise<boolean>;
+  
   // Search methods
   searchUsers(query: string): Promise<User[]>;
   searchPosts(query: string): Promise<PostWithUser[]>;
@@ -897,6 +902,25 @@ export class DatabaseStorage implements IStorage {
           .where(eq(posts.id, postId));
           
         const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+        
+        // Create notification for post owner (if not self-like)
+        if (post && post.userId !== userId) {
+          const [liker] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, userId));
+          
+          if (liker) {
+            await this.createNotification(
+              post.userId,
+              'like',
+              `${liker.username} liked your post`,
+              userId,
+              postId
+            );
+          }
+        }
+        
         return { liked: true, likesCount: post?.likesCount || 1 };
       }
     } catch (error) {
@@ -1046,6 +1070,33 @@ export class DatabaseStorage implements IStorage {
       await db
         .insert(follows)
         .values({ followerId, followingId });
+      
+      // Update follower counts
+      await db
+        .update(users)
+        .set({ followersCount: sql`${users.followersCount} + 1` })
+        .where(eq(users.id, followingId));
+        
+      await db
+        .update(users)
+        .set({ followingCount: sql`${users.followingCount} + 1` })
+        .where(eq(users.id, followerId));
+      
+      // Create notification for followed user
+      const [follower] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, followerId));
+      
+      if (follower) {
+        await this.createNotification(
+          followingId,
+          'follow',
+          `${follower.username} started following you`,
+          followerId
+        );
+      }
+      
       return true;
     } catch (error) {
       console.error('Error following user:', error);
@@ -1059,6 +1110,20 @@ export class DatabaseStorage implements IStorage {
         .delete(follows)
         .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
         .returning();
+      
+      if (result.length > 0) {
+        // Update follower counts
+        await db
+          .update(users)
+          .set({ followersCount: sql`${users.followersCount} - 1` })
+          .where(eq(users.id, followingId));
+          
+        await db
+          .update(users)
+          .set({ followingCount: sql`${users.followingCount} - 1` })
+          .where(eq(users.id, followerId));
+      }
+      
       return result.length > 0;
     } catch (error) {
       console.error('Error unfollowing user:', error);
