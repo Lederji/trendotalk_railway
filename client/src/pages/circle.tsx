@@ -171,22 +171,22 @@ export default function Circle() {
             </div>
             {searchResults.length > 0 && (
               <div className="mt-4 space-y-2">
-                {searchResults.map((user: any) => (
-                  <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
+                {searchResults.filter((searchUser: any) => searchUser.id !== user?.id).map((searchUser: any) => (
+                  <div key={searchUser.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={user.avatar} alt={user.username} />
+                        <AvatarImage src={searchUser.avatar} alt={searchUser.username} />
                         <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                          {user.username[3]?.toUpperCase()}
+                          {searchUser.username[3]?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold">{user.username}</p>
-                        {user.name && <p className="text-sm text-gray-500">{user.name}</p>}
+                        <p className="font-semibold">{searchUser.username}</p>
+                        {searchUser.name && <p className="text-sm text-gray-500">{searchUser.name}</p>}
                       </div>
                     </div>
                     <Button
-                      onClick={() => handleSendFriendRequest(user.id)}
+                      onClick={() => handleSendFriendRequest(searchUser.id)}
                       disabled={sendFriendRequestMutation.isPending}
                       className="gradient-bg text-white"
                     >
@@ -195,6 +195,11 @@ export default function Circle() {
                     </Button>
                   </div>
                 ))}
+                {searchResults.filter((searchUser: any) => searchUser.id !== user?.id).length === 0 && (
+                  <div className="text-center p-4 text-gray-500">
+                    No users found
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -252,8 +257,14 @@ export default function Circle() {
 
           <TabsContent value="chats" className="space-y-4">
             {selectedChat ? (
-              <Card>
-                <CardHeader className="flex flex-row items-center space-y-0 pb-4">
+              <div className="fixed inset-0 z-50 bg-white flex flex-col">
+                {/* Chat Header */}
+                <div className="flex items-center p-4 border-b bg-white shadow-sm">
+                  <Button variant="ghost" onClick={() => setSelectedChat(null)} className="mr-3">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </Button>
                   <Avatar className="w-10 h-10 mr-3">
                     <AvatarImage src={selectedChat.user.avatar} alt={selectedChat.user.username} />
                     <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
@@ -261,51 +272,102 @@ export default function Circle() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h3 className="font-semibold">{selectedChat.user.username}</h3>
-                    <p className="text-sm text-gray-500">Online</p>
+                    <h3 className="font-semibold text-lg">{selectedChat.user.username}</h3>
+                    <p className="text-sm text-green-500">Online</p>
                   </div>
-                  <Button variant="ghost" onClick={() => setSelectedChat(null)}>
-                    <X className="w-4 h-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-64 mb-4">
-                    <div className="space-y-2">
-                      {selectedChat.messages?.map((message: any) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-xs p-3 rounded-lg ${
-                              message.senderId === user?.id
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-200 text-gray-900'
-                            }`}
-                          >
-                            <p className="text-sm">{message.content}</p>
-                            <p className="text-xs opacity-70 mt-1">
-                              {new Date(message.createdAt).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
                   <div className="flex space-x-2">
-                    <Input
-                      placeholder="Type a message..."
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      className="flex-1"
-                    />
-                    <Button onClick={handleSendMessage} disabled={!messageText.trim()}>
+                    <Button variant="ghost" size="sm" className="rounded-full">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </Button>
+                    <Button variant="ghost" size="sm" className="rounded-full">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Messages Area */}
+                <div 
+                  className="flex-1 overflow-y-auto p-4 space-y-4"
+                  style={{
+                    backgroundImage: 'linear-gradient(to bottom, #1e3a8a, #059669)',
+                    minHeight: 'calc(100vh - 140px)'
+                  }}
+                >
+                  {selectedChat.messages?.map((message: any, index: number) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {message.senderId !== user?.id && (
+                        <Avatar className="w-8 h-8 mr-2 mt-1">
+                          <AvatarImage src={selectedChat.user.avatar} alt={selectedChat.user.username} />
+                          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
+                            {selectedChat.user.username[3]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={`max-w-xs px-4 py-2 rounded-2xl shadow-sm ${
+                          message.senderId === user?.id
+                            ? 'bg-blue-500 text-white rounded-br-sm'
+                            : 'bg-white text-gray-900 rounded-bl-sm'
+                        }`}
+                      >
+                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        <p className={`text-xs mt-1 ${
+                          message.senderId === user?.id ? 'text-blue-100' : 'text-gray-400'
+                        }`}>
+                          {new Date(message.createdAt).toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Message Input */}
+                <div className="p-4 bg-white border-t">
+                  <div className="flex items-center space-x-3">
+                    <Button variant="ghost" size="sm" className="rounded-full">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </Button>
+                    <div className="flex-1 bg-gray-100 rounded-full px-4 py-2">
+                      <Input
+                        placeholder="Message..."
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        className="border-none bg-transparent focus:ring-0 focus:outline-none"
+                      />
+                    </div>
+                    <Button variant="ghost" size="sm" className="rounded-full">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    </Button>
+                    <Button variant="ghost" size="sm" className="rounded-full">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </Button>
+                    <Button 
+                      onClick={handleSendMessage} 
+                      disabled={!messageText.trim()}
+                      className={`rounded-full ${messageText.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-300'} text-white`}
+                    >
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ) : (
               <div className="space-y-2">
                 {chats.length === 0 ? (

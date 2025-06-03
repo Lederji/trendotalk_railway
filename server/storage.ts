@@ -1155,7 +1155,7 @@ export class DatabaseStorage implements IStorage {
           eq(chats.user2Id, userId)
         ));
       
-      // Get the other user details for each chat
+      // Get the other user details and messages for each chat
       const formattedChats = [];
       for (const chat of userChats) {
         const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
@@ -1163,6 +1163,13 @@ export class DatabaseStorage implements IStorage {
           .select()
           .from(users)
           .where(eq(users.id, otherUserId));
+        
+        // Get chat messages
+        const chatMessages = await db
+          .select()
+          .from(messages)
+          .where(eq(messages.chatId, chat.id))
+          .orderBy(messages.createdAt);
         
         if (otherUser) {
           formattedChats.push({
@@ -1172,9 +1179,9 @@ export class DatabaseStorage implements IStorage {
               username: otherUser.username,
               avatar: otherUser.avatar
             },
-            messages: [], // Will be populated separately if needed
-            lastMessage: null,
-            lastMessageTime: chat.createdAt
+            messages: chatMessages,
+            lastMessage: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].content : null,
+            lastMessageTime: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].createdAt : chat.createdAt
           });
         }
       }
