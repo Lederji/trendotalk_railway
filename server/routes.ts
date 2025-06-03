@@ -632,6 +632,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search endpoint
+  app.get("/api/search", authenticateUser, async (req: any, res: any) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim().length === 0) {
+        return res.json({ users: [], posts: [] });
+      }
+
+      const users = await storage.searchUsers(query);
+      const posts = await storage.searchPosts(query);
+
+      res.json({ users, posts });
+    } catch (error) {
+      console.error('Error searching:', error);
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
