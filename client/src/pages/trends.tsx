@@ -35,12 +35,14 @@ export default function Trends() {
 
   const likeMutation = useMutation({
     mutationFn: async (postId: number) => {
-      return apiRequest(`/api/posts/${postId}/like`, {
+      const response = await fetch(`/api/posts/${postId}/like`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
         },
       });
+      if (!response.ok) throw new Error('Failed to like post');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
@@ -49,12 +51,14 @@ export default function Trends() {
 
   const followMutation = useMutation({
     mutationFn: async ({ userId, action }: { userId: number; action: 'follow' | 'unfollow' }) => {
-      return apiRequest(`/api/users/${userId}/${action}`, {
+      const response = await fetch(`/api/users/${userId}/${action}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
         },
       });
+      if (!response.ok) throw new Error('Failed to follow/unfollow user');
+      return response.json();
     },
     onSuccess: (data, variables) => {
       setFollowingUsers(prev => {

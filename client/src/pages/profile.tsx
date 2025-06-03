@@ -31,7 +31,76 @@ const editProfileSchema = z.object({
 
 export default function Profile() {
   const { username } = useParams();
-  const { user: currentUser, isAuthenticated, logout } = useAuth();
+  const { user: currentUser, isAuthenticated, logout, updateUser } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  const form = useForm({
+    resolver: zodResolver(editProfileSchema),
+    defaultValues: {
+      name: "",
+      bio: "",
+      website: "",
+      phone: "",
+      email: "",
+    },
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/users/profile`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update profile');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      updateUser(data);
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: "Profile updated successfully!" });
+      setIsEditDialogOpen(false);
+    },
+  });
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload/avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) throw new Error('Failed to upload avatar');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      updateUser({ avatar: data.url });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: "Profile picture updated!" });
+    },
+  });
+
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadAvatarMutation.mutate(file);
+    }
+  };
+
+  const onSubmit = (data: any) => {
+    updateProfileMutation.mutate(data);
+  };
   
   // If no username provided, show current user's profile
   const targetUsername = username || currentUser?.username;

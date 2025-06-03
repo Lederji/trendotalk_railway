@@ -78,12 +78,14 @@ export default function Circle() {
 
   const sendFriendRequestMutation = useMutation({
     mutationFn: async (userId: number) => {
-      return apiRequest(`/api/friend-requests/${userId}`, {
+      const response = await fetch(`/api/friend-requests/${userId}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
         },
       });
+      if (!response.ok) throw new Error('Failed to send friend request');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/friend-requests"] });
@@ -93,12 +95,14 @@ export default function Circle() {
 
   const handleFriendRequestMutation = useMutation({
     mutationFn: async ({ requestId, action }: { requestId: number; action: 'accept' | 'reject' }) => {
-      return apiRequest(`/api/friend-requests/${requestId}/${action}`, {
+      const response = await fetch(`/api/friend-requests/${requestId}/${action}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
         },
       });
+      if (!response.ok) throw new Error('Failed to handle friend request');
+      return response.json();
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/friend-requests"] });
@@ -111,7 +115,7 @@ export default function Circle() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async ({ chatId, message }: { chatId: number; message: string }) => {
-      return apiRequest(`/api/chats/${chatId}/messages`, {
+      const response = await fetch(`/api/chats/${chatId}/messages`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
@@ -119,6 +123,8 @@ export default function Circle() {
         },
         body: JSON.stringify({ message }),
       });
+      if (!response.ok) throw new Error('Failed to send message');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });

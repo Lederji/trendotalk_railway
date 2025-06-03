@@ -1,12 +1,12 @@
 import { 
-  users, posts, comments, likes, stories, follows,
+  users, posts, comments, likes, stories, follows, friendRequests, chats, messages,
   type User, type InsertUser, type Post, type InsertPost, 
   type Comment, type InsertComment, type Like, type Story, 
   type InsertStory, type Follow, type PostWithUser, type StoryWithUser, type UserProfile 
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { eq, and, desc, sql, notInArray } from "drizzle-orm";
+import { eq, and, desc, sql, notInArray, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -985,6 +985,222 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting suggested users:', error);
       return [];
+    }
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    try {
+      const searchResults = await db
+        .select()
+        .from(users)
+        .where(ilike(users.username, `%${query}%`))
+        .limit(10);
+      
+      return searchResults;
+    } catch (error) {
+      console.error('Error searching users:', error);
+      return [];
+    }
+  }
+
+  async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
+    try {
+      // Check if request already exists
+      const existing = await db
+        .select()
+        .from(friendRequests)
+        .where(and(
+          eq(friendRequests.fromUserId, fromUserId),
+          eq(friendRequests.toUserId, toUserId)
+        ));
+      
+      if (existing.length > 0) {
+        return false; // Request already exists
+      }
+      
+      // Check if they're already friends
+      const alreadyFriends = await db
+        .select()
+        .from(follows)
+        .where(and(
+          eq(follows.followerId, fromUserId),
+          eq(follows.followingId, toUserId)
+        ));
+      
+      if (alreadyFriends.length > 0) {
+        return false; // Already friends
+      }
+      
+      await db.insert(friendRequests).values({
+        fromUserId,
+        toUserId,
+        status: 'pending',
+        createdAt: new Date()
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      return false;
+    }
+  }
+
+  async getFriendRequests(userId: number): Promise<any[]> {
+    try {
+      const requests = await db
+        .select({
+          id: friendRequests.id,
+          fromUserId: friendRequests.fromUserId,
+          status: friendRequests.status,
+          createdAt: friendRequests.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            avatar: users.avatar
+          }
+        })
+        .from(friendRequests)
+        .leftJoin(users, eq(friendRequests.fromUserId, users.id))
+        .where(and(
+          eq(friendRequests.toUserId, userId),
+          eq(friendRequests.status, 'pending')
+        ));
+      
+      return requests;
+    } catch (error) {
+      console.error('Error getting friend requests:', error);
+      return [];
+    }
+  }
+
+  async acceptFriendRequest(requestId: number, userId: number): Promise<boolean> {
+    try {
+      // Get the friend request
+      const [request] = await db
+        .select()
+        .from(friendRequests)
+        .where(and(
+          eq(friendRequests.id, requestId),
+          eq(friendRequests.toUserId, userId)
+        ));
+      
+      if (!request) {
+        return false;
+      }
+      
+      // Create mutual follow relationship
+      await db.insert(follows).values([
+        {
+          followerId: request.fromUserId,
+          followingId: request.toUserId,
+          createdAt: new Date()
+        },
+        {
+          followerId: request.toUserId,
+          followingId: request.fromUserId,
+          createdAt: new Date()
+        }
+      ]);
+      
+      // Create chat for the two users
+      await db.insert(chats).values({
+        user1Id: Math.min(request.fromUserId, request.toUserId),
+        user2Id: Math.max(request.fromUserId, request.toUserId),
+        createdAt: new Date()
+      });
+      
+      // Update request status
+      await db
+        .update(friendRequests)
+        .set({ status: 'accepted' })
+        .where(eq(friendRequests.id, requestId));
+      
+      return true;
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      return false;
+    }
+  }
+
+  async rejectFriendRequest(requestId: number, userId: number): Promise<boolean> {
+    try {
+      await db
+        .update(friendRequests)
+        .set({ status: 'rejected' })
+        .where(and(
+          eq(friendRequests.id, requestId),
+          eq(friendRequests.toUserId, userId)
+        ));
+      
+      return true;
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      return false;
+    }
+  }
+
+  async getUserChats(userId: number): Promise<any[]> {
+    try {
+      const userChats = await db
+        .select({
+          id: chats.id,
+          createdAt: chats.createdAt,
+          user1Id: chats.user1Id,
+          user2Id: chats.user2Id
+        })
+        .from(chats)
+        .where(or(
+          eq(chats.user1Id, userId),
+          eq(chats.user2Id, userId)
+        ));
+      
+      // Get the other user details for each chat
+      const formattedChats = [];
+      for (const chat of userChats) {
+        const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
+        const [otherUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, otherUserId));
+        
+        if (otherUser) {
+          formattedChats.push({
+            id: chat.id,
+            user: {
+              id: otherUser.id,
+              username: otherUser.username,
+              avatar: otherUser.avatar
+            },
+            messages: [], // Will be populated separately if needed
+            lastMessage: null,
+            lastMessageTime: chat.createdAt
+          });
+        }
+      }
+      
+      return formattedChats;
+    } catch (error) {
+      console.error('Error getting user chats:', error);
+      return [];
+    }
+  }
+
+  async sendMessage(chatId: number, senderId: number, message: string): Promise<any> {
+    try {
+      const [newMessage] = await db
+        .insert(messages)
+        .values({
+          chatId,
+          senderId,
+          content: message,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      return newMessage;
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
     }
   }
 
