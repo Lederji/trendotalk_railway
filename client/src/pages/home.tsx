@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Header } from "@/components/layout/header";
 import { Navigation } from "@/components/layout/navigation";
 import { StoriesCarousel } from "@/components/stories/stories-carousel";
@@ -24,6 +25,7 @@ const CATEGORIES = [
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);

@@ -1466,10 +1466,15 @@ export class DatabaseStorage implements IStorage {
 
   async createNotification(userId: number, type: string, message: string, fromUserId?: number, postId?: number): Promise<void> {
     try {
-      await db.execute(`
-        INSERT INTO notifications (user_id, type, message, from_user_id, post_id, is_read, created_at)
-        VALUES ($1, $2, $3, $4, $5, false, NOW())
-      `, [userId, type, message, fromUserId || null, postId || null]);
+      await db.insert(notifications).values({
+        userId: userId,
+        type: type,
+        message: message,
+        fromUserId: fromUserId || null,
+        postId: postId || null,
+        isRead: false,
+        createdAt: new Date()
+      });
     } catch (error) {
       console.error('Error creating notification:', error);
     }

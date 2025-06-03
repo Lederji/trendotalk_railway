@@ -1,0 +1,127 @@
+
+12:28:46 PM [express] POST /api/signup 500 in 561ms :: {"message":"Internal server error"}
+Error getting user by username: error: column "followers_count" does not exist
+    at file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (file:///opt/render/project/src/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.getUserByUsername (file:///opt/render/project/src/dist/index.js:359:22)
+    at async file:///opt/render/project/src/dist/index.js:1016:20 {
+  length: 115,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '67',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+12:28:50 PM [express] POST /api/login 401 in 18ms :: {"message":"Invalid credentials"}
+Error getting user by username: error: column "followers_count" does not exist
+    at file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (file:///opt/render/project/src/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.getUserByUsername (file:///opt/render/project/src/dist/index.js:359:22)
+    at async DatabaseStorage.checkUsernameAvailability (file:///opt/render/project/src/dist/index.js:381:20)
+    at async file:///opt/render/project/src/dist/index.js:988:27 {
+  length: 115,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '67',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error creating user: error: column "followers_count" of relation "users" does not exist
+    at file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (file:///opt/render/project/src/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.createUser (file:///opt/render/project/src/dist/index.js:369:22)
+    at async file:///opt/render/project/src/dist/index.js:992:20 {
+  length: 133,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '81',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1065',
+  routine: 'checkInsertTargets'
+}
+2:39:11 PM [express] POST /api/signup 500 in 672ms :: {"message":"Internal server error"}
+Error getting user by username: error: column "followers_count" does not exist
+    at file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (file:///opt/render/project/src/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.getUserByUsername (file:///opt/render/project/src/dist/index.js:359:22)
+    at async DatabaseStorage.checkUsernameAvailability (file:///opt/render/project/src/dist/index.js:381:20)
+    at async file:///opt/render/project/src/dist/index.js:988:27 {
+  length: 115,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '67',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error creating user: error: column "followers_count" of relation "users" does not exist
+    at file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (file:///opt/render/project/src/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.createUser (file:///opt/render/project/src/dist/index.js:369:22)
+    at async file:///opt/render/project/src/dist/index.js:992:20 {
+  length: 133,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '81',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1065',
+  routine: 'checkInsertTargets'
+}
+2:39:27 PM [express] POST /api/signup 500 in 563ms :: {"message":"Internal server error"}
