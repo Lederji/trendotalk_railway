@@ -450,6 +450,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User search endpoint
+  app.get('/api/users/search', authenticateUser, async (req: any, res: any) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim().length < 2) {
+        return res.json([]);
+      }
+      
+      const users = await storage.searchUsers(query.trim());
+      res.json(users);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Friend request routes
+  app.get('/api/friend-requests', authenticateUser, async (req: any, res: any) => {
+    try {
+      const requests = await storage.getFriendRequests(req.user.userId);
+      res.json(requests);
+    } catch (error) {
+      console.error('Error getting friend requests:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/friend-requests/:userId', authenticateUser, async (req: any, res: any) => {
+    try {
+      const targetUserId = Number(req.params.userId);
+      const success = await storage.sendFriendRequest(req.user.userId, targetUserId);
+      if (!success) {
+        return res.status(400).json({ message: 'Cannot send friend request' });
+      }
+      res.json({ message: 'Friend request sent' });
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/friend-requests/:requestId/accept', authenticateUser, async (req: any, res: any) => {
+    try {
+      const requestId = Number(req.params.requestId);
+      const success = await storage.acceptFriendRequest(requestId, req.user.userId);
+      if (!success) {
+        return res.status(400).json({ message: 'Cannot accept friend request' });
+      }
+      res.json({ message: 'Friend request accepted' });
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/friend-requests/:requestId/reject', authenticateUser, async (req: any, res: any) => {
+    try {
+      const requestId = Number(req.params.requestId);
+      const success = await storage.rejectFriendRequest(requestId, req.user.userId);
+      if (!success) {
+        return res.status(400).json({ message: 'Cannot reject friend request' });
+      }
+      res.json({ message: 'Friend request rejected' });
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Chat routes
+  app.get('/api/chats', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chats = await storage.getUserChats(req.user.userId);
+      res.json(chats);
+    } catch (error) {
+      console.error('Error getting chats:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/friends/status', authenticateUser, async (req: any, res: any) => {
+    try {
+      const friends = await storage.getUserFollowing(req.user.userId);
+      res.json(friends);
+    } catch (error) {
+      console.error('Error getting friends status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/chats/:chatId/messages', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const { message } = req.body;
+      
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json({ message: 'Message cannot be empty' });
+      }
+      
+      const newMessage = await storage.sendMessage(chatId, req.user.userId, message.trim());
+      res.json(newMessage);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/users/suggested', authenticateUser, async (req: any, res: any) => {
     try {
       const suggested = await storage.getSuggestedUsers(req.user.userId);

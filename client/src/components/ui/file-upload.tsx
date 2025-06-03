@@ -133,9 +133,6 @@ export function FileUpload({
                   Choose File
                 </label>
               </Button>
-              <p className="text-xs text-gray-400 mt-2">
-                Max size: {maxSize / 1024 / 1024}MB
-              </p>
             </div>
           </CardContent>
         </Card>

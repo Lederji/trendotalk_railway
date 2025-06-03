@@ -43,6 +43,19 @@ export interface IStorage {
   getUserFollowers(userId: number): Promise<User[]>;
   getUserFollowing(userId: number): Promise<User[]>;
   getSuggestedUsers(userId: number): Promise<User[]>;
+  
+  // Search methods
+  searchUsers(query: string): Promise<User[]>;
+  
+  // Friend request methods
+  sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean>;
+  getFriendRequests(userId: number): Promise<any[]>;
+  acceptFriendRequest(requestId: number, userId: number): Promise<boolean>;
+  rejectFriendRequest(requestId: number, userId: number): Promise<boolean>;
+  
+  // Chat methods
+  getUserChats(userId: number): Promise<any[]>;
+  sendMessage(chatId: number, senderId: number, message: string): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
