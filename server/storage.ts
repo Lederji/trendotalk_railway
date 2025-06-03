@@ -479,6 +479,10 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  constructor() {
+    this.seedData();
+  }
+
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
@@ -535,15 +539,17 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .from(posts)
-      .leftJoin(users, eq(posts.userId, users.id))
+      .innerJoin(users, eq(posts.userId, users.id))
       .where(eq(posts.id, id));
 
-    if (!result[0]) return undefined;
+    if (!result[0] || !result[0].user) return undefined;
 
     return {
       ...result[0].post,
       user: result[0].user,
-    };
+      likesCount: result[0].post.likesCount || 0,
+      commentsCount: result[0].post.commentsCount || 0,
+    } as PostWithUser;
   }
 
   async getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]> {
@@ -558,18 +564,22 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .from(posts)
-      .leftJoin(users, eq(posts.userId, users.id));
+      .innerJoin(users, eq(posts.userId, users.id));
 
     if (isAdminOnly !== undefined) {
       query = query.where(eq(posts.isAdminPost, isAdminOnly));
     }
 
-    const result = await query.orderBy(posts.createdAt);
+    const result = await query.orderBy(desc(posts.createdAt));
 
-    return result.map((row) => ({
-      ...row.post,
-      user: row.user,
-    }));
+    return result
+      .filter(row => row.user)
+      .map((row) => ({
+        ...row.post,
+        user: row.user,
+        likesCount: row.post.likesCount || 0,
+        commentsCount: row.post.commentsCount || 0,
+      } as PostWithUser));
   }
 
   async getUserPosts(userId: number): Promise<PostWithUser[]> {
@@ -584,31 +594,72 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .from(posts)
-      .leftJoin(users, eq(posts.userId, users.id))
+      .innerJoin(users, eq(posts.userId, users.id))
       .where(eq(posts.userId, userId))
-      .orderBy(posts.createdAt);
+      .orderBy(desc(posts.createdAt));
 
-    return result.map((row) => ({
-      ...row.post,
-      user: row.user,
-    }));
+    return result
+      .filter(row => row.user)
+      .map((row) => ({
+        ...row.post,
+        user: row.user,
+        likesCount: row.post.likesCount || 0,
+        commentsCount: row.post.commentsCount || 0,
+      } as PostWithUser));
   }
 
   async deletePost(id: number, userId: number): Promise<boolean> {
     const result = await db
       .delete(posts)
-      .where(eq(posts.id, id))
+      .where(and(eq(posts.id, id), eq(posts.userId, userId)))
       .returning();
     return result.length > 0;
   }
 
   async toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number }> {
-    // Implementation for like toggle
-    return { liked: false, likesCount: 0 };
+    // Check if like exists
+    const [existingLike] = await db
+      .select()
+      .from(likes)
+      .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+
+    if (existingLike) {
+      // Remove like
+      await db
+        .delete(likes)
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+      
+      // Update post likes count
+      await db
+        .update(posts)
+        .set({ likesCount: sql`${posts.likesCount} - 1` })
+        .where(eq(posts.id, postId));
+        
+      const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+      return { liked: false, likesCount: post?.likesCount || 0 };
+    } else {
+      // Add like
+      await db
+        .insert(likes)
+        .values({ postId, userId });
+      
+      // Update post likes count
+      await db
+        .update(posts)
+        .set({ likesCount: sql`${posts.likesCount} + 1` })
+        .where(eq(posts.id, postId));
+        
+      const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+      return { liked: true, likesCount: post?.likesCount || 1 };
+    }
   }
 
   async getUserLikes(userId: number): Promise<number[]> {
-    return [];
+    const userLikes = await db
+      .select({ postId: likes.postId })
+      .from(likes)
+      .where(eq(likes.userId, userId));
+    return userLikes.map(like => like.postId);
   }
 
   async createComment(comment: InsertComment & { userId: number }): Promise<Comment> {
@@ -616,64 +667,164 @@ export class DatabaseStorage implements IStorage {
       .insert(comments)
       .values(comment)
       .returning();
+    
+    // Update post comments count
+    await db
+      .update(posts)
+      .set({ commentsCount: sql`${posts.commentsCount} + 1` })
+      .where(eq(posts.id, comment.postId));
+      
     return newComment;
   }
 
   async getPostComments(postId: number): Promise<(Comment & { user: Pick<User, 'username' | 'avatar'> })[]> {
-    return [];
+    const result = await db
+      .select({
+        comment: comments,
+        user: {
+          username: users.username,
+          avatar: users.avatar,
+        },
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
+      .where(eq(comments.postId, postId))
+      .orderBy(desc(comments.createdAt));
+
+    return result.map(row => ({
+      ...row.comment,
+      user: row.user,
+    }));
   }
 
   async createStory(story: InsertStory & { userId: number }): Promise<Story> {
+    // Add expiration date (24 hours from now)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+    
     const [newStory] = await db
       .insert(stories)
-      .values(story)
+      .values({
+        ...story,
+        expiresAt,
+      })
       .returning();
     return newStory;
   }
 
   async getActiveStories(): Promise<StoryWithUser[]> {
-    return [];
+    const now = new Date();
+    const result = await db
+      .select({
+        story: stories,
+        user: {
+          username: users.username,
+          avatar: users.avatar,
+        },
+      })
+      .from(stories)
+      .innerJoin(users, eq(stories.userId, users.id))
+      .where(sql`${stories.expiresAt} > ${now}`)
+      .orderBy(desc(stories.createdAt));
+
+    return result.map(row => ({
+      ...row.story,
+      user: row.user,
+    }));
   }
 
   async getUserStories(userId: number): Promise<Story[]> {
-    return [];
+    const result = await db
+      .select()
+      .from(stories)
+      .where(eq(stories.userId, userId))
+      .orderBy(desc(stories.createdAt));
+    return result;
   }
 
   async followUser(followerId: number, followingId: number): Promise<boolean> {
-    return true;
+    try {
+      await db
+        .insert(follows)
+        .values({ followerId, followingId });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async unfollowUser(followerId: number, followingId: number): Promise<boolean> {
-    return true;
+    const result = await db
+      .delete(follows)
+      .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+      .returning();
+    return result.length > 0;
   }
 
   async isFollowing(followerId: number, followingId: number): Promise<boolean> {
-    return false;
+    const [follow] = await db
+      .select()
+      .from(follows)
+      .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
+    return !!follow;
   }
 
   async getUserFollowers(userId: number): Promise<User[]> {
-    return [];
+    const result = await db
+      .select({
+        user: users,
+      })
+      .from(follows)
+      .innerJoin(users, eq(follows.followerId, users.id))
+      .where(eq(follows.followingId, userId));
+    return result.map(row => row.user);
   }
 
   async getUserFollowing(userId: number): Promise<User[]> {
-    return [];
+    const result = await db
+      .select({
+        user: users,
+      })
+      .from(follows)
+      .innerJoin(users, eq(follows.followingId, users.id))
+      .where(eq(follows.followerId, userId));
+    return result.map(row => row.user);
   }
 
   async getSuggestedUsers(userId: number): Promise<User[]> {
-    return [];
+    const following = await db
+      .select({ followingId: follows.followingId })
+      .from(follows)
+      .where(eq(follows.followerId, userId));
+    
+    const followingIds = following.map(f => f.followingId);
+    followingIds.push(userId); // Exclude self
+    
+    const result = await db
+      .select()
+      .from(users)
+      .where(notInArray(users.id, followingIds))
+      .limit(5);
+      
+    return result;
   }
 
   private async seedData() {
-    // Check if admin user already exists
-    const existingAdmin = await this.getUserByUsername("ipj.trendotalk");
-    if (!existingAdmin) {
-      await this.createUser({
-        username: "ipj.trendotalk",
-        password: "IpjDr620911@TrendoTalk",
-        isAdmin: true,
-        bio: "Official TrendoTalk Account",
-        avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
-      });
+    try {
+      // Check if admin user already exists
+      const existingAdmin = await this.getUserByUsername("ipj.trendotalk");
+      if (!existingAdmin) {
+        await this.createUser({
+          username: "ipj.trendotalk",
+          password: "IpjDr620911@TrendoTalk",
+          confirmPassword: "IpjDr620911@TrendoTalk",
+          isAdmin: true,
+          bio: "Official TrendoTalk Account",
+          avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
+        });
+      }
+    } catch (error) {
+      console.error('Error seeding data:', error);
     }
   }
 }

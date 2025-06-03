@@ -108,7 +108,6 @@ export function CreatePost() {
             onFileSelect={handleFileSelect}
             onFileRemove={handleFileRemove}
             accept="image/*,video/*"
-            maxSize={10 * 1024 * 1024} // 10MB
           />
           
           {previewUrl && (

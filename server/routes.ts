@@ -16,23 +16,10 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage_multer = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
 const upload = multer({ 
-  storage: storage_multer,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
+  storage: multer.memoryStorage(), // Use memory storage for Cloudinary
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|webm/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
@@ -187,16 +174,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
       
-      let mediaUrl = null;
+      let imageUrl = null;
+      let videoUrl = null;
+      
       if (req.file) {
-        mediaUrl = `/uploads/${req.file.filename}`;
+        try {
+          const cloudinaryUrl = await uploadToCloudinary(req.file);
+          if (req.file.mimetype.startsWith('image')) {
+            imageUrl = cloudinaryUrl;
+          } else if (req.file.mimetype.startsWith('video')) {
+            videoUrl = cloudinaryUrl;
+          }
+        } catch (uploadError) {
+          console.error('Cloudinary upload error:', uploadError);
+          return res.status(500).json({ message: 'File upload failed' });
+        }
       }
       
       const post = await storage.createPost({
         ...postData,
         userId: user.id,
-        imageUrl: req.file?.mimetype.startsWith('image') ? mediaUrl : null,
-        videoUrl: req.file?.mimetype.startsWith('video') ? mediaUrl : null,
+        imageUrl,
+        videoUrl,
         isAdminPost: user.isAdmin && req.body.isAdminPost === 'true',
       });
       
@@ -206,6 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
+        console.error('Post creation error:', error);
         res.status(500).json({ message: 'Internal server error' });
       }
     }
@@ -341,16 +341,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const storyData = insertStorySchema.parse(req.body);
       
-      let mediaUrl = null;
+      let imageUrl = null;
+      let videoUrl = null;
+      
       if (req.file) {
-        mediaUrl = `/uploads/${req.file.filename}`;
+        try {
+          const cloudinaryUrl = await uploadToCloudinary(req.file);
+          if (req.file.mimetype.startsWith('image')) {
+            imageUrl = cloudinaryUrl;
+          } else if (req.file.mimetype.startsWith('video')) {
+            videoUrl = cloudinaryUrl;
+          }
+        } catch (uploadError) {
+          console.error('Cloudinary upload error:', uploadError);
+          return res.status(500).json({ message: 'File upload failed' });
+        }
       }
       
       const story = await storage.createStory({
         ...storyData,
         userId: req.user.userId,
-        imageUrl: req.file?.mimetype.startsWith('image') ? mediaUrl : null,
-        videoUrl: req.file?.mimetype.startsWith('video') ? mediaUrl : null,
+        imageUrl,
+        videoUrl,
       });
       
       res.json(story);
@@ -358,6 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
+        console.error('Story creation error:', error);
         res.status(500).json({ message: 'Internal server error' });
       }
     }
