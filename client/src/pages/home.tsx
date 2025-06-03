@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { Header } from "@/components/layout/header";
 import { Navigation } from "@/components/layout/navigation";
 import { StoriesCarousel } from "@/components/stories/stories-carousel";
@@ -7,9 +6,7 @@ import { PostCard } from "@/components/post/post-card";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Search, Hash, User } from "lucide-react";
+import { Hash } from "lucide-react";
 import { useState } from "react";
 import Auth from "@/pages/auth";
 
@@ -25,9 +22,7 @@ const CATEGORIES = [
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
-  const [, setLocation] = useLocation();
   const [activeCategory, setActiveCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "admin"],
@@ -51,22 +46,6 @@ export default function Home() {
     },
   });
 
-  const { data: searchUsers = [] } = useQuery({
-    queryKey: ["/api/search", searchQuery],
-    queryFn: async () => {
-      if (!searchQuery.trim()) return [];
-      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`, {
-        headers: isAuthenticated ? {
-          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        } : {}
-      });
-      if (!response.ok) throw new Error('Failed to search');
-      const data = await response.json();
-      return data.users || [];
-    },
-    enabled: !!searchQuery.trim(),
-  });
-
   if (!isAuthenticated) {
     return <Auth />;
   }
@@ -76,54 +55,11 @@ export default function Home() {
       <Header />
       
       <div className="px-4 pb-20">
-        {/* Search Bar */}
-        <Card className="my-4">
-          <CardContent className="p-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Search Results */}
-        {searchQuery.trim() && (
-          <Card className="mb-4">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Search Results for "{searchQuery}"</h3>
-              {searchUsers.length > 0 ? (
-                <div className="space-y-3">
-                  {searchUsers.map((searchUser: any) => (
-                    <div 
-                      key={searchUser.id} 
-                      className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                      onClick={() => setLocation(`/profile/${searchUser.username}`)}
-                    >
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={searchUser.avatar} alt={searchUser.username} />
-                        <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                          {searchUser.username[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium">{searchUser.username}</p>
-                        {searchUser.bio && (
-                          <p className="text-sm text-gray-500 truncate">{searchUser.bio}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">No users found</p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Stories */}
+        {stories.length > 0 && (
+          <div className="my-4">
+            <StoriesCarousel stories={stories} />
+          </div>
         )}
 
         {/* Tags Bar */}

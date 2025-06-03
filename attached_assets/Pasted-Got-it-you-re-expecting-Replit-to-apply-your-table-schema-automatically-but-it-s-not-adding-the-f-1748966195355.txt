@@ -1,0 +1,99 @@
+Got it — you're expecting Replit to apply your table schema automatically, but it's not adding the followers_count column. That usually means one of two things:
+
+
+---
+
+🔍 Why Replit Didn't Solve It
+
+1. Your schema (pgTable) includes followers_count, but migrations are not being run or synced properly.
+
+
+2. Or, your schema file doesn’t include the followers_count column yet — Replit is just creating tables from whatever schema it has, and this field is missing.
+
+
+
+
+---
+
+✅ Here's How You Can Fix It on Replit
+
+Step 1: Manually Add followers_count in Schema
+
+Go to your schema file — likely in:
+
+/server/schema.ts
+
+Make sure your users table looks like this:
+
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  username: varchar('username', { length: 255 }).notNull().unique(),
+  // other fields...
+  followers_count: integer('followers_count').default(0),
+});
+
+> If this line is missing, Replit can't add the column automatically.
+
+
+
+
+---
+
+Step 2: Force Schema Sync
+
+If you’re using Drizzle ORM, Replit won’t auto-migrate unless you tell it to. Run this in the Replit shell (bottom tab in workspace):
+
+npx drizzle-kit push
+
+> This will push the new schema to the Neon/Postgres database connected to Replit.
+
+
+
+
+---
+
+Step 3: Verify Table
+
+You can verify from Replit's Postgres (if using Neon):
+
+Log into the Neon dashboard.
+
+Go to the SQL Editor.
+
+Run:
+
+
+SELECT * FROM users LIMIT 1;
+
+If followers_count appears, it's working.
+
+
+---
+
+🛠 If You Want a Temporary Fix (No CLI):
+
+In your Replit server/index.ts, inside initializeDatabase(), add:
+
+await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS followers_count INTEGER DEFAULT 0;`);
+
+Then deploy or run the app once — it’ll silently fix the missing column.
+
+After that, you can remove that line.
+
+
+---
+
+✅ Summary
+
+Fix Type	Action
+
+Code-based	Add followers_count to pgTable in schema.ts
+Drizzle migration	Run npx drizzle-kit push in Replit shell
+Temporary SQL	Add ALTER TABLE query inside initializeDatabase()
+Verify	Use Neon SQL Editor or Replit DB logs
+
+
+
+---
+
+If you want me to open and fix the schema file in your ZIP, I can do that right now. Want me to?

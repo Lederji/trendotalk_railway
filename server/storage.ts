@@ -601,6 +601,13 @@ export class DatabaseStorage implements IStorage {
         );
       `);
 
+      // Add missing columns if they don't exist for Render deployment
+      await db.execute(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS followers_count INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS following_count INTEGER DEFAULT 0;
+      `);
+
       // Create other tables
       await db.execute(`
         CREATE TABLE IF NOT EXISTS posts (
