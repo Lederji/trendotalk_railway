@@ -6,14 +6,17 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, Camera, Mic, Paperclip } from "lucide-react";
+import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Plus } from "lucide-react";
 
 export default function ChatPage() {
   const { chatId } = useParams();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const [message, setMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: chat, isLoading } = useQuery({
@@ -47,14 +50,21 @@ export default function ChatPage() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      return apiRequest(`/api/chats/${chatId}/messages`, {
+      const response = await fetch(`/api/chats/${chatId}/messages`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        },
         body: JSON.stringify({ message: content }),
       });
+      if (!response.ok) throw new Error('Failed to send message');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
       setMessage("");
+      setSelectedFile(null);
     },
   });
 
@@ -68,6 +78,22 @@ export default function ChatPage() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // TODO: Handle file upload
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // TODO: Handle image upload
     }
   };
 
@@ -157,45 +183,117 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="bg-white border-t border-gray-200 p-4">
-        <div className="flex items-center space-x-3">
-          <div className="flex space-x-2">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Camera className="w-5 h-5 text-gray-500" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Paperclip className="w-5 h-5 text-gray-500" />
+      {/* Message Input - Instagram Style */}
+      <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0">
+        {/* File Preview */}
+        {selectedFile && (
+          <div className="mb-3 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                <Paperclip className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm text-gray-600">{selectedFile.name}</span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSelectedFile(null)}
+              className="text-gray-500"
+            >
+              ×
             </Button>
           </div>
-          
-          <div className="flex-1 relative">
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
-              className="rounded-full pr-12"
-              disabled={sendMessageMutation.isPending}
-            />
+        )}
+        
+        <div className="flex items-end space-x-3">
+          {/* Attachment Options */}
+          <div className="flex space-x-1">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 rounded-full"
+              className="rounded-full w-8 h-8"
+              onClick={() => imageInputRef.current?.click()}
             >
-              <Mic className="w-4 h-4 text-gray-500" />
+              <Image className="w-4 h-4 text-gray-500" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full w-8 h-8"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="w-4 h-4 text-gray-500" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full w-8 h-8"
+            >
+              <Camera className="w-4 h-4 text-gray-500" />
             </Button>
           </div>
           
-          <Button
-            onClick={handleSendMessage}
-            disabled={!message.trim() || sendMessageMutation.isPending}
-            className="rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90"
-            size="icon"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+          {/* Message Input */}
+          <div className="flex-1 relative">
+            <div className="flex items-end bg-gray-100 rounded-2xl">
+              <Input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Message..."
+                className="flex-1 border-0 bg-transparent rounded-2xl px-4 py-2 min-h-[40px] max-h-[120px] resize-none focus:ring-0 focus:outline-none"
+                disabled={sendMessageMutation.isPending}
+              />
+              
+              {/* Voice Message Button */}
+              {!message.trim() && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full w-8 h-8 mr-2"
+                >
+                  <Mic className="w-4 h-4 text-gray-500" />
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Send Button */}
+          {message.trim() ? (
+            <Button
+              onClick={handleSendMessage}
+              disabled={sendMessageMutation.isPending}
+              className="rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 w-8 h-8"
+              size="icon"
+            >
+              <Send className="w-3 h-3" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full w-8 h-8"
+            >
+              <Plus className="w-4 h-4 text-gray-500" />
+            </Button>
+          )}
         </div>
+        
+        {/* Hidden File Inputs */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="*/*"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
       </div>
     </div>
   );

@@ -688,6 +688,20 @@ export class DatabaseStorage implements IStorage {
         );
       `);
 
+      // Create notifications table
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          type VARCHAR(20) NOT NULL,
+          message TEXT NOT NULL,
+          from_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+          is_read BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
       console.log('Database tables created successfully');
     } catch (error) {
       console.error('Error creating tables:', error);
