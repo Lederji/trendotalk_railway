@@ -153,12 +153,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Username availability check
+  // Username availability check - automatically add tp- prefix
   app.get('/api/check/:username', async (req, res) => {
     try {
-      const { username } = req.params;
+      let { username } = req.params;
+      
+      // Always add tp- prefix if not present
+      if (!username.startsWith('tp-')) {
+        username = 'tp-' + username;
+      }
+      
       const isAvailable = await storage.checkUsernameAvailability(username);
-      res.json({ available: isAvailable });
+      res.json({ available: isAvailable, username });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }
