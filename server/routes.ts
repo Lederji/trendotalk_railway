@@ -650,6 +650,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notification endpoints
+  app.get('/api/notifications', authenticateUser, async (req: any, res: any) => {
+    try {
+      const notifications = await storage.getUserNotifications(req.user.userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error getting notifications:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/notifications/:id/read', authenticateUser, async (req: any, res: any) => {
+    try {
+      const notificationId = Number(req.params.id);
+      const success = await storage.markNotificationAsRead(notificationId);
+      
+      if (success) {
+        res.json({ message: 'Notification marked as read' });
+      } else {
+        res.status(404).json({ message: 'Notification not found' });
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get individual chat details
+  app.get('/api/chats/:chatId', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const userChats = await storage.getUserChats(req.user.userId);
+      
+      const chat = userChats.find(c => c.id === chatId);
+      if (!chat) {
+        return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      res.json(chat);
+    } catch (error) {
+      console.error('Error getting chat:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get chat messages
+  app.get('/api/chats/:chatId/messages', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const userChats = await storage.getUserChats(req.user.userId);
+      
+      const chat = userChats.find(c => c.id === chatId);
+      if (!chat) {
+        return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      res.json(chat.messages || []);
+    } catch (error) {
+      console.error('Error getting chat messages:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

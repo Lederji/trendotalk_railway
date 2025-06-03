@@ -1450,6 +1450,46 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async createNotification(userId: number, type: string, message: string, fromUserId?: number, postId?: number): Promise<void> {
+    try {
+      await db.execute(`
+        INSERT INTO notifications (user_id, type, message, from_user_id, post_id, is_read, created_at)
+        VALUES ($1, $2, $3, $4, $5, false, NOW())
+      `, [userId, type, message, fromUserId || null, postId || null]);
+    } catch (error) {
+      console.error('Error creating notification:', error);
+    }
+  }
+
+  async getUserNotifications(userId: number): Promise<any[]> {
+    try {
+      const result = await db.execute(`
+        SELECT n.*, u.username as from_username, u.avatar as from_avatar
+        FROM notifications n
+        LEFT JOIN users u ON n.from_user_id = u.id
+        WHERE n.user_id = $1
+        ORDER BY n.created_at DESC
+        LIMIT 20
+      `, [userId]);
+      return result.rows;
+    } catch (error) {
+      console.error('Error getting notifications:', error);
+      return [];
+    }
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<boolean> {
+    try {
+      await db.execute(`
+        UPDATE notifications SET is_read = true WHERE id = $1
+      `, [notificationId]);
+      return true;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      return false;
+    }
+  }
+
   private async seedData() {
     try {
       const existingAdmin = await this.getUserByUsername("ipj.trendotalk");

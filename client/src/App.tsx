@@ -11,6 +11,7 @@ import Circle from "@/pages/circle";
 import Profile from "@/pages/profile";
 import Auth from "@/pages/auth";
 import SearchPage from "@/pages/search";
+import ChatPage from "@/pages/chat";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/trends" component={Trends} />
       <Route path="/create" component={Create} />
       <Route path="/circle" component={Circle} />
+      <Route path="/chat/:chatId" component={ChatPage} />
       <Route path="/profile/:username?" component={Profile} />
       <Route path="/search" component={SearchPage} />
       <Route path="/auth" component={Auth} />
