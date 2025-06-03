@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Navigation } from "@/components/layout/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ export default function Circle() {
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [messageText, setMessageText] = useState("");
@@ -414,7 +416,7 @@ export default function Circle() {
                   </Card>
                 ) : (
                   chats.map((chat: any) => (
-                    <Card key={chat.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedChat(chat)}>
+                    <Card key={chat.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setLocation(`/chat/${chat.id}`)}>
                       <CardContent className="p-4">
                         <div className="flex items-center space-x-3">
                           <Avatar className="w-12 h-12">
