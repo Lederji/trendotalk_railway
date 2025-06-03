@@ -590,6 +590,8 @@ export class DatabaseStorage implements IStorage {
           email VARCHAR(255),
           avatar VARCHAR(255),
           is_admin BOOLEAN DEFAULT false,
+          followers_count INTEGER DEFAULT 0,
+          following_count INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);

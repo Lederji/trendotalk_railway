@@ -29,6 +29,8 @@ async function initializeDatabase() {
         email VARCHAR(255),
         avatar VARCHAR(255),
         is_admin BOOLEAN DEFAULT false,
+        followers_count INTEGER DEFAULT 0,
+        following_count INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -126,6 +128,14 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Add missing columns to existing tables
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS followers_count INTEGER DEFAULT 0;`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS following_count INTEGER DEFAULT 0;`);
+    } catch (error) {
+      console.log('Columns already exist or error adding columns:', error.message);
+    }
 
     // Create indexes for performance
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);`);
