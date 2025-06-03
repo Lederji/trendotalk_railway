@@ -308,170 +308,100 @@ export default function Circle() {
 
           <TabsContent value="chats" className="space-y-4">
             {selectedChat ? (
-              <div className="fixed inset-0 z-50 bg-white flex flex-col">
-                {/* Chat Header */}
-                <div className="flex items-center p-4 border-b bg-white shadow-sm">
-                  <Button variant="ghost" onClick={() => setSelectedChat(null)} className="mr-3">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </Button>
-                  <Avatar className="w-10 h-10 mr-3">
-                    <AvatarImage src={selectedChat.user.avatar} alt={selectedChat.user.username} />
-                    <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                      {selectedChat.user.username[3]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{selectedChat.user.username}</h3>
-                    <p className="text-sm text-green-500">Online</p>
+              <>
+                <style>{`
+                  nav[class*="fixed bottom-0"] { display: none !important; }
+                `}</style>
+                <div className="fixed inset-0 z-50 bg-white flex flex-col">
+                  <div className="flex items-center p-4 border-b bg-white shadow-sm">
+                    <Button variant="ghost" onClick={() => setSelectedChat(null)} className="mr-3">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </Button>
+                    <Avatar className="w-10 h-10 mr-3">
+                      <AvatarImage src={selectedChat.user.avatar} alt={selectedChat.user.username} />
+                      <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                        {selectedChat.user.username[3]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">{selectedChat.user.username}</h3>
+                      <p className="text-sm text-green-500">Online</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="ghost" size="sm" className="rounded-full" title="Voice Call" onClick={() => alert('Voice call feature will be implemented with WebRTC')}>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                      </Button>
+                      <Button variant="ghost" size="sm" className="rounded-full" title="Video Call" onClick={() => alert('Video call feature will be implemented with WebRTC')}>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </Button>
+                      <Button variant="ghost" size="sm" className="rounded-full" title="Settings" onClick={() => alert('Chat settings menu')}>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm" className="rounded-full" title="Voice Call">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                    </Button>
-                    <Button variant="ghost" size="sm" className="rounded-full" title="Video Call">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </Button>
-                    <Button variant="ghost" size="sm" className="rounded-full" title="Settings">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Messages Area */}
-                <div 
-                  className="flex-1 overflow-y-auto p-4 space-y-4"
-                  style={{
-                    backgroundImage: 'linear-gradient(to bottom, #1e3a8a, #059669)',
-                    minHeight: 'calc(100vh - 140px)'
-                  }}
-                >
-                  {selectedChat.messages?.map((message: any, index: number) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-                    >
-                      {message.senderId !== user?.id && (
-                        <Avatar className="w-8 h-8 mr-2 mt-1">
-                          <AvatarImage src={selectedChat.user.avatar} alt={selectedChat.user.username} />
-                          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
-                            {selectedChat.user.username[3]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div
-                        className={`max-w-xs px-4 py-2 rounded-2xl shadow-sm ${
-                          message.senderId === user?.id
-                            ? 'bg-blue-500 text-white rounded-br-sm'
-                            : 'bg-white text-gray-900 rounded-bl-sm'
-                        }`}
-                      >
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                        <p className={`text-xs mt-1 ${
-                          message.senderId === user?.id ? 'text-blue-100' : 'text-gray-400'
-                        }`}>
-                          {new Date(message.createdAt).toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </p>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ backgroundImage: 'linear-gradient(to bottom, #1e3a8a, #059669)', minHeight: 'calc(100vh - 140px)' }}>
+                    {selectedChat.messages?.map((message: any) => (
+                      <div key={message.id} className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
+                        {message.senderId !== user?.id && (
+                          <Avatar className="w-8 h-8 mr-2 mt-1">
+                            <AvatarImage src={selectedChat.user.avatar} alt={selectedChat.user.username} />
+                            <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
+                              {selectedChat.user.username[3]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className={`max-w-xs px-4 py-2 rounded-2xl shadow-sm ${message.senderId === user?.id ? 'bg-blue-500 text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'}`}>
+                          <p className="text-sm leading-relaxed">{message.content}</p>
+                          <p className={`text-xs mt-1 ${message.senderId === user?.id ? 'text-blue-100' : 'text-gray-400'}`}>
+                            {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Message Input */}
-                <div className="p-4 bg-white border-t">
-                  <div className="flex items-center space-x-2">
-                    {/* File Upload Button */}
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="rounded-full p-2"
-                      onClick={() => document.getElementById('chat-file-upload')?.click()}
-                    >
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                      </svg>
-                    </Button>
-                    <input
-                      id="chat-file-upload"
-                      type="file"
-                      accept="image/*,video/*,audio/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          // Handle file upload
-                          console.log('File selected:', file.name);
-                        }
-                      }}
-                    />
-
-                    {/* Camera Button */}
-                    <Button variant="ghost" size="sm" className="rounded-full p-2">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </Button>
-
-                    {/* Message Input Field */}
-                    <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 flex items-center">
-                      <Input
-                        placeholder="Message..."
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        className="border-none bg-transparent focus:ring-0 focus:outline-none text-sm"
-                      />
-                      
-                      {/* Emoji Button */}
-                      <Button variant="ghost" size="sm" className="p-1 ml-2">
-                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    ))}
+                  </div>
+                  <div className="bg-white border-t p-3 safe-area-bottom">
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm" className="rounded-full p-2 min-w-[40px] min-h-[40px]" onClick={() => document.getElementById('chat-camera-upload')?.click()}>
+                        <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="13" r="3"/>
+                          <path d="M5 7h2a2 2 0 0 0 2-2 1 1 0 0 1 1-1h4a1 1 0 0 1 1 1 2 2 0 0 0 2 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2"/>
                         </svg>
                       </Button>
+                      <input id="chat-camera-upload" type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) console.log('Camera file selected:', file.name); }} />
+                      <div className="flex-1 bg-gray-100 rounded-full px-4 py-3 flex items-center min-h-[44px]">
+                        <Input placeholder="Message..." value={messageText} onChange={(e) => setMessageText(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} className="border-none bg-transparent focus:ring-0 focus:outline-none text-sm flex-1" />
+                        <Button variant="ghost" size="sm" className="p-1 ml-2" onClick={() => document.getElementById('chat-file-upload')?.click()}>
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </Button>
+                        <input id="chat-file-upload" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) console.log('File selected:', file.name); }} />
+                      </div>
+                      {messageText.trim() ? (
+                        <Button onClick={handleSendMessage} className="rounded-full bg-blue-500 hover:bg-blue-600 text-white p-2 min-w-[40px] min-h-[40px]">
+                          <Send className="w-5 h-5" />
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" className="rounded-full p-2 min-w-[40px] min-h-[40px]" onMouseDown={() => console.log('Start recording')} onMouseUp={() => console.log('Stop recording')}>
+                          <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                          </svg>
+                        </Button>
+                      )}
                     </div>
-
-                    {/* Audio Record or Send Button */}
-                    {messageText.trim() ? (
-                      <Button 
-                        onClick={handleSendMessage}
-                        className="rounded-full bg-blue-500 hover:bg-blue-600 text-white p-2"
-                      >
-                        <Send className="w-4 h-4" />
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="rounded-full p-2"
-                        onMouseDown={() => {
-                          // Start audio recording
-                          console.log('Start recording');
-                        }}
-                        onMouseUp={() => {
-                          // Stop audio recording
-                          console.log('Stop recording');
-                        }}
-                      >
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
-                      </Button>
-                    )}
                   </div>
                 </div>
-              </div>
+              </>
             ) : (
               <div className="space-y-2">
                 {chats.length === 0 ? (
