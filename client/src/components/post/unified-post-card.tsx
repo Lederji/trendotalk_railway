@@ -146,82 +146,77 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
             </div>
           </div>
 
-          {/* Content Section */}
-          <div className="p-4">
-            {/* Ranking Display */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                {post.rank && (
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                    #{post.rank}
-                  </div>
-                )}
-                {post.otherRank && (
-                  <div className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                    {formatOtherRank(post.otherRank)}
-                  </div>
-                )}
-              </div>
-              {post.detailsLink && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(post.detailsLink, '_blank')}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
+          {/* Post Details Section - YouTube Style */}
+          <div className="p-4 space-y-3">
+            {/* First Line: Rank, Other Rank, Type */}
+            <div className="flex items-center space-x-3">
+              {post.rank && (
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded text-xs font-bold">
+                  #{post.rank}
+                </div>
+              )}
+              {post.otherRank && (
+                <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                  {formatOtherRank(post.otherRank)}
+                </div>
+              )}
+              {post.type && (
+                <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
+                  #{post.type}
+                </div>
               )}
             </div>
 
-            {/* Title */}
+            {/* Second & Third Line: Title */}
             {post.title && (
-              <div className="mb-3">
-                <p className="text-gray-900 leading-relaxed">
+              <div>
+                <p className="text-gray-900 text-sm leading-relaxed font-medium">
                   {formatContent(post.title)}
                 </p>
                 {post.title.length > 100 && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="p-0 h-auto text-blue-600 hover:text-blue-800"
+                    className="p-0 h-auto text-blue-600 hover:text-blue-800 text-xs"
                     onClick={() => setExpandedContent(!expandedContent)}
                   >
-                    {expandedContent ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     {expandedContent ? "Show less" : "Show more"}
                   </Button>
                 )}
               </div>
             )}
 
-            {/* Type */}
-            {post.type && (
-              <div className="mb-2">
-                <span className="text-sm text-purple-600 font-medium">#{post.type}</span>
-              </div>
-            )}
-
-            {/* Interaction Buttons */}
-            <div className="flex items-center justify-between mb-4">
+            {/* Fourth Line: Likes, Dislikes, Votes, Details Link */}
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-green-50 hover:text-green-600">
-                  <ThumbsUp className="w-4 h-4" />
+                <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs">
+                  <ThumbsUp className="w-3 h-3" />
                   <span>{post.likesCount || 0}</span>
                 </Button>
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-red-50 hover:text-red-600">
-                  <ThumbsDown className="w-4 h-4" />
+                <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-red-50 hover:text-red-600 text-xs">
+                  <ThumbsDown className="w-3 h-3" />
                   <span>{post.dislikesCount || 0}</span>
                 </Button>
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-600">
-                  <Vote className="w-4 h-4" />
+                <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-blue-50 hover:text-blue-600 text-xs">
+                  <Vote className="w-3 h-3" />
                   <span>{post.votesCount || 0}</span>
                 </Button>
               </div>
+              {post.detailsLink && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(post.detailsLink, '_blank')}
+                  className="hover:bg-gray-50"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </Button>
+              )}
             </div>
 
             {/* User Info */}
-            <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-3">
-              <span>@{post.user.username}</span>
-              <span className="text-xs">Admin Post</span>
+            <div className="text-xs text-gray-500 border-t pt-2">
+              <span>@{post.user.username} • Admin Post</span>
             </div>
           </div>
         </CardContent>
@@ -268,57 +263,50 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
           </div>
         )}
 
-        {/* Content Section */}
-        <div className="p-4">
+        {/* Post Details Section - YouTube Style */}
+        <div className="p-4 space-y-3">
           {/* Caption */}
           {post.caption && (
-            <div className="mb-3">
-              <p className="text-gray-900 leading-relaxed">
+            <div>
+              <p className="text-gray-900 text-sm leading-relaxed font-medium">
                 {formatContent(post.caption)}
               </p>
               {post.caption.length > 100 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-0 h-auto text-blue-600 hover:text-blue-800"
+                  className="p-0 h-auto text-blue-600 hover:text-blue-800 text-xs"
                   onClick={() => setExpandedContent(!expandedContent)}
                 >
-                  {expandedContent ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   {expandedContent ? "Show less" : "Show more"}
                 </Button>
               )}
             </div>
           )}
 
-          {/* Link */}
-          {post.link && (
-            <div className="mb-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(post.link, '_blank')}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Visit Link
-              </Button>
-            </div>
-          )}
-
-          {/* Interaction Buttons */}
-          <div className="flex items-center justify-between mb-4">
+          {/* Interaction Line: Likes and Link */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-green-50 hover:text-green-600">
-                <ThumbsUp className="w-4 h-4" />
+              <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs">
+                <ThumbsUp className="w-3 h-3" />
                 <span>{post.likesCount || 0}</span>
               </Button>
             </div>
+            {post.link && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.open(post.link, '_blank')}
+                className="hover:bg-gray-50 text-xs"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </Button>
+            )}
           </div>
 
           {/* User Info */}
-          <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-3">
-            <span>@{post.user.username}</span>
-            <span className="text-xs">User Post</span>
+          <div className="text-xs text-gray-500 border-t pt-2">
+            <span>@{post.user.username} • User Post</span>
           </div>
         </div>
       </CardContent>
