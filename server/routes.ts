@@ -170,50 +170,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Post routes
-  app.post('/api/posts', authenticateUser, upload.single('media'), async (req: any, res: any) => {
+  // Video Post routes
+  app.post('/api/posts', authenticateUser, upload.fields([
+    { name: 'video1', maxCount: 1 },
+    { name: 'video2', maxCount: 1 },
+    { name: 'video3', maxCount: 1 }
+  ]), async (req: any, res: any) => {
     try {
-      const postData = insertPostSchema.parse(req.body);
       const user = await storage.getUser(req.user.userId);
       
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
-      let imageUrl = null;
-      let videoUrl = null;
-      
-      if (req.file) {
-        try {
-          const cloudinaryUrl = await uploadToCloudinary(req.file);
-          if (req.file.mimetype.startsWith('image')) {
-            imageUrl = cloudinaryUrl;
-          } else if (req.file.mimetype.startsWith('video')) {
-            videoUrl = cloudinaryUrl;
-          }
-        } catch (uploadError) {
-          console.error('Cloudinary upload error:', uploadError);
-          return res.status(500).json({ message: 'File upload failed' });
-        }
+
+      if (!user.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required to create video posts' });
       }
-      
+
+      const { title, rank, otherRank, category, type, detailsLink } = req.body;
+
+      if (!title || !rank || !category) {
+        return res.status(400).json({ message: 'Title, rank, and category are required' });
+      }
+
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      let video1Url: string | undefined;
+      let video2Url: string | undefined;
+      let video3Url: string | undefined;
+
+      try {
+        if (files.video1 && files.video1[0]) {
+          video1Url = await uploadToCloudinary(files.video1[0]);
+        }
+        if (files.video2 && files.video2[0]) {
+          video2Url = await uploadToCloudinary(files.video2[0]);
+        }
+        if (files.video3 && files.video3[0]) {
+          video3Url = await uploadToCloudinary(files.video3[0]);
+        }
+      } catch (uploadError) {
+        console.error('Video upload error:', uploadError);
+        return res.status(500).json({ message: 'Video upload failed' });
+      }
+
+      if (!video1Url && !video2Url && !video3Url) {
+        return res.status(400).json({ message: 'At least one video is required' });
+      }
+
       const post = await storage.createPost({
-        ...postData,
+        title,
+        rank: Number(rank),
+        otherRank: otherRank || undefined,
+        category,
+        type: type || undefined,
+        detailsLink: detailsLink || undefined,
+        video1Url,
+        video2Url,
+        video3Url,
         userId: user.id,
-        imageUrl,
-        videoUrl,
-        isAdminPost: user.isAdmin && req.body.isAdminPost === 'true',
+        isAdminPost: true,
       });
       
       const postWithUser = await storage.getPostById(post.id);
       res.json(postWithUser);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: error.errors[0].message });
-      } else {
-        console.error('Post creation error:', error);
-        res.status(500).json({ message: 'Internal server error' });
-      }
+      console.error('Video post creation error:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
