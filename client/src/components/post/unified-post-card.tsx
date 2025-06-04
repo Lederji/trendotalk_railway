@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown, Vote, ExternalLink, ChevronDown, ChevronUp, Play, Pause, VolumeX, Volume2 } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Vote, ExternalLink, ChevronDown, ChevronUp, Play, Pause, VolumeX, Volume2, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UnifiedPostCardProps {
@@ -108,19 +108,43 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
   };
 
   const formatOtherRank = (otherRank?: string) => {
-    if (!otherRank) return "__";
+    if (!otherRank) return null;
+    // Convert "on youtube:#1" to "#1 on youtube"
+    const match = otherRank.match(/on\s+(\w+):#(\d+)/i);
+    if (match) {
+      const [, platform, rank] = match;
+      return `#${rank} on ${platform}`;
+    }
     return otherRank;
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title || post.caption || 'TrendoTalk Post',
+          text: post.title || post.caption || 'Check out this post on TrendoTalk',
+          url: window.location.href
+        });
+      } catch (error) {
+        console.log('Share cancelled');
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      navigator.clipboard.writeText(window.location.href);
+      // You could show a toast here indicating the link was copied
+    }
   };
 
   if (isAdminVideoPost) {
     return (
       <Card className="w-full max-w-2xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden mb-6">
         <CardContent className="p-0">
-          {/* 16:9 Video Container */}
+          {/* Fixed 16:9 Video Container */}
           <div className="relative w-full aspect-video bg-black">
             <div className={cn("grid h-full", getVideoLayout())}>
               {adminVideos.map((videoUrl, index) => (
-                <div key={`video-${post.id}-${index}`} className="relative h-full">
+                <div key={`video-${post.id}-${index}`} className="relative h-full overflow-hidden">
                   <video
                     ref={(el) => (videoRefs.current[index] = el)}
                     src={videoUrl || ""}
@@ -156,14 +180,14 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
                 #{post.rank}
               </div>
             )}
-            {post.otherRank && (
+            {formatOtherRank(post.otherRank) && (
               <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
                 {formatOtherRank(post.otherRank)}
               </div>
             )}
             {post.type && (
               <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
-                #{post.type}
+                Trend type - {post.type}
               </div>
             )}
           </div>
@@ -187,7 +211,7 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
             </div>
           )}
 
-          {/* Fourth Line: Likes, Dislikes, Votes, Details Link */}
+          {/* Fourth Line: Likes, Dislikes, Votes, Details Link, Share */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs">
@@ -203,21 +227,26 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
                 <span>{post.votesCount || 0}</span>
               </Button>
             </div>
-            {post.detailsLink && (
+            <div className="flex items-center space-x-2">
+              {post.detailsLink && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(post.detailsLink, '_blank')}
+                  className="hover:bg-gray-50 text-xs text-blue-600"
+                >
+                  full details
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => window.open(post.detailsLink, '_blank')}
+                onClick={handleShare}
                 className="hover:bg-gray-50"
               >
-                <ExternalLink className="w-3 h-3" />
+                <Share2 className="w-3 h-3" />
               </Button>
-            )}
-          </div>
-
-          {/* User Info */}
-          <div className="text-xs text-gray-500 border-t pt-2">
-            <span>@{post.user.username} • Admin Post</span>
+            </div>
           </div>
         </div>
       </Card>
@@ -228,40 +257,42 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
   return (
     <Card className="w-full max-w-2xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden mb-6">
       <CardContent className="p-0">
-        {/* Media Section */}
-        {(post.imageUrl || post.videoUrl) && (
-          <div className="relative w-full aspect-video bg-black">
-            {post.videoUrl ? (
-              <div className="relative h-full">
-                <video
-                  ref={singleVideoRef}
-                  src={post.videoUrl}
-                  className="w-full h-full object-cover cursor-pointer"
-                  loop
-                  muted
-                  autoPlay
-                  playsInline
-                  onClick={handleRegularVideoClick}
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                  <div className="text-white pointer-events-auto">
-                    {isPlaying ? (
-                      isMuted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />
-                    ) : (
-                      <Play className="w-8 h-8" />
-                    )}
+        {/* Fixed 16:9 Media Container */}
+        <div className="relative w-full aspect-video bg-black">
+          {(post.imageUrl || post.videoUrl) && (
+            <>
+              {post.videoUrl ? (
+                <div className="relative h-full overflow-hidden">
+                  <video
+                    ref={singleVideoRef}
+                    src={post.videoUrl}
+                    className="w-full h-full object-cover cursor-pointer"
+                    loop
+                    muted
+                    autoPlay
+                    playsInline
+                    onClick={handleRegularVideoClick}
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <div className="text-white pointer-events-auto">
+                      {isPlaying ? (
+                        isMuted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />
+                      ) : (
+                        <Play className="w-8 h-8" />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <img
-                src={post.imageUrl}
-                alt="Post content"
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
-        )}
+              ) : (
+                <img
+                  src={post.imageUrl}
+                  alt="Post content"
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </>
+          )}
+        </div>
       </CardContent>
 
       {/* Post Details Section - Always Visible */}
@@ -285,7 +316,7 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
           </div>
         )}
 
-        {/* Interaction Line: Likes and Link */}
+        {/* Interaction Line: Likes, Link, Share */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs">
@@ -293,21 +324,26 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
               <span>{post.likesCount || 0}</span>
             </Button>
           </div>
-          {post.link && (
+          <div className="flex items-center space-x-2">
+            {post.link && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.open(post.link, '_blank')}
+                className="hover:bg-gray-50 text-xs text-blue-600"
+              >
+                full details
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.open(post.link, '_blank')}
-              className="hover:bg-gray-50 text-xs"
+              onClick={handleShare}
+              className="hover:bg-gray-50"
             >
-              <ExternalLink className="w-3 h-3" />
+              <Share2 className="w-3 h-3" />
             </Button>
-          )}
-        </div>
-
-        {/* User Info */}
-        <div className="text-xs text-gray-500 border-t pt-2">
-          <span>@{post.user.username} • User Post</span>
+          </div>
         </div>
       </div>
     </Card>
