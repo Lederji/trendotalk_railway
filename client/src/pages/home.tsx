@@ -147,7 +147,11 @@ export default function Home() {
         ) : (
           <div className="space-y-6">
             {filteredPosts.map((post: any) => (
-              <UnifiedPostCard key={post.id} post={post} />
+              <UnifiedPostCard 
+                key={post.id} 
+                post={post} 
+                currentUser={user}
+              />
             ))}
           </div>
         )}
