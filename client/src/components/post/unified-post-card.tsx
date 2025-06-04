@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown, Vote, ExternalLink, ChevronDown, ChevronUp, Play, Pause, VolumeX, Volume2, Share2 } from "lucide-react";
+import { ThumbsUp, ThumbsDown, TrendingUp, ExternalLink, ChevronDown, ChevronUp, Play, Pause, VolumeX, Volume2, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface UnifiedPostCardProps {
   post: {
@@ -118,6 +120,50 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
     return otherRank;
   };
 
+  const queryClient = useQueryClient();
+
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/posts/${post.id}/like`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    }
+  });
+
+  const dislikeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/posts/${post.id}/dislike`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    }
+  });
+
+  const voteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/posts/${post.id}/vote`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    }
+  });
+
+  const handleLike = () => {
+    likeMutation.mutate();
+  };
+
+  const handleDislike = () => {
+    dislikeMutation.mutate();
+  };
+
+  const handleVote = () => {
+    voteMutation.mutate();
+  };
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -214,16 +260,34 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
           {/* Fourth Line: Likes, Dislikes, Votes, Details Link, Share */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLike}
+                disabled={likeMutation.isPending}
+                className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs"
+              >
                 <ThumbsUp className="w-3 h-3" />
                 <span>{post.likesCount || 0}</span>
               </Button>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-red-50 hover:text-red-600 text-xs">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleDislike}
+                disabled={dislikeMutation.isPending}
+                className="flex items-center space-x-1 hover:bg-red-50 hover:text-red-600 text-xs"
+              >
                 <ThumbsDown className="w-3 h-3" />
                 <span>{post.dislikesCount || 0}</span>
               </Button>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-blue-50 hover:text-blue-600 text-xs">
-                <Vote className="w-3 h-3" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleVote}
+                disabled={voteMutation.isPending}
+                className="flex items-center space-x-1 hover:bg-blue-50 hover:text-blue-600 text-xs"
+              >
+                <TrendingUp className="w-3 h-3" />
                 <span>{post.votesCount || 0}</span>
               </Button>
             </div>
