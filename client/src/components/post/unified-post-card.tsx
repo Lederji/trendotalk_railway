@@ -47,6 +47,7 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const singleVideoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -207,8 +208,7 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
   };
 
   const handleEdit = () => {
-    // Open edit modal
-    console.log('Edit post', post.id);
+    setEditModalOpen(true);
   };
 
   const handleShare = async () => {
@@ -402,6 +402,15 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
           postId={post.id}
           currentUser={currentUser}
         />
+
+        {/* Edit Modal */}
+        {currentUser?.isAdmin && (
+          <EditPostModal 
+            isOpen={editModalOpen}
+            onClose={() => setEditModalOpen(false)}
+            post={post}
+          />
+        )}
       </>
     );
   }
@@ -537,6 +546,15 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
         postId={post.id}
         currentUser={currentUser}
       />
+
+      {/* Edit Modal */}
+      {currentUser?.isAdmin && (
+        <EditPostModal 
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          post={post}
+        />
+      )}
     </Card>
   );
 }
