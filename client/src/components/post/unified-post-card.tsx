@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { CommentModal } from "./comment-modal";
+import { EditPostModal } from "./edit-post-modal";
 
 interface UnifiedPostCardProps {
   post: {

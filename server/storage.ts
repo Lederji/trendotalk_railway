@@ -16,6 +16,9 @@ export interface IStorage {
   checkUsernameAvailability(username: string): Promise<boolean>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   
+  // Post editing
+  updatePost(id: number, userId: number, updates: Partial<Post>): Promise<Post | undefined>;
+  
   // Post methods
   createPost(post: InsertPost & { userId: number }): Promise<Post>;
   getPostById(id: number): Promise<PostWithUser | undefined>;
@@ -179,17 +182,42 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
+  async updatePost(id: number, userId: number, updates: Partial<Post>): Promise<Post | undefined> {
+    const post = this.posts.get(id);
+    if (!post) return undefined;
+    
+    // Allow admin to edit any post, or user to edit their own post
+    const user = this.users.get(userId);
+    if (!user || (!user.isAdmin && post.userId !== userId)) return undefined;
+    
+    const updatedPost = { ...post, ...updates };
+    this.posts.set(id, updatedPost);
+    return updatedPost;
+  }
+
   async createPost(postData: InsertPost & { userId: number }): Promise<Post> {
     const post: Post = {
       id: this.currentPostId++,
       userId: postData.userId,
-      caption: postData.caption,
+      caption: postData.caption || null,
       imageUrl: postData.imageUrl || null,
       videoUrl: postData.videoUrl || null,
       link: postData.link || null,
       likesCount: 0,
+      dislikesCount: 0,
+      votesCount: 0,
       commentsCount: 0,
       isAdminPost: postData.isAdminPost || false,
+      // Admin post fields
+      title: postData.title || null,
+      rank: postData.rank || null,
+      otherRank: postData.otherRank || null,
+      category: postData.category || null,
+      type: postData.type || null,
+      detailsLink: postData.detailsLink || null,
+      video1Url: postData.video1Url || null,
+      video2Url: postData.video2Url || null,
+      video3Url: postData.video3Url || null,
       createdAt: new Date(),
     };
     this.posts.set(post.id, post);
@@ -262,7 +290,11 @@ export class MemStorage implements IStorage {
 
   async deletePost(id: number, userId: number): Promise<boolean> {
     const post = this.posts.get(id);
-    if (!post || post.userId !== userId) return false;
+    if (!post) return false;
+    
+    // Allow admin to delete any post, or user to delete their own post
+    const user = this.users.get(userId);
+    if (!user || (!user.isAdmin && post.userId !== userId)) return false;
     
     this.posts.delete(id);
     // Also delete related comments and likes

@@ -361,6 +361,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/posts/:id', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { title, rank, otherRank, category, type, detailsLink } = req.body;
+      
+      const updatedPost = await storage.updatePost(Number(req.params.id), req.user.userId, {
+        title: title || null,
+        rank: rank ? Number(rank) : null,
+        otherRank: otherRank || null,
+        category: category || null,
+        type: type || null,
+        detailsLink: detailsLink || null,
+      });
+      
+      if (!updatedPost) {
+        return res.status(404).json({ message: 'Post not found or unauthorized' });
+      }
+      
+      const postWithUser = await storage.getPostById(updatedPost.id);
+      res.json(postWithUser);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Like routes
   app.post('/api/posts/:id/like', authenticateUser, async (req: any, res: any) => {
     try {
