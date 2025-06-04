@@ -83,40 +83,45 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Posts Feed */}
+        {/* Video Posts Feed */}
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                    <div className="space-y-1">
-                      <div className="w-24 h-4 bg-gray-200 rounded"></div>
-                      <div className="w-16 h-3 bg-gray-200 rounded"></div>
+                <CardContent className="p-0">
+                  <div className="w-full aspect-video bg-gray-200 rounded-t"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-4 bg-gray-200 rounded"></div>
+                      <div className="w-12 h-4 bg-gray-200 rounded"></div>
+                      <div className="w-16 h-6 bg-gray-200 rounded-full"></div>
                     </div>
-                  </div>
-                  <div className="w-full h-64 bg-gray-200 rounded mb-4"></div>
-                  <div className="space-y-2">
-                    <div className="w-full h-4 bg-gray-200 rounded"></div>
-                    <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
+                    <div className="space-y-2">
+                      <div className="w-full h-4 bg-gray-200 rounded"></div>
+                      <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="flex items-center space-x-4 pt-2">
+                      <div className="w-12 h-6 bg-gray-200 rounded"></div>
+                      <div className="w-12 h-6 bg-gray-200 rounded"></div>
+                      <div className="w-12 h-6 bg-gray-200 rounded"></div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <Card>
             <CardContent className="p-6 text-center">
               <Hash className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">No trending posts yet</h3>
-              <p className="text-gray-500">Be the first to create trending content!</p>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No trending videos yet</h3>
+              <p className="text-gray-500">Admin hasn't posted any videos in this category!</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {posts.map((post: any) => (
-              <PostCard key={post.id} post={post} />
+          <div className="space-y-6">
+            {filteredPosts.map((post: any) => (
+              <VideoPostCard key={post.id} post={post} />
             ))}
           </div>
         )}

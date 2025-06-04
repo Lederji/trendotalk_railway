@@ -118,7 +118,7 @@ export function VideoPostCard({ post }: VideoPostCardProps) {
                       size="sm"
                       variant="secondary"
                       className="bg-black bg-opacity-70 text-white hover:bg-opacity-90"
-                      onClick={() => window.open(post.detailsLink, '_blank')}
+                      onClick={() => post.detailsLink && window.open(post.detailsLink, '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-1" />
                       Details
