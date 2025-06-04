@@ -170,8 +170,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Video Post routes
-  app.post('/api/posts', authenticateUser, upload.fields([
+  // Admin Video Post routes
+  app.post('/api/admin/posts', authenticateUser, upload.fields([
     { name: 'video1', maxCount: 1 },
     { name: 'video2', maxCount: 1 },
     { name: 'video3', maxCount: 1 }
@@ -188,10 +188,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { title, rank, otherRank, category, type, detailsLink } = req.body;
-
-      if (!title || !rank || !category) {
-        return res.status(400).json({ message: 'Title, rank, and category are required' });
-      }
 
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       let video1Url: string | undefined;
@@ -219,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const post = await storage.createPost({
         title,
-        rank: Number(rank),
+        rank: rank ? Number(rank) : undefined,
         otherRank: otherRank || undefined,
         category,
         type: type || undefined,
@@ -235,6 +231,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(postWithUser);
     } catch (error) {
       console.error('Video post creation error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Regular User Post routes
+  app.post('/api/posts', authenticateUser, upload.single('media'), async (req: any, res: any) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const { caption, link } = req.body;
+
+      if (!caption?.trim()) {
+        return res.status(400).json({ message: 'Caption is required' });
+      }
+
+      let mediaUrl: string | undefined;
+
+      if (req.file) {
+        try {
+          mediaUrl = await uploadToCloudinary(req.file);
+        } catch (uploadError) {
+          console.error('Media upload error:', uploadError);
+          return res.status(500).json({ message: 'Media upload failed' });
+        }
+      }
+
+      const post = await storage.createPost({
+        caption,
+        imageUrl: req.file && req.file.mimetype.startsWith('image/') ? mediaUrl : undefined,
+        videoUrl: req.file && req.file.mimetype.startsWith('video/') ? mediaUrl : undefined,
+        link: link || undefined,
+        userId: user.id,
+        isAdminPost: false,
+      });
+      
+      const postWithUser = await storage.getPostById(post.id);
+      res.json(postWithUser);
+    } catch (error) {
+      console.error('Post creation error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

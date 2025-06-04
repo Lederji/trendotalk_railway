@@ -48,7 +48,7 @@ export function CreateVideoPost() {
         }
       });
 
-      const response = await fetch('/api/posts', {
+      const response = await fetch('/api/admin/posts', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
@@ -112,24 +112,7 @@ export function CreateVideoPost() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim()) {
-      toast({
-        title: "Error",
-        description: "Title is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!rank || isNaN(Number(rank))) {
-      toast({
-        title: "Error",
-        description: "Valid rank number is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    // Only require at least one video - all other fields are optional for admin
     const hasVideos = videos.some(video => video.file);
     if (!hasVideos) {
       toast({
@@ -146,8 +129,8 @@ export function CreateVideoPost() {
       : undefined;
 
     createPostMutation.mutate({
-      title,
-      rank: Number(rank),
+      title: title.trim() || undefined,
+      rank: rank ? Number(rank) : undefined,
       otherRank,
       type: type.trim() || undefined,
       detailsLink: detailsLink.trim() || undefined,
@@ -214,21 +197,20 @@ export function CreateVideoPost() {
 
       {/* Title */}
       <div className="space-y-2">
-        <Label htmlFor="title">Title *</Label>
+        <Label htmlFor="title">Title</Label>
         <Textarea
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter video title..."
           className="min-h-[80px]"
-          required
         />
       </div>
 
       {/* Rank and Other Rank */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="rank">Rank *</Label>
+          <Label htmlFor="rank">Rank</Label>
           <Input
             id="rank"
             type="number"
@@ -236,7 +218,6 @@ export function CreateVideoPost() {
             onChange={(e) => setRank(e.target.value)}
             placeholder="1"
             min="1"
-            required
           />
         </div>
         <div className="space-y-2">
