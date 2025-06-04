@@ -371,6 +371,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/posts/:id/dislike', authenticateUser, async (req: any, res: any) => {
+    try {
+      const result = await storage.toggleDislike(Number(req.params.id), req.user.userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/posts/:id/vote', authenticateUser, async (req: any, res: any) => {
+    try {
+      const result = await storage.toggleVote(Number(req.params.id), req.user.userId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Comment routes
   app.post('/api/posts/:id/comments', authenticateUser, async (req: any, res: any) => {
     try {

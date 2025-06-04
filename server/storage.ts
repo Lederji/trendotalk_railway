@@ -25,6 +25,8 @@ export interface IStorage {
   
   // Like methods
   toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number }>;
+  toggleDislike(postId: number, userId: number): Promise<{ disliked: boolean; dislikesCount: number }>;
+  toggleVote(postId: number, userId: number): Promise<{ voted: boolean; votesCount: number }>;
   getUserLikes(userId: number): Promise<number[]>;
   
   // Comment methods
@@ -860,6 +862,11 @@ export class DatabaseStorage implements IStorage {
 
       return result
         .filter(row => row.user)
+        .filter(row => {
+          // Only show posts that have videos (admin posts) or images/videos (regular posts)
+          const post = row.post;
+          return post.video1Url || post.video2Url || post.video3Url || post.videoUrl || post.imageUrl;
+        })
         .map((row) => ({
           ...row.post,
           user: row.user,
@@ -966,6 +973,84 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error toggling like:', error);
       return { liked: false, likesCount: 0 };
+    }
+  }
+
+  async toggleDislike(postId: number, userId: number): Promise<{ disliked: boolean; dislikesCount: number }> {
+    try {
+      // For simplicity, we'll track dislikes using the likes table with a negative type
+      // In a real implementation, you might want a separate dislikes table
+      const [existingDislike] = await db
+        .select()
+        .from(likes)
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+
+      if (existingDislike) {
+        await db
+          .delete(likes)
+          .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+        
+        await db
+          .update(posts)
+          .set({ dislikesCount: sql`${posts.dislikesCount} - 1` })
+          .where(eq(posts.id, postId));
+          
+        const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+        return { disliked: false, dislikesCount: post?.dislikesCount || 0 };
+      } else {
+        await db
+          .insert(likes)
+          .values({ postId, userId });
+        
+        await db
+          .update(posts)
+          .set({ dislikesCount: sql`${posts.dislikesCount} + 1` })
+          .where(eq(posts.id, postId));
+          
+        const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+        return { disliked: true, dislikesCount: post?.dislikesCount || 1 };
+      }
+    } catch (error) {
+      console.error('Error toggling dislike:', error);
+      return { disliked: false, dislikesCount: 0 };
+    }
+  }
+
+  async toggleVote(postId: number, userId: number): Promise<{ voted: boolean; votesCount: number }> {
+    try {
+      const [existingVote] = await db
+        .select()
+        .from(likes)
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+
+      if (existingVote) {
+        await db
+          .delete(likes)
+          .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+        
+        await db
+          .update(posts)
+          .set({ votesCount: sql`${posts.votesCount} - 1` })
+          .where(eq(posts.id, postId));
+          
+        const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+        return { voted: false, votesCount: post?.votesCount || 0 };
+      } else {
+        await db
+          .insert(likes)
+          .values({ postId, userId });
+        
+        await db
+          .update(posts)
+          .set({ votesCount: sql`${posts.votesCount} + 1` })
+          .where(eq(posts.id, postId));
+          
+        const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+        return { voted: true, votesCount: post?.votesCount || 1 };
+      }
+    } catch (error) {
+      console.error('Error toggling vote:', error);
+      return { voted: false, votesCount: 0 };
     }
   }
 
