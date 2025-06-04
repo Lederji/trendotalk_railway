@@ -777,11 +777,30 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createPost(postData: InsertPost & { userId: number }): Promise<Post> {
+  async createPost(postData: any): Promise<Post> {
     try {
+      // Handle both old and new post formats
+      const insertData = {
+        userId: postData.userId,
+        title: postData.title || null,
+        caption: postData.caption || null,
+        imageUrl: postData.imageUrl || null,
+        videoUrl: postData.videoUrl || null,
+        video1Url: postData.video1Url || null,
+        video2Url: postData.video2Url || null,
+        video3Url: postData.video3Url || null,
+        rank: postData.rank || null,
+        otherRank: postData.otherRank || null,
+        category: postData.category || null,
+        type: postData.type || null,
+        detailsLink: postData.detailsLink || null,
+        link: postData.link || null,
+        isAdminPost: postData.isAdminPost || false,
+      };
+
       const [post] = await db
         .insert(posts)
-        .values(postData)
+        .values(insertData)
         .returning();
       return post;
     } catch (error) {
