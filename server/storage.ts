@@ -697,6 +697,28 @@ export class DatabaseStorage implements IStorage {
         );
       `);
 
+      // Create dislikes table
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS dislikes (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(post_id, user_id)
+        );
+      `);
+
+      // Create votes table
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS votes (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(post_id, user_id)
+        );
+      `);
+
       // Create notifications table
       await db.execute(`
         CREATE TABLE IF NOT EXISTS notifications (

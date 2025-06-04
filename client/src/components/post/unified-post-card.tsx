@@ -5,6 +5,7 @@ import { ThumbsUp, ThumbsDown, MessageCircle, ExternalLink, ChevronDown, Chevron
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { CommentModal } from "./comment-modal";
 
 interface UnifiedPostCardProps {
   post: {
@@ -44,6 +45,7 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
   const [activeVideo, setActiveVideo] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const singleVideoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -184,8 +186,7 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
   };
 
   const handleComment = () => {
-    // Open comment modal or section
-    console.log('Open comments for post', post.id);
+    setCommentModalOpen(true);
   };
 
   const deletePostMutation = useMutation({
@@ -390,6 +391,14 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
             </div>
           </div>
         </div>
+
+        {/* Comment Modal */}
+        <CommentModal 
+          isOpen={commentModalOpen}
+          onClose={() => setCommentModalOpen(false)}
+          postId={post.id}
+          currentUser={currentUser}
+        />
       </Card>
     );
   }
