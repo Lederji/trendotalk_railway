@@ -17,12 +17,17 @@ export const users = pgTable("users", {
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  caption: text("caption").notNull(),
-  imageUrl: text("image_url"),
-  videoUrl: text("video_url"),
-  link: text("link"),
+  title: text("title").notNull(),
+  video1Url: text("video1_url"),
+  video2Url: text("video2_url"),
+  video3Url: text("video3_url"),
+  rank: integer("rank").notNull(),
+  otherRank: text("other_rank"), // e.g., "yt:#1", "insta:#4"
+  category: text("category").notNull(), // memes, reels, model, news, dialogue, etc.
+  detailsLink: text("details_link"),
   likesCount: integer("likes_count").notNull().default(0),
-  commentsCount: integer("comments_count").notNull().default(0),
+  dislikesCount: integer("dislikes_count").notNull().default(0),
+  votesCount: integer("votes_count").notNull().default(0),
   isAdminPost: boolean("is_admin_post").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { Navigation } from "@/components/layout/navigation";
-import { StoriesCarousel } from "@/components/stories/stories-carousel";
-import { PostCard } from "@/components/post/post-card";
+import { VideoPostCard } from "@/components/post/video-post-card";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,19 +11,23 @@ import Auth from "@/pages/auth";
 
 const CATEGORIES = [
   { id: "all", label: "Top Trends" },
-  { id: "youtube", label: "YouTube" },
-  { id: "instagram", label: "Instagram" },
+  { id: "yt", label: "YouTube" },
+  { id: "insta", label: "Instagram" },
   { id: "ipl", label: "IPL" },
   { id: "film", label: "Film" },
   { id: "songs", label: "Songs" },
   { id: "model", label: "Model" },
+  { id: "memes", label: "Memes" },
+  { id: "reels", label: "Reels" },
+  { id: "news", label: "News" },
+  { id: "dialogue", label: "Dialogue" },
 ];
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
 
-  const { data: posts = [], isLoading } = useQuery({
+  const { data: allPosts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "admin"],
     queryFn: async () => {
       const response = await fetch("/api/posts?adminOnly=true", {
@@ -37,14 +40,16 @@ export default function Home() {
     },
   });
 
-  const { data: stories = [] } = useQuery({
-    queryKey: ["/api/stories"],
-    queryFn: async () => {
-      const response = await fetch("/api/stories");
-      if (!response.ok) throw new Error('Failed to fetch stories');
-      return response.json();
-    },
-  });
+  // Filter posts based on active category
+  const filteredPosts = allPosts.filter((post: any) => {
+    if (activeCategory === "all") {
+      // Show posts that have rank but no otherRank, or have both rank and otherRank
+      return post.rank;
+    } else {
+      // Show posts that have otherRank matching the category (e.g., "yt:#1" for YouTube)
+      return post.otherRank && post.otherRank.toLowerCase().startsWith(activeCategory + ":");
+    }
+  }).sort((a: any, b: any) => a.rank - b.rank); // Sort by rank ascending
 
   if (!isAuthenticated) {
     return <Auth />;
@@ -55,13 +60,6 @@ export default function Home() {
       <Header />
       
       <div className="px-4 pb-20">
-        {/* Stories */}
-        {stories.length > 0 && (
-          <div className="my-4">
-            <StoriesCarousel stories={stories} />
-          </div>
-        )}
-
         {/* Tags Bar */}
         <Card className="my-4">
           <CardContent className="p-3">
