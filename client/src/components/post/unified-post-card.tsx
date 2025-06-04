@@ -151,12 +151,16 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
             {/* Ranking Display */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                  #{post.rank}
-                </div>
-                <div className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                  {formatOtherRank(post.otherRank)}
-                </div>
+                {post.rank && (
+                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    #{post.rank}
+                  </div>
+                )}
+                {post.otherRank && (
+                  <div className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                    {formatOtherRank(post.otherRank)}
+                  </div>
+                )}
               </div>
               {post.detailsLink && (
                 <Button
@@ -196,13 +200,28 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
               </div>
             )}
 
-            {/* User Info */}
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <span>@{post.user.username}</span>
+            {/* Interaction Buttons */}
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-4">
-                <span>{post.likesCount || 0} likes</span>
-                <span>{post.votesCount || 0} votes</span>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-green-50 hover:text-green-600">
+                  <ThumbsUp className="w-4 h-4" />
+                  <span>{post.likesCount || 0}</span>
+                </Button>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-red-50 hover:text-red-600">
+                  <ThumbsDown className="w-4 h-4" />
+                  <span>{post.dislikesCount || 0}</span>
+                </Button>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-600">
+                  <Vote className="w-4 h-4" />
+                  <span>{post.votesCount || 0}</span>
+                </Button>
               </div>
+            </div>
+
+            {/* User Info */}
+            <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-3">
+              <span>@{post.user.username}</span>
+              <span className="text-xs">Admin Post</span>
             </div>
           </div>
         </CardContent>
@@ -286,12 +305,20 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
             </div>
           )}
 
-          {/* User Info */}
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>@{post.user.username}</span>
+          {/* Interaction Buttons */}
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <span>{post.likesCount || 0} likes</span>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-green-50 hover:text-green-600">
+                <ThumbsUp className="w-4 h-4" />
+                <span>{post.likesCount || 0}</span>
+              </Button>
             </div>
+          </div>
+
+          {/* User Info */}
+          <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-3">
+            <span>@{post.user.username}</span>
+            <span className="text-xs">User Post</span>
           </div>
         </div>
       </CardContent>
