@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown, TrendingUp, ExternalLink, ChevronDown, ChevronUp, Play, Pause, VolumeX, Volume2, Share2 } from "lucide-react";
+import { ThumbsUp, ThumbsDown, MessageCircle, ExternalLink, ChevronDown, ChevronUp, Play, Pause, VolumeX, Volume2, Share2, Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -29,11 +29,17 @@ interface UnifiedPostCardProps {
     user: {
       username: string;
       avatar?: string;
+      isAdmin?: boolean;
     };
   };
+  currentUser?: {
+    id: number;
+    username: string;
+    isAdmin: boolean;
+  } | null;
 }
 
-export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
+export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
   const [expandedContent, setExpandedContent] = useState(false);
   const [activeVideo, setActiveVideo] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -153,15 +159,54 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
   });
 
   const handleLike = () => {
+    if (!currentUser) {
+      alert('Please login to like posts');
+      return;
+    }
     likeMutation.mutate();
   };
 
   const handleDislike = () => {
+    if (!currentUser) {
+      alert('Please login to dislike posts');
+      return;
+    }
     dislikeMutation.mutate();
   };
 
   const handleVote = () => {
+    if (!currentUser) {
+      // Redirect to login or show login modal
+      alert('Please login to vote');
+      return;
+    }
     voteMutation.mutate();
+  };
+
+  const handleComment = () => {
+    // Open comment modal or section
+    console.log('Open comments for post', post.id);
+  };
+
+  const deletePostMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", `/api/posts/${post.id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    }
+  });
+
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this post?')) {
+      deletePostMutation.mutate();
+    }
+  };
+
+  const handleEdit = () => {
+    // Open edit modal
+    console.log('Edit post', post.id);
   };
 
   const handleShare = async () => {
@@ -219,22 +264,34 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
         
         {/* Post Details Section - Always Visible */}
         <div className="bg-white p-4 space-y-3 border-t">
-          {/* First Line: Rank, Other Rank, Type */}
-          <div className="flex items-center space-x-3">
-            {post.rank && (
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded text-xs font-bold">
-                #{post.rank}
-              </div>
-            )}
-            {formatOtherRank(post.otherRank) && (
-              <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                {formatOtherRank(post.otherRank)}
-              </div>
-            )}
-            {post.type && (
-              <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
-                Trend type - {post.type}
-              </div>
+          {/* First Line: Rank, Other Rank, Type, Full Details */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {post.rank && (
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded text-xs font-bold">
+                  #{post.rank}
+                </div>
+              )}
+              {formatOtherRank(post.otherRank) && (
+                <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                  {formatOtherRank(post.otherRank)}
+                </div>
+              )}
+              {post.type && (
+                <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
+                  Trend type - {post.type}
+                </div>
+              )}
+            </div>
+            {post.detailsLink && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.open(post.detailsLink, '_blank')}
+                className="hover:bg-gray-50 text-xs text-blue-600"
+              >
+                full details
+              </Button>
             )}
           </div>
 
@@ -257,7 +314,7 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
             </div>
           )}
 
-          {/* Fourth Line: Likes, Dislikes, Votes, Details Link, Share */}
+          {/* Fourth Line: Likes, Dislikes, Votes, Comments, Share */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button 
@@ -287,21 +344,19 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
                 disabled={voteMutation.isPending}
                 className="flex items-center space-x-1 hover:bg-blue-50 hover:text-blue-600 text-xs"
               >
-                <TrendingUp className="w-3 h-3" />
+                <span>vote</span>
                 <span>{post.votesCount || 0}</span>
               </Button>
             </div>
             <div className="flex items-center space-x-2">
-              {post.detailsLink && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(post.detailsLink, '_blank')}
-                  className="hover:bg-gray-50 text-xs text-blue-600"
-                >
-                  full details
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleComment}
+                className="hover:bg-gray-50"
+              >
+                <MessageCircle className="w-3 h-3" />
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -310,6 +365,28 @@ export function UnifiedPostCard({ post }: UnifiedPostCardProps) {
               >
                 <Share2 className="w-3 h-3" />
               </Button>
+              {/* Admin Edit/Delete Buttons */}
+              {currentUser?.isAdmin && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="hover:bg-blue-50 hover:text-blue-600"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={deletePostMutation.isPending}
+                    className="hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
