@@ -25,6 +25,7 @@ export function CreateVideoPost() {
   const [rank, setRank] = useState("");
   const [otherRank, setOtherRank] = useState("");
   const [category, setCategory] = useState("");
+  const [type, setType] = useState("");
   const [detailsLink, setDetailsLink] = useState("");
   const [videos, setVideos] = useState<VideoUpload[]>([
     { file: null, url: "" },
@@ -39,6 +40,7 @@ export function CreateVideoPost() {
       formData.append('rank', postData.rank);
       formData.append('category', postData.category);
       if (postData.otherRank) formData.append('otherRank', postData.otherRank);
+      if (postData.type) formData.append('type', postData.type);
       if (postData.detailsLink) formData.append('detailsLink', postData.detailsLink);
       
       // Add video files
@@ -48,10 +50,20 @@ export function CreateVideoPost() {
         }
       });
 
-      return apiRequest(`/api/posts`, {
+      const response = await fetch('/api/posts', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        },
         body: formData,
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create post');
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -75,6 +87,7 @@ export function CreateVideoPost() {
     setRank("");
     setOtherRank("");
     setCategory("");
+    setType("");
     setDetailsLink("");
     setVideos([
       { file: null, url: "" },
@@ -143,6 +156,7 @@ export function CreateVideoPost() {
       rank: Number(rank),
       otherRank: otherRank.trim() || undefined,
       category,
+      type: type.trim() || undefined,
       detailsLink: detailsLink.trim() || undefined,
     });
   };
@@ -266,6 +280,18 @@ export function CreateVideoPost() {
                 <SelectItem value="sports">Sports</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Type */}
+          <div className="space-y-2">
+            <Label htmlFor="type">Type (Custom trend type)</Label>
+            <Input
+              id="type"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              placeholder="e.g., Viral Dance, Comedy Skit, Tutorial..."
+            />
+            <p className="text-xs text-gray-500">Describe what type of trend this post represents</p>
           </div>
 
           {/* Details Link */}

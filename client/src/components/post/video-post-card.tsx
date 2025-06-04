@@ -14,6 +14,7 @@ interface VideoPostCardProps {
     rank: number;
     otherRank?: string;
     category: string;
+    type?: string;
     detailsLink?: string;
     likesCount: number;
     dislikesCount: number;
@@ -132,13 +133,13 @@ export function VideoPostCard({ post }: VideoPostCardProps) {
 
         {/* Post Information */}
         <div className="p-4 space-y-3">
-          {/* First Line: Rank, Other Rank, Category */}
+          {/* First Line: Rank, Other Rank, Type */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-4">
               <span className="font-bold text-pink-600">#{post.rank}</span>
               <span className="text-gray-600">{formatOtherRank(post.otherRank)}</span>
               <span className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-medium">
-                {post.category}
+                {post.type || post.category}
               </span>
             </div>
           </div>

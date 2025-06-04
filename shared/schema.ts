@@ -22,8 +22,9 @@ export const posts = pgTable("posts", {
   video2Url: text("video2_url"),
   video3Url: text("video3_url"),
   rank: integer("rank").notNull(),
-  otherRank: text("other_rank"), // e.g., "yt:#1", "insta:#4"
+  otherRank: text("other_rank"), // e.g., "on yt:#2", "on memes:#4"
   category: text("category").notNull(), // memes, reels, model, news, dialogue, etc.
+  type: text("type"), // admin specified type of trend
   detailsLink: text("details_link"),
   likesCount: integer("likes_count").notNull().default(0),
   dislikesCount: integer("dislikes_count").notNull().default(0),
