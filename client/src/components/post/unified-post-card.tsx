@@ -230,167 +230,169 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
 
   if (isAdminVideoPost) {
     return (
-      <Card className="w-full max-w-2xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-        <CardContent className="p-0">
-          {/* Fixed 16:9 Video Container */}
-          <div className="relative w-full aspect-video bg-black">
-            <div className={cn("grid h-full", getVideoLayout())}>
-              {adminVideos.map((videoUrl, index) => (
-                <div key={`video-${post.id}-${index}`} className="relative h-full overflow-hidden">
-                  <video
-                    ref={(el) => (videoRefs.current[index] = el)}
-                    src={videoUrl || ""}
-                    className="w-full h-full object-cover cursor-pointer"
-                    loop
-                    muted
-                    autoPlay
-                    playsInline
-                    onClick={() => handleAdminVideoClick(index)}
-                  />
-                  {/* Video Controls Overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                    <div className="text-white pointer-events-auto">
-                      {activeVideo === index ? (
-                        isMuted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />
-                      ) : (
-                        <Play className="w-8 h-8" />
-                      )}
+      <>
+        <Card className="w-full max-w-2xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+          <CardContent className="p-0">
+            {/* Fixed 16:9 Video Container */}
+            <div className="relative w-full aspect-video bg-black">
+              <div className={cn("grid h-full", getVideoLayout())}>
+                {adminVideos.map((videoUrl, index) => (
+                  <div key={`video-${post.id}-${index}`} className="relative h-full overflow-hidden">
+                    <video
+                      ref={(el) => (videoRefs.current[index] = el)}
+                      src={videoUrl || ""}
+                      className="w-full h-full object-cover cursor-pointer"
+                      loop
+                      muted
+                      autoPlay
+                      playsInline
+                      onClick={() => handleAdminVideoClick(index)}
+                    />
+                    {/* Video Controls Overlay */}
+                    <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <div className="text-white pointer-events-auto">
+                        {activeVideo === index ? (
+                          isMuted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />
+                        ) : (
+                          <Play className="w-8 h-8" />
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        </CardContent>
-        
-        {/* Post Details Section - Always Visible */}
-        <div className="bg-white p-4 space-y-3 border-t">
-          {/* First Line: Rank, Other Rank, Type, Full Details */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              {post.rank && (
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded text-xs font-bold">
-                  #{post.rank}
-                </div>
-              )}
-              {formatOtherRank(post.otherRank) && (
-                <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                  {formatOtherRank(post.otherRank)}
-                </div>
-              )}
-              {post.type && (
-                <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
-                  Trend type - {post.type}
-                </div>
-              )}
-            </div>
-            {post.detailsLink && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(post.detailsLink, '_blank')}
-                className="hover:bg-gray-50 text-xs text-blue-600"
-              >
-                full details
-              </Button>
-            )}
-          </div>
-
-          {/* Second & Third Line: Title */}
-          {post.title && (
-            <div>
-              <p className="text-gray-900 text-sm leading-relaxed font-medium">
-                {formatContent(post.title)}
-              </p>
-              {post.title.length > 100 && (
+          </CardContent>
+          
+          {/* Post Details Section - Always Visible */}
+          <div className="bg-white p-4 space-y-3 border-t">
+            {/* First Line: Rank, Other Rank, Type, Full Details */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                {post.rank && (
+                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded text-xs font-bold">
+                    #{post.rank}
+                  </div>
+                )}
+                {formatOtherRank(post.otherRank) && (
+                  <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                    {formatOtherRank(post.otherRank)}
+                  </div>
+                )}
+                {post.type && (
+                  <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
+                    Trend type - {post.type}
+                  </div>
+                )}
+              </div>
+              {post.detailsLink && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-0 h-auto text-blue-600 hover:text-blue-800 text-xs mt-1"
-                  onClick={() => setExpandedContent(!expandedContent)}
+                  onClick={() => window.open(post.detailsLink, '_blank')}
+                  className="hover:bg-gray-50 text-xs text-blue-600"
                 >
-                  {expandedContent ? "Show less" : "Show more"}
+                  full details
                 </Button>
               )}
             </div>
-          )}
 
-          {/* Fourth Line: Likes, Dislikes, Votes, Comments, Share */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleLike}
-                disabled={likeMutation.isPending}
-                className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs"
-              >
-                <ThumbsUp className="w-3 h-3" />
-                <span>{post.likesCount || 0}</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleDislike}
-                disabled={dislikeMutation.isPending}
-                className="flex items-center space-x-1 hover:bg-red-50 hover:text-red-600 text-xs"
-              >
-                <ThumbsDown className="w-3 h-3" />
-                <span>{post.dislikesCount || 0}</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleVote}
-                disabled={voteMutation.isPending}
-                className="flex items-center space-x-1 hover:bg-blue-50 hover:text-blue-600 text-xs"
-              >
-                <span>vote</span>
-                <span>{post.votesCount || 0}</span>
-              </Button>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleComment}
-                className="hover:bg-gray-50"
-              >
-                <MessageCircle className="w-3 h-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleShare}
-                className="hover:bg-gray-50"
-              >
-                <Share2 className="w-3 h-3" />
-              </Button>
-              {/* Admin Edit/Delete Buttons */}
-              {currentUser?.isAdmin && (
-                <>
+            {/* Second & Third Line: Title */}
+            {post.title && (
+              <div>
+                <p className="text-gray-900 text-sm leading-relaxed font-medium">
+                  {formatContent(post.title)}
+                </p>
+                {post.title.length > 100 && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleEdit}
-                    className="hover:bg-blue-50 hover:text-blue-600"
+                    className="p-0 h-auto text-blue-600 hover:text-blue-800 text-xs mt-1"
+                    onClick={() => setExpandedContent(!expandedContent)}
                   >
-                    <Edit className="w-3 h-3" />
+                    {expandedContent ? "Show less" : "Show more"}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDelete}
-                    disabled={deletePostMutation.isPending}
-                    className="hover:bg-red-50 hover:text-red-600"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </>
-              )}
+                )}
+              </div>
+            )}
+
+            {/* Fourth Line: Likes, Dislikes, Votes, Comments, Share */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleLike}
+                  disabled={likeMutation.isPending}
+                  className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs"
+                >
+                  <ThumbsUp className="w-3 h-3" />
+                  <span>{post.likesCount || 0}</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleDislike}
+                  disabled={dislikeMutation.isPending}
+                  className="flex items-center space-x-1 hover:bg-red-50 hover:text-red-600 text-xs"
+                >
+                  <ThumbsDown className="w-3 h-3" />
+                  <span>{post.dislikesCount || 0}</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleVote}
+                  disabled={voteMutation.isPending}
+                  className="flex items-center space-x-1 hover:bg-blue-50 hover:text-blue-600 text-xs"
+                >
+                  <span>vote</span>
+                  <span>{post.votesCount || 0}</span>
+                </Button>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleComment}
+                  className="hover:bg-gray-50"
+                >
+                  <MessageCircle className="w-3 h-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="hover:bg-gray-50"
+                >
+                  <Share2 className="w-3 h-3" />
+                </Button>
+                {/* Admin Edit/Delete Buttons */}
+                {currentUser?.isAdmin && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleEdit}
+                      className="hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDelete}
+                      disabled={deletePostMutation.isPending}
+                      className="hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Comment Modal */}
         <CommentModal 
@@ -399,7 +401,7 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
           postId={post.id}
           currentUser={currentUser}
         />
-      </Card>
+      </>
     );
   }
 
@@ -488,14 +490,52 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
             <Button
               variant="ghost"
               size="sm"
+              onClick={handleComment}
+              className="hover:bg-gray-50"
+            >
+              <MessageCircle className="w-3 h-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleShare}
               className="hover:bg-gray-50"
             >
               <Share2 className="w-3 h-3" />
             </Button>
+            {/* Admin Edit/Delete Buttons for all posts */}
+            {currentUser?.isAdmin && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleEdit}
+                  className="hover:bg-blue-50 hover:text-blue-600"
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={deletePostMutation.isPending}
+                  className="hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Comment Modal */}
+      <CommentModal 
+        isOpen={commentModalOpen}
+        onClose={() => setCommentModalOpen(false)}
+        postId={post.id}
+        currentUser={currentUser}
+      />
     </Card>
   );
 }

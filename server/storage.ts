@@ -283,7 +283,7 @@ export class MemStorage implements IStorage {
 
   async toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number }> {
     const existingLike = Array.from(this.likes.values()).find(
-      like => like.postId === postId && like.userId === userId
+      like => like.postId === postId && like.userId === userId && like.type === 'like'
     );
     
     const post = this.posts.get(postId);
@@ -291,12 +291,7 @@ export class MemStorage implements IStorage {
     
     if (existingLike) {
       // Unlike
-      Array.from(this.likes.entries()).forEach(([likeId, like]) => {
-        if (like.postId === postId && like.userId === userId) {
-          this.likes.delete(likeId);
-        }
-      });
-      
+      this.likes.delete(existingLike.id);
       post.likesCount = Math.max(0, post.likesCount - 1);
       this.posts.set(postId, post);
       return { liked: false, likesCount: post.likesCount };
@@ -306,6 +301,7 @@ export class MemStorage implements IStorage {
         id: this.currentLikeId++,
         postId,
         userId,
+        type: 'like',
         createdAt: new Date(),
       };
       this.likes.set(like.id, like);
@@ -313,6 +309,64 @@ export class MemStorage implements IStorage {
       post.likesCount += 1;
       this.posts.set(postId, post);
       return { liked: true, likesCount: post.likesCount };
+    }
+  }
+
+  async toggleDislike(postId: number, userId: number): Promise<{ disliked: boolean; dislikesCount: number }> {
+    const existingDislike = Array.from(this.likes.values()).find(
+      like => like.postId === postId && like.userId === userId && like.type === 'dislike'
+    );
+    
+    const post = this.posts.get(postId);
+    if (!post) throw new Error("Post not found");
+    
+    if (existingDislike) {
+      this.likes.delete(existingDislike.id);
+      post.dislikesCount = Math.max(0, (post.dislikesCount || 0) - 1);
+      this.posts.set(postId, post);
+      return { disliked: false, dislikesCount: post.dislikesCount || 0 };
+    } else {
+      const dislike: Like = {
+        id: this.currentLikeId++,
+        postId,
+        userId,
+        type: 'dislike',
+        createdAt: new Date(),
+      };
+      this.likes.set(dislike.id, dislike);
+      
+      post.dislikesCount = (post.dislikesCount || 0) + 1;
+      this.posts.set(postId, post);
+      return { disliked: true, dislikesCount: post.dislikesCount };
+    }
+  }
+
+  async toggleVote(postId: number, userId: number): Promise<{ voted: boolean; votesCount: number }> {
+    const existingVote = Array.from(this.likes.values()).find(
+      like => like.postId === postId && like.userId === userId && like.type === 'vote'
+    );
+    
+    const post = this.posts.get(postId);
+    if (!post) throw new Error("Post not found");
+    
+    if (existingVote) {
+      this.likes.delete(existingVote.id);
+      post.votesCount = Math.max(0, (post.votesCount || 0) - 1);
+      this.posts.set(postId, post);
+      return { voted: false, votesCount: post.votesCount || 0 };
+    } else {
+      const vote: Like = {
+        id: this.currentLikeId++,
+        postId,
+        userId,
+        type: 'vote',
+        createdAt: new Date(),
+      };
+      this.likes.set(vote.id, vote);
+      
+      post.votesCount = (post.votesCount || 0) + 1;
+      this.posts.set(postId, post);
+      return { voted: true, votesCount: post.votesCount };
     }
   }
 

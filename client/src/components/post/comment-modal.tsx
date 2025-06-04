@@ -33,7 +33,7 @@ export function CommentModal({ isOpen, onClose, postId, currentUser }: CommentMo
   const [newComment, setNewComment] = useState("");
   const queryClient = useQueryClient();
 
-  const { data: comments = [], isLoading } = useQuery({
+  const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
     enabled: isOpen && !!postId,
   });
