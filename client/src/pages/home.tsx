@@ -25,9 +25,9 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("all");
 
   const { data: allPosts = [], isLoading } = useQuery({
-    queryKey: ["/api/posts"],
+    queryKey: ["/api/posts", "admin-only"],
     queryFn: async () => {
-      const response = await fetch("/api/posts", {
+      const response = await fetch("/api/posts?adminOnly=true", {
         headers: isAuthenticated ? {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         } : {}
@@ -37,11 +37,11 @@ export default function Home() {
     },
   });
 
-  // Filter posts based on active category
+  // Filter admin posts based on active category
   const filteredPosts = allPosts.filter((post: any) => {
     if (activeCategory === "all") {
-      // Show all posts - admin posts with rank first, then regular user posts
-      return true;
+      // Show all admin posts with rank
+      return post.isAdminPost;
     } else {
       // Show posts that have otherRank matching the category
       if (post.otherRank) {
