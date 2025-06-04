@@ -38,21 +38,21 @@ export function VideoPostCard({ post }: VideoPostCardProps) {
     const video = videoRefs.current[index];
     if (!video) return;
 
+    // Pause all other videos first
+    videoRefs.current.forEach((v, i) => {
+      if (v && i !== index) {
+        v.pause();
+        v.muted = true;
+      }
+    });
+
     if (activeVideo === index) {
-      // If already playing, mute/unmute
+      // If this video is already active, toggle mute/unmute
       video.muted = !video.muted;
     } else {
-      // Pause all other videos
-      videoRefs.current.forEach((v, i) => {
-        if (v && i !== index) {
-          v.pause();
-          v.muted = true;
-        }
-      });
-      
-      // Play selected video with sound
+      // Play this video and unmute it
       video.muted = false;
-      video.play();
+      video.play().catch(console.error);
       setActiveVideo(index);
     }
   };
@@ -96,8 +96,8 @@ export function VideoPostCard({ post }: VideoPostCardProps) {
               <div key={index} className="relative h-full">
                 <video
                   ref={(el) => (videoRefs.current[index] = el)}
-                  src={videoUrl}
-                  className={getVideoClass(videoUrl)}
+                  src={videoUrl || ""}
+                  className={getVideoClass(videoUrl || "")}
                   loop
                   muted
                   autoPlay

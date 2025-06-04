@@ -25,9 +25,9 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("all");
 
   const { data: allPosts = [], isLoading } = useQuery({
-    queryKey: ["/api/posts", "admin"],
+    queryKey: ["/api/posts"],
     queryFn: async () => {
-      const response = await fetch("/api/posts?adminOnly=true", {
+      const response = await fetch("/api/posts", {
         headers: isAuthenticated ? {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         } : {}
@@ -40,13 +40,42 @@ export default function Home() {
   // Filter posts based on active category
   const filteredPosts = allPosts.filter((post: any) => {
     if (activeCategory === "all") {
-      // Show posts that have rank but no otherRank, or have both rank and otherRank
-      return post.rank;
+      // Show all posts - admin posts with rank first, then regular user posts
+      return true;
     } else {
-      // Show posts that have otherRank matching the category (e.g., "yt:#1" for YouTube)
-      return post.otherRank && post.otherRank.toLowerCase().startsWith(activeCategory + ":");
+      // Show posts that have otherRank matching the category
+      if (post.otherRank) {
+        const otherRankLower = post.otherRank.toLowerCase();
+        // Handle different platform formats
+        if (activeCategory === "youtube") {
+          return otherRankLower.includes("youtube") || otherRankLower.includes("yt");
+        } else if (activeCategory === "instagram") {
+          return otherRankLower.includes("instagram") || otherRankLower.includes("insta");
+        } else if (activeCategory === "films") {
+          return otherRankLower.includes("films") || otherRankLower.includes("film");
+        } else {
+          return otherRankLower.includes(activeCategory);
+        }
+      }
+      return false;
     }
-  }).sort((a: any, b: any) => a.rank - b.rank); // Sort by rank ascending
+  }).sort((a: any, b: any) => {
+    if (activeCategory === "all") {
+      // Show admin posts with rank first, then regular posts by creation date
+      if (a.rank && !b.rank) return -1;
+      if (!a.rank && b.rank) return 1;
+      if (a.rank && b.rank) return (a.rank || 999) - (b.rank || 999);
+      // Both are regular posts, sort by creation date (newest first)
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    } else {
+      // For platform-specific categories, extract rank from otherRank
+      const getRankFromOtherRank = (otherRank: string) => {
+        const match = otherRank.match(/#(\d+)/);
+        return match ? parseInt(match[1]) : 999;
+      };
+      return getRankFromOtherRank(a.otherRank || "") - getRankFromOtherRank(b.otherRank || "");
+    }
+  });
 
   if (!isAuthenticated) {
     return <Auth />;
