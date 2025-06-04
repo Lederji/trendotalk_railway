@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, X, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface VideoUpload {
@@ -23,8 +22,8 @@ export function CreateVideoPost() {
   
   const [title, setTitle] = useState("");
   const [rank, setRank] = useState("");
-  const [otherRank, setOtherRank] = useState("");
-  const [category, setCategory] = useState("");
+  const [otherRankPlatform, setOtherRankPlatform] = useState("");
+  const [otherRankNumber, setOtherRankNumber] = useState("");
   const [type, setType] = useState("");
   const [detailsLink, setDetailsLink] = useState("");
   const [videos, setVideos] = useState<VideoUpload[]>([
@@ -38,7 +37,6 @@ export function CreateVideoPost() {
       const formData = new FormData();
       formData.append('title', postData.title);
       formData.append('rank', postData.rank);
-      formData.append('category', postData.category);
       if (postData.otherRank) formData.append('otherRank', postData.otherRank);
       if (postData.type) formData.append('type', postData.type);
       if (postData.detailsLink) formData.append('detailsLink', postData.detailsLink);
@@ -85,8 +83,8 @@ export function CreateVideoPost() {
   const resetForm = () => {
     setTitle("");
     setRank("");
-    setOtherRank("");
-    setCategory("");
+    setOtherRankPlatform("");
+    setOtherRankNumber("");
     setType("");
     setDetailsLink("");
     setVideos([
@@ -132,15 +130,6 @@ export function CreateVideoPost() {
       return;
     }
 
-    if (!category) {
-      toast({
-        title: "Error",
-        description: "Category is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const hasVideos = videos.some(video => video.file);
     if (!hasVideos) {
       toast({
@@ -151,11 +140,15 @@ export function CreateVideoPost() {
       return;
     }
 
+    // Build other rank string if platform and number are provided
+    const otherRank = otherRankPlatform && otherRankNumber 
+      ? `on ${otherRankPlatform}:#${otherRankNumber}`
+      : undefined;
+
     createPostMutation.mutate({
       title,
       rank: Number(rank),
-      otherRank: otherRank.trim() || undefined,
-      category,
+      otherRank,
       type: type.trim() || undefined,
       detailsLink: detailsLink.trim() || undefined,
     });
@@ -172,162 +165,156 @@ export function CreateVideoPost() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="gradient-text">Create Video Post</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Video Uploads */}
-          <div className="space-y-4">
-            <Label className="text-base font-semibold">Videos (Max 3)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {videos.map((video, index) => (
-                <div key={index} className="space-y-2">
-                  <Label className="text-sm text-gray-600">Video {index + 1}</Label>
-                  <div className="relative aspect-video border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
-                    {video.url ? (
-                      <div className="relative w-full h-full">
-                        <video
-                          src={video.url}
-                          className="w-full h-full object-cover"
-                          controls
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeVideo(index)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer hover:bg-gray-50">
-                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-500">Upload Video</span>
-                        <input
-                          type="file"
-                          accept="video/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleVideoUpload(index, file);
-                          }}
-                        />
-                      </label>
-                    )}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Video Uploads */}
+      <div className="space-y-4">
+        <Label className="text-base font-semibold">Videos (Max 3)</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {videos.map((video, index) => (
+            <div key={index} className="space-y-2">
+              <Label className="text-sm text-gray-600">Video {index + 1}</Label>
+              <div className="relative aspect-video border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
+                {video.url ? (
+                  <div className="relative w-full h-full">
+                    <video
+                      src={video.url}
+                      className="w-full h-full object-cover"
+                      controls
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => removeVideo(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                </div>
-              ))}
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer hover:bg-gray-50">
+                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500">Upload Video</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleVideoUpload(index, file);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
-            <Textarea
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter video title..."
-              className="min-h-[80px]"
-              required
-            />
-          </div>
+      {/* Title */}
+      <div className="space-y-2">
+        <Label htmlFor="title">Title *</Label>
+        <Textarea
+          id="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter video title..."
+          className="min-h-[80px]"
+          required
+        />
+      </div>
 
-          {/* Rank and Other Rank */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="rank">Rank *</Label>
-              <Input
-                id="rank"
-                type="number"
-                value={rank}
-                onChange={(e) => setRank(e.target.value)}
-                placeholder="1"
-                min="1"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="otherRank">Other Rank (e.g., yt:#1, insta:#4)</Label>
-              <Input
-                id="otherRank"
-                value={otherRank}
-                onChange={(e) => setOtherRank(e.target.value)}
-                placeholder="yt:#1"
-              />
-            </div>
-          </div>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Category *</Label>
-            <Select value={category} onValueChange={setCategory} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
+      {/* Rank and Other Rank */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="rank">Rank *</Label>
+          <Input
+            id="rank"
+            type="number"
+            value={rank}
+            onChange={(e) => setRank(e.target.value)}
+            placeholder="1"
+            min="1"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Other Rank (Optional)</Label>
+          <div className="flex space-x-2">
+            <Select value={otherRankPlatform} onValueChange={setOtherRankPlatform}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Platform" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="memes">Memes</SelectItem>
-                <SelectItem value="reels">Reels</SelectItem>
-                <SelectItem value="model">Model</SelectItem>
-                <SelectItem value="news">News</SelectItem>
-                <SelectItem value="dialogue">Dialogue</SelectItem>
+                <SelectItem value="youtube">YouTube</SelectItem>
+                <SelectItem value="instagram">Instagram</SelectItem>
+                <SelectItem value="ipl">IPL</SelectItem>
+                <SelectItem value="x">X</SelectItem>
+                <SelectItem value="films">Films</SelectItem>
                 <SelectItem value="songs">Songs</SelectItem>
-                <SelectItem value="film">Film</SelectItem>
-                <SelectItem value="sports">Sports</SelectItem>
+                <SelectItem value="model">Model</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Type */}
-          <div className="space-y-2">
-            <Label htmlFor="type">Type (Custom trend type)</Label>
             <Input
-              id="type"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              placeholder="e.g., Viral Dance, Comedy Skit, Tutorial..."
+              type="number"
+              value={otherRankNumber}
+              onChange={(e) => setOtherRankNumber(e.target.value)}
+              placeholder="Rank"
+              className="w-20"
+              min="1"
             />
-            <p className="text-xs text-gray-500">Describe what type of trend this post represents</p>
           </div>
+          <p className="text-xs text-gray-500">
+            Example: Select "Instagram" + "6" = "on instagram:#6"
+          </p>
+        </div>
+      </div>
 
-          {/* Details Link */}
-          <div className="space-y-2">
-            <Label htmlFor="detailsLink">Details Link</Label>
-            <div className="flex">
-              <Input
-                id="detailsLink"
-                value={detailsLink}
-                onChange={(e) => setDetailsLink(e.target.value)}
-                placeholder="https://example.com"
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="ml-2"
-                disabled={!detailsLink.trim()}
-                onClick={() => detailsLink.trim() && window.open(detailsLink, '_blank')}
-              >
-                <ExternalLink className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+      {/* Type */}
+      <div className="space-y-2">
+        <Label htmlFor="type">Type (Custom trend type)</Label>
+        <Input
+          id="type"
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          placeholder="e.g., Viral Dance, Comedy Skit, Tutorial..."
+        />
+        <p className="text-xs text-gray-500">Describe what type of trend this post represents</p>
+      </div>
 
-          {/* Submit Button */}
+      {/* Details Link */}
+      <div className="space-y-2">
+        <Label htmlFor="detailsLink">Details Link</Label>
+        <div className="flex">
+          <Input
+            id="detailsLink"
+            value={detailsLink}
+            onChange={(e) => setDetailsLink(e.target.value)}
+            placeholder="https://example.com"
+            className="flex-1"
+          />
           <Button
-            type="submit"
-            className="w-full gradient-bg text-white"
-            disabled={createPostMutation.isPending}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ml-2"
+            disabled={!detailsLink.trim()}
+            onClick={() => detailsLink.trim() && window.open(detailsLink, '_blank')}
           >
-            {createPostMutation.isPending ? "Creating..." : "Create Video Post"}
+            <ExternalLink className="w-4 h-4" />
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <Button
+        type="submit"
+        className="w-full gradient-bg text-white"
+        disabled={createPostMutation.isPending}
+      >
+        {createPostMutation.isPending ? "Creating..." : "Create Video Post"}
+      </Button>
+    </form>
   );
 }

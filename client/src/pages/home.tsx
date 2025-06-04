@@ -11,16 +11,13 @@ import Auth from "@/pages/auth";
 
 const CATEGORIES = [
   { id: "all", label: "Top Trends" },
-  { id: "yt", label: "YouTube" },
-  { id: "insta", label: "Instagram" },
+  { id: "youtube", label: "YouTube" },
+  { id: "instagram", label: "Instagram" },
   { id: "ipl", label: "IPL" },
-  { id: "film", label: "Film" },
+  { id: "x", label: "X" },
+  { id: "films", label: "Films" },
   { id: "songs", label: "Songs" },
   { id: "model", label: "Model" },
-  { id: "memes", label: "Memes" },
-  { id: "reels", label: "Reels" },
-  { id: "news", label: "News" },
-  { id: "dialogue", label: "Dialogue" },
 ];
 
 export default function Home() {
