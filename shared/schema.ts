@@ -53,6 +53,7 @@ export const likes = pgTable("likes", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").notNull().references(() => posts.id),
   userId: integer("user_id").notNull().references(() => users.id),
+  type: text("type").notNull().default("like"), // 'like', 'dislike', 'vote'
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

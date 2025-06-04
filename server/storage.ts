@@ -551,6 +551,78 @@ export class MemStorage implements IStorage {
       .filter(user => !followingIds.includes(user.id))
       .slice(0, 5); // Return up to 5 suggestions
   }
+
+  async createNotification(userId: number, type: string, message: string, fromUserId?: number, postId?: number): Promise<void> {
+    // In-memory implementation doesn't persist notifications
+    // You could extend this to store in memory if needed
+  }
+
+  async getUserNotifications(userId: number): Promise<any[]> {
+    // Return empty array for in-memory implementation
+    return [];
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<boolean> {
+    // Return true for in-memory implementation
+    return true;
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    const users = Array.from(this.users.values());
+    return users.filter(user => 
+      user.username.toLowerCase().includes(query.toLowerCase())
+    );
+  }
+
+  async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
+    // Simple in-memory implementation
+    return true;
+  }
+
+  async getFriendRequests(userId: number): Promise<any[]> {
+    return [];
+  }
+
+  async acceptFriendRequest(requestId: number, userId: number): Promise<boolean> {
+    return true;
+  }
+
+  async rejectFriendRequest(requestId: number, userId: number): Promise<boolean> {
+    return true;
+  }
+
+  async getUserChats(userId: number): Promise<any[]> {
+    return [];
+  }
+
+  async sendMessage(chatId: number, senderId: number, message: string): Promise<any> {
+    return {};
+  }
+
+  async searchPosts(query: string): Promise<PostWithUser[]> {
+    const posts = Array.from(this.posts.values());
+    const filteredPosts = posts.filter(post => 
+      post.title?.toLowerCase().includes(query.toLowerCase()) ||
+      post.caption?.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    const postsWithUsers = await Promise.all(
+      filteredPosts.map(async (post) => {
+        const user = await this.getUser(post.userId);
+        return {
+          ...post,
+          user: {
+            id: user!.id,
+            username: user!.username,
+            avatar: user!.avatar,
+            isAdmin: user!.isAdmin
+          }
+        } as PostWithUser;
+      })
+    );
+    
+    return postsWithUsers;
+  }
 }
 
 
