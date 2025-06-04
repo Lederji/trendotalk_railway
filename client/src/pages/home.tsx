@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { Navigation } from "@/components/layout/navigation";
-import { VideoPostCard } from "@/components/post/video-post-card";
+import { UnifiedPostCard } from "@/components/post/unified-post-card";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -147,7 +147,7 @@ export default function Home() {
         ) : (
           <div className="space-y-6">
             {filteredPosts.map((post: any) => (
-              <VideoPostCard key={post.id} post={post} />
+              <UnifiedPostCard key={post.id} post={post} />
             ))}
           </div>
         )}
