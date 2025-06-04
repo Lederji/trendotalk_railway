@@ -1,6 +1,6 @@
 import { Header } from "@/components/layout/header";
 import { Navigation } from "@/components/layout/navigation";
-import { CreatePost } from "@/components/post/create-post";
+import { CreateRegularPost } from "@/components/post/create-regular-post";
 import { CreateVideoPost } from "@/components/post/create-video-post";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,7 +81,7 @@ export default function Create() {
             {user?.isAdmin && activeTab === "video" ? (
               <CreateVideoPost />
             ) : (
-              <CreatePost />
+              <CreateRegularPost />
             )}
           </CardContent>
         </Card>
