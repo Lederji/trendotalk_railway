@@ -17,18 +17,26 @@ export const users = pgTable("users", {
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  title: text("title").notNull(),
+  // Admin post fields
+  title: text("title"),
   video1Url: text("video1_url"),
   video2Url: text("video2_url"),
   video3Url: text("video3_url"),
-  rank: integer("rank").notNull(),
+  rank: integer("rank"),
   otherRank: text("other_rank"), // e.g., "on yt:#2", "on memes:#4"
-  category: text("category").notNull(), // memes, reels, model, news, dialogue, etc.
+  category: text("category"), // memes, reels, model, news, dialogue, etc.
   type: text("type"), // admin specified type of trend
   detailsLink: text("details_link"),
+  // Regular user post fields
+  caption: text("caption"),
+  imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  link: text("link"),
+  // Interaction counts
   likesCount: integer("likes_count").notNull().default(0),
   dislikesCount: integer("dislikes_count").notNull().default(0),
   votesCount: integer("votes_count").notNull().default(0),
+  commentsCount: integer("comments_count").notNull().default(0),
   isAdminPost: boolean("is_admin_post").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -42,6 +50,20 @@ export const comments = pgTable("comments", {
 });
 
 export const likes = pgTable("likes", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull().references(() => posts.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const dislikes = pgTable("dislikes", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull().references(() => posts.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const votes = pgTable("votes", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").notNull().references(() => posts.id),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -147,6 +169,8 @@ export type InsertPost = z.infer<typeof insertPostSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Like = typeof likes.$inferSelect;
+export type Dislike = typeof dislikes.$inferSelect;
+export type Vote = typeof votes.$inferSelect;
 export type Story = typeof stories.$inferSelect;
 export type InsertStory = z.infer<typeof insertStorySchema>;
 export type Follow = typeof follows.$inferSelect;

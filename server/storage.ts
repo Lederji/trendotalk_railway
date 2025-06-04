@@ -1,7 +1,7 @@
 import { 
-  users, posts, comments, likes, stories, follows, friendRequests, chats, messages,
+  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages,
   type User, type InsertUser, type Post, type InsertPost, 
-  type Comment, type InsertComment, type Like, type Story, 
+  type Comment, type InsertComment, type Like, type Dislike, type Vote, type Story, 
   type InsertStory, type Follow, type PostWithUser, type StoryWithUser, type UserProfile 
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
@@ -978,17 +978,15 @@ export class DatabaseStorage implements IStorage {
 
   async toggleDislike(postId: number, userId: number): Promise<{ disliked: boolean; dislikesCount: number }> {
     try {
-      // For simplicity, we'll track dislikes using the likes table with a negative type
-      // In a real implementation, you might want a separate dislikes table
       const [existingDislike] = await db
         .select()
-        .from(likes)
-        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+        .from(dislikes)
+        .where(and(eq(dislikes.postId, postId), eq(dislikes.userId, userId)));
 
       if (existingDislike) {
         await db
-          .delete(likes)
-          .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+          .delete(dislikes)
+          .where(and(eq(dislikes.postId, postId), eq(dislikes.userId, userId)));
         
         await db
           .update(posts)
@@ -999,7 +997,7 @@ export class DatabaseStorage implements IStorage {
         return { disliked: false, dislikesCount: post?.dislikesCount || 0 };
       } else {
         await db
-          .insert(likes)
+          .insert(dislikes)
           .values({ postId, userId });
         
         await db
@@ -1020,13 +1018,13 @@ export class DatabaseStorage implements IStorage {
     try {
       const [existingVote] = await db
         .select()
-        .from(likes)
-        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+        .from(votes)
+        .where(and(eq(votes.postId, postId), eq(votes.userId, userId)));
 
       if (existingVote) {
         await db
-          .delete(likes)
-          .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+          .delete(votes)
+          .where(and(eq(votes.postId, postId), eq(votes.userId, userId)));
         
         await db
           .update(posts)
@@ -1037,7 +1035,7 @@ export class DatabaseStorage implements IStorage {
         return { voted: false, votesCount: post?.votesCount || 0 };
       } else {
         await db
-          .insert(likes)
+          .insert(votes)
           .values({ postId, userId });
         
         await db
