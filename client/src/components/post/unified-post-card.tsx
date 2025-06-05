@@ -279,7 +279,7 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
                       className="w-full h-full object-cover cursor-pointer"
                       loop
                       muted
-                      autoPlay
+                      autoPlay={false}
                       playsInline
                       onClick={() => handleAdminVideoClick(index)}
                     />
