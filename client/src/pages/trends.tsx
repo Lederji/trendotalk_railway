@@ -22,6 +22,7 @@ export default function Trends() {
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const tapTimeouts = useRef<Map<number, number>>(new Map());
   const videoObserver = useRef<IntersectionObserver | null>(null);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "videos"],
@@ -88,7 +89,7 @@ export default function Trends() {
     },
   });
 
-  // Enhanced intersection observer for reliable video autoplay
+  // Enhanced intersection observer with forced autoplay
   useEffect(() => {
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
       entries.forEach((entry) => {
@@ -97,42 +98,49 @@ export default function Trends() {
         
         if (!video) return;
         
-        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-          // Video is in view - play it
+        if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+          // Video is in view - force play immediately
           if (currentPlayingVideo !== postId) {
-            // Pause all other videos first
+            // Pause all other videos
             videoRefs.current.forEach((v, id) => {
-              if (v && id !== postId && !v.paused) {
+              if (v && id !== postId) {
                 v.pause();
               }
             });
             
             setCurrentPlayingVideo(postId);
             
-            // Force video to play immediately
-            const playVideo = async () => {
+            // Aggressive autoplay strategy
+            const forcePlay = async () => {
+              video.currentTime = 0;
+              video.muted = videoMuteStates.get(postId) ?? false;
+              
               try {
-                video.currentTime = 0;
-                video.muted = videoMuteStates.get(postId) ?? false;
                 await video.play();
               } catch (error) {
-                // Fallback to muted playback
+                // Force muted playback
                 video.muted = true;
                 setVideoMuteStates(prev => new Map(prev.set(postId, true)));
-                try {
-                  await video.play();
-                } catch (mutedError) {
-                  console.error(`Failed to play video ${postId}:`, mutedError);
-                }
+                await video.play().catch(() => {
+                  // Last resort - try after brief delay
+                  setTimeout(() => {
+                    video.play().catch(console.error);
+                  }, 500);
+                });
               }
             };
             
-            // Start playback immediately regardless of ready state
-            playVideo();
+            // Try immediate play
+            forcePlay();
+            
+            // Also try when video is loaded if not already playing
+            if (video.readyState < 3) {
+              video.addEventListener('canplaythrough', forcePlay, { once: true });
+            }
           }
-        } else if (entry.intersectionRatio < 0.3) {
-          // Video is out of view - pause it
-          if (currentPlayingVideo === postId && !video.paused) {
+        } else if (entry.intersectionRatio < 0.2) {
+          // Video out of view
+          if (currentPlayingVideo === postId) {
             video.pause();
             setCurrentPlayingVideo(null);
           }
@@ -141,8 +149,8 @@ export default function Trends() {
     };
 
     videoObserver.current = new IntersectionObserver(observerCallback, {
-      threshold: [0.3, 0.5, 0.8],
-      rootMargin: '0px'
+      threshold: [0.2, 0.6, 0.9],
+      rootMargin: '-10px'
     });
 
     return () => {
@@ -373,22 +381,83 @@ export default function Trends() {
                 onClick={(e) => handleVideoClick(post.id, e)}
                 onDoubleClick={(e) => handleVideoDoubleClick(post.id, e)}
                 onTouchStart={(e) => {
-                  const now = Date.now();
-                  const lastTouch = tapTimeouts.current.get(post.id) || 0;
-                  if (now - lastTouch < 300) {
-                    // Double tap
-                    e.preventDefault();
-                    handleVideoDoubleClick(post.id, e as any);
-                  } else {
-                    // Single tap
-                    tapTimeouts.current.set(post.id, now);
-                    setTimeout(() => {
-                      const current = tapTimeouts.current.get(post.id);
-                      if (current === now) {
-                        handleVideoClick(post.id, e as any);
-                      }
-                    }, 300);
+                  const touch = e.touches[0];
+                  setTouchStart({
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    time: Date.now()
+                  });
+                }}
+                onTouchEnd={(e) => {
+                  if (!isAuthenticated) {
+                    toast({
+                      title: "Please login",
+                      description: "You need to login to interact with videos",
+                      variant: "destructive"
+                    });
+                    return;
                   }
+
+                  if (!touchStart) return;
+
+                  const touch = e.changedTouches[0];
+                  const deltaX = touch.clientX - touchStart.x;
+                  const deltaY = touch.clientY - touchStart.y;
+                  const deltaTime = Date.now() - touchStart.time;
+                  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                  // Check for swipe right to share
+                  if (deltaX > 100 && Math.abs(deltaY) < 100 && deltaTime < 500) {
+                    // Swipe right detected - redirect to chat with video
+                    window.location.href = `/chats?shareVideo=${post.id}`;
+                    return;
+                  }
+
+                  // Check for tap (small movement, short time)
+                  if (distance < 30 && deltaTime < 300) {
+                    // Check for double tap
+                    const lastTap = tapTimeouts.current.get(post.id) || 0;
+                    const now = Date.now();
+                    
+                    if (now - lastTap < 300) {
+                      // Double tap - like video
+                      e.preventDefault();
+                      likeMutation.mutate(post.id);
+                      tapTimeouts.current.delete(post.id);
+                      
+                      // Visual feedback for double tap
+                      const target = e.currentTarget as HTMLElement;
+                      const heart = document.createElement('div');
+                      heart.innerHTML = '❤️';
+                      heart.style.cssText = `
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        font-size: 3rem;
+                        pointer-events: none;
+                        z-index: 1000;
+                        animation: heartPop 0.6s ease-out;
+                      `;
+                      target.appendChild(heart);
+                      setTimeout(() => {
+                        if (heart.parentNode) {
+                          heart.parentNode.removeChild(heart);
+                        }
+                      }, 600);
+                    } else {
+                      // Single tap - toggle mute after delay
+                      tapTimeouts.current.set(post.id, now);
+                      setTimeout(() => {
+                        const currentTap = tapTimeouts.current.get(post.id);
+                        if (currentTap === now) {
+                          toggleVideoMute(post.id);
+                        }
+                      }, 300);
+                    }
+                  }
+
+                  setTouchStart(null);
                 }}
               />
               
