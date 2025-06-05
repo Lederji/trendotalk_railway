@@ -100,73 +100,70 @@ export default function Trends() {
     },
   });
 
-  // Enhanced video autoplay with proper audio switching
+  // Robust video autoplay with forced switching
   useEffect(() => {
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      // Find the most visible video
-      const visibleEntries = entries.filter(entry => entry.isIntersecting && entry.intersectionRatio > 0.6);
-      
-      if (visibleEntries.length > 0) {
-        // Sort by intersection ratio to get the most visible
-        const mostVisible = visibleEntries.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        const postId = parseInt(mostVisible.target.getAttribute('data-post-id') || '0');
+      entries.forEach((entry) => {
+        const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
         const video = videoRefs.current.get(postId);
         
-        if (video && currentPlayingVideo !== postId) {
-          // Immediately stop ALL other videos first
-          videoRefs.current.forEach((v, id) => {
-            if (v && id !== postId) {
-              v.pause();
-              v.currentTime = 0;
-              v.muted = true; // Ensure no audio leakage
-            }
-          });
-          
-          setCurrentPlayingVideo(postId);
-          
-          // Start the new video
-          const playNewVideo = async () => {
-            try {
+        if (!video) return;
+        
+        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+          // Video is in view - switch to this video
+          if (currentPlayingVideo !== postId) {
+            console.log(`Switching to video ${postId}, stopping ${currentPlayingVideo}`);
+            
+            // Force stop all other videos immediately
+            videoRefs.current.forEach((v, id) => {
+              if (v && id !== postId) {
+                v.pause();
+                v.currentTime = 0;
+                v.volume = 0;
+                v.muted = true;
+              }
+            });
+            
+            // Set new playing video
+            setCurrentPlayingVideo(postId);
+            
+            // Start new video immediately
+            const startVideo = async () => {
               video.currentTime = 0;
               video.muted = videoMuteStates.get(postId) ?? false;
-              await video.play();
-            } catch (error) {
-              // Fallback to muted playback
-              video.muted = true;
-              setVideoMuteStates(prev => new Map(prev.set(postId, true)));
+              video.volume = video.muted ? 0 : 1;
+              
               try {
                 await video.play();
-              } catch (mutedError) {
-                // Force play after brief delay
-                setTimeout(() => {
-                  video.play().catch(console.error);
-                }, 200);
+                console.log(`Started playing video ${postId}`);
+              } catch (error) {
+                console.log(`Unmuted play failed for ${postId}, trying muted`);
+                video.muted = true;
+                video.volume = 0;
+                setVideoMuteStates(prev => new Map(prev.set(postId, true)));
+                await video.play().catch(() => {
+                  setTimeout(() => video.play().catch(console.error), 100);
+                });
               }
-            }
-          };
-          
-          playNewVideo();
-        }
-      }
-      
-      // Pause videos that are completely out of view
-      entries.forEach(entry => {
-        if (entry.intersectionRatio < 0.1) {
-          const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
-          const video = videoRefs.current.get(postId);
-          if (video) {
+            };
+            
+            startVideo();
+          }
+        } else if (entry.intersectionRatio < 0.3) {
+          // Video is out of view - force stop
+          if (currentPlayingVideo === postId) {
+            console.log(`Stopping video ${postId} - out of view`);
             video.pause();
+            video.volume = 0;
             video.muted = true;
-            if (currentPlayingVideo === postId) {
-              setCurrentPlayingVideo(null);
-            }
+            setCurrentPlayingVideo(null);
           }
         }
       });
     };
 
     videoObserver.current = new IntersectionObserver(observerCallback, {
-      threshold: [0.1, 0.6, 0.9],
+      threshold: [0.3, 0.5, 0.8],
       rootMargin: '0px'
     });
 
@@ -288,6 +285,10 @@ export default function Trends() {
 
   const shareToCircle = (postId: number) => {
     window.location.href = `/chats?shareVideo=${postId}`;
+  };
+
+  const addToCircleVibe = (postId: number) => {
+    window.location.href = `/circle/add-vibe?video=${postId}`;
   };
 
   const shareToExternalApp = (postId: number) => {
@@ -644,9 +645,9 @@ export default function Trends() {
                         <Users className="w-4 h-4 mr-2" />
                         Share to Circle
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => shareToCircle(post.id)} className="hover:bg-white/10">
+                      <DropdownMenuItem onClick={() => addToCircleVibe(post.id)} className="hover:bg-white/10">
                         <Users className="w-4 h-4 mr-2" />
-                        Add to Circle story
+                        Add to Circle vibe
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => shareToExternalApp(post.id)} className="hover:bg-white/10">
                         <Share className="w-4 h-4 mr-2" />
