@@ -163,7 +163,7 @@ export default function Trends() {
     };
   }, []);
 
-  // Enhanced tap detection system for reliable single/double tap
+  // Simplified and reliable tap detection system
   const handleVideoTap = (postId: number, event: React.MouseEvent) => {
     if (!isAuthenticated) {
       toast({
@@ -178,30 +178,22 @@ export default function Trends() {
     event.stopPropagation();
 
     const now = Date.now();
-    const lastTap = tapTimeouts.current.get(postId);
+    const lastTap = tapTimeouts.current.get(postId) || 0;
     
-    if (lastTap && (now - lastTap) < 300) {
+    if (now - lastTap < 300) {
       // Double tap detected - like the video
       tapTimeouts.current.delete(postId);
       likeMutation.mutate(postId);
       
       // Visual feedback for double tap
-      const target = event.currentTarget as HTMLElement;
-      target.style.transform = 'scale(0.95)';
-      setTimeout(() => {
-        target.style.transform = 'scale(1)';
-      }, 150);
+      toast({
+        title: "❤️ Liked!",
+        duration: 1000
+      });
     } else {
-      // Potential single tap - wait for double tap timeout
+      // Single tap - toggle mute immediately
+      toggleVideoMute(postId);
       tapTimeouts.current.set(postId, now);
-      setTimeout(() => {
-        const currentTap = tapTimeouts.current.get(postId);
-        if (currentTap === now) {
-          // Single tap confirmed - toggle mute
-          tapTimeouts.current.delete(postId);
-          toggleVideoMute(postId);
-        }
-      }, 300);
     }
   };
 
@@ -326,7 +318,7 @@ export default function Trends() {
                 loop
                 playsInline
                 preload="metadata"
-                onClick={() => handleVideoTap(post.id)}
+                onClick={(e) => handleVideoTap(post.id, e)}
               />
               
               {/* Audio indicator */}
@@ -335,7 +327,10 @@ export default function Trends() {
                   variant="ghost"
                   size="sm"
                   className="w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 p-0"
-                  onClick={() => handleVideoTap(post.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleVideoMute(post.id);
+                  }}
                 >
                   {videoMuteStates.get(post.id) ?? false ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                 </Button>
