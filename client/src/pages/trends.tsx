@@ -88,80 +88,60 @@ export default function Trends() {
     },
   });
 
-  // Robust intersection observer for video autoplay
+  // High-performance intersection observer for Instagram-like reels
   useEffect(() => {
-    videoObserver.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      const visibleEntry = entries.find(entry => entry.intersectionRatio > 0.7);
+      
+      if (visibleEntry) {
+        const postId = parseInt(visibleEntry.target.getAttribute('data-post-id') || '0');
+        const video = videoRefs.current.get(postId);
+        
+        if (video && currentPlayingVideo !== postId) {
+          // Pause all videos immediately
+          videoRefs.current.forEach((v, id) => {
+            if (v && id !== postId) {
+              v.pause();
+            }
+          });
+          
+          setCurrentPlayingVideo(postId);
+          
+          // Optimized play strategy
+          const startPlayback = () => {
+            video.currentTime = 0;
+            video.play().catch(() => {
+              video.muted = true;
+              setVideoMuteStates(prev => new Map(prev.set(postId, true)));
+              video.play().catch(console.error);
+            });
+          };
+          
+          if (video.readyState >= 3) {
+            startPlayback();
+          } else {
+            video.addEventListener('canplaythrough', startPlayback, { once: true });
+          }
+        }
+      }
+      
+      // Pause videos that are completely out of view
+      entries.forEach(entry => {
+        if (entry.intersectionRatio < 0.1) {
           const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
           const video = videoRefs.current.get(postId);
-          
-          if (!video) return;
-          
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-            // Video is visible - play it and pause others
-            if (currentPlayingVideo !== postId) {
-              // Pause all other videos immediately
-              videoRefs.current.forEach((v, id) => {
-                if (v && id !== postId && !v.paused) {
-                  v.pause();
-                  v.currentTime = 0;
-                }
-              });
-              
-              setCurrentPlayingVideo(postId);
-              
-              // Force immediate play attempt for better performance
-              video.currentTime = 0;
-              
-              // Try to play immediately with fallback strategy
-              const playVideo = async () => {
-                try {
-                  await video.play();
-                } catch (error) {
-                  // If play fails, try with muted audio
-                  try {
-                    video.muted = true;
-                    setVideoMuteStates(prev => new Map(prev.set(postId, true)));
-                    await video.play();
-                  } catch (mutedError) {
-                    console.error(`Failed to play video ${postId}:`, mutedError);
-                  }
-                }
-              };
-              
-              if (video.readyState >= 2) {
-                playVideo();
-              } else {
-                // For large videos, start playing as soon as enough data is loaded
-                const onLoadedData = () => {
-                  playVideo();
-                  video.removeEventListener('loadeddata', onLoadedData);
-                };
-                video.addEventListener('loadeddata', onLoadedData);
-                
-                // Timeout fallback for very slow loading videos
-                setTimeout(() => {
-                  if (video.paused && currentPlayingVideo === postId) {
-                    playVideo();
-                  }
-                }, 2000);
-              }
-            }
-          } else if (entry.intersectionRatio < 0.3) {
-            // Video is out of view - pause it
-            if (currentPlayingVideo === postId && !video.paused) {
-              video.pause();
-              setCurrentPlayingVideo(null);
-            }
+          if (video && currentPlayingVideo === postId) {
+            video.pause();
+            setCurrentPlayingVideo(null);
           }
-        });
-      },
-      {
-        threshold: [0.3, 0.5, 0.8],
-        rootMargin: '0px'
-      }
-    );
+        }
+      });
+    };
+
+    videoObserver.current = new IntersectionObserver(observerCallback, {
+      threshold: [0.1, 0.7],
+      rootMargin: '-50px 0px'
+    });
 
     return () => {
       if (videoObserver.current) {
@@ -333,7 +313,7 @@ export default function Trends() {
       </div>
       
       {/* Video Feed */}
-      <div className="h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide">
+      <div className="h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide scroll-smooth">
         {isLoading ? (
           <div className="h-screen flex items-center justify-center">
             <div className="text-white">Loading trends...</div>
@@ -367,8 +347,6 @@ export default function Trends() {
                       el.muted = false;
                       setVideoMuteStates(prev => new Map(prev.set(post.id, false)));
                     }
-                    // Ensure video loads properly
-                    el.load();
                   } else {
                     videoRefs.current.delete(post.id);
                   }
@@ -378,7 +356,7 @@ export default function Trends() {
                 muted={videoMuteStates.get(post.id) ?? false}
                 loop
                 playsInline
-                preload="auto"
+                preload="metadata"
                 onClick={(e) => handleVideoClick(post.id, e)}
                 onDoubleClick={(e) => handleVideoDoubleClick(post.id, e)}
                 onTouchStart={(e) => {
@@ -398,15 +376,6 @@ export default function Trends() {
                       }
                     }, 300);
                   }
-                }}
-                onLoadStart={() => {
-                  console.log(`Video ${post.id} loading started`);
-                }}
-                onCanPlay={() => {
-                  console.log(`Video ${post.id} can play`);
-                }}
-                onError={() => {
-                  console.error(`Video ${post.id} failed to load`);
                 }}
               />
               
