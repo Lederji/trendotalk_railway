@@ -88,49 +88,51 @@ export default function Trends() {
     },
   });
 
-  // High-performance intersection observer for Instagram-like reels
+  // Enhanced intersection observer for reliable video autoplay
   useEffect(() => {
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      const visibleEntry = entries.find(entry => entry.intersectionRatio > 0.7);
-      
-      if (visibleEntry) {
-        const postId = parseInt(visibleEntry.target.getAttribute('data-post-id') || '0');
+      entries.forEach((entry) => {
+        const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
         const video = videoRefs.current.get(postId);
         
-        if (video && currentPlayingVideo !== postId) {
-          // Pause all videos immediately
-          videoRefs.current.forEach((v, id) => {
-            if (v && id !== postId) {
-              v.pause();
-            }
-          });
-          
-          setCurrentPlayingVideo(postId);
-          
-          // Optimized play strategy
-          const startPlayback = () => {
-            video.currentTime = 0;
-            video.play().catch(() => {
-              video.muted = true;
-              setVideoMuteStates(prev => new Map(prev.set(postId, true)));
-              video.play().catch(console.error);
+        if (!video) return;
+        
+        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+          // Video is in view - play it
+          if (currentPlayingVideo !== postId) {
+            // Pause all other videos first
+            videoRefs.current.forEach((v, id) => {
+              if (v && id !== postId && !v.paused) {
+                v.pause();
+              }
             });
-          };
-          
-          if (video.readyState >= 3) {
-            startPlayback();
-          } else {
-            video.addEventListener('canplaythrough', startPlayback, { once: true });
+            
+            setCurrentPlayingVideo(postId);
+            
+            // Force video to play immediately
+            const playVideo = async () => {
+              try {
+                video.currentTime = 0;
+                video.muted = videoMuteStates.get(postId) ?? false;
+                await video.play();
+              } catch (error) {
+                // Fallback to muted playback
+                video.muted = true;
+                setVideoMuteStates(prev => new Map(prev.set(postId, true)));
+                try {
+                  await video.play();
+                } catch (mutedError) {
+                  console.error(`Failed to play video ${postId}:`, mutedError);
+                }
+              }
+            };
+            
+            // Start playback immediately regardless of ready state
+            playVideo();
           }
-        }
-      }
-      
-      // Pause videos that are completely out of view
-      entries.forEach(entry => {
-        if (entry.intersectionRatio < 0.1) {
-          const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
-          const video = videoRefs.current.get(postId);
-          if (video && currentPlayingVideo === postId) {
+        } else if (entry.intersectionRatio < 0.3) {
+          // Video is out of view - pause it
+          if (currentPlayingVideo === postId && !video.paused) {
             video.pause();
             setCurrentPlayingVideo(null);
           }
@@ -139,8 +141,8 @@ export default function Trends() {
     };
 
     videoObserver.current = new IntersectionObserver(observerCallback, {
-      threshold: [0.1, 0.7],
-      rootMargin: '-50px 0px'
+      threshold: [0.3, 0.5, 0.8],
+      rootMargin: '0px'
     });
 
     return () => {
@@ -148,7 +150,7 @@ export default function Trends() {
         videoObserver.current.disconnect();
       }
     };
-  }, [currentPlayingVideo]);
+  }, [currentPlayingVideo, videoMuteStates]);
 
   // Cleanup effect for component unmount
   useEffect(() => {
@@ -356,7 +358,18 @@ export default function Trends() {
                 muted={videoMuteStates.get(post.id) ?? false}
                 loop
                 playsInline
-                preload="metadata"
+                preload="auto"
+                onLoadedData={() => {
+                  // When video data is loaded, check if it should be playing
+                  const video = videoRefs.current.get(post.id);
+                  if (video && currentPlayingVideo === post.id) {
+                    video.play().catch(() => {
+                      video.muted = true;
+                      setVideoMuteStates(prev => new Map(prev.set(post.id, true)));
+                      video.play().catch(console.error);
+                    });
+                  }
+                }}
                 onClick={(e) => handleVideoClick(post.id, e)}
                 onDoubleClick={(e) => handleVideoDoubleClick(post.id, e)}
                 onTouchStart={(e) => {
@@ -379,18 +392,18 @@ export default function Trends() {
                 }}
               />
               
-              {/* Audio indicator */}
-              <div className="absolute top-4 right-4 z-50">
+              {/* Centered mute button for single tap */}
+              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 p-0"
+                  size="lg"
+                  className="w-16 h-16 rounded-full bg-black/40 text-white hover:bg-black/60 p-0 pointer-events-auto opacity-70 hover:opacity-100 transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleVideoMute(post.id);
                   }}
                 >
-                  {videoMuteStates.get(post.id) ?? false ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  {videoMuteStates.get(post.id) ?? false ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />}
                 </Button>
               </div>
               
