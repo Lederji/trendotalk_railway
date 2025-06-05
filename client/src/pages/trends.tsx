@@ -4,11 +4,18 @@ import { Navigation } from "@/components/layout/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share, Link as LinkIcon, MoreVertical, Volume2, VolumeX } from "lucide-react";
+import { Heart, MessageCircle, Share, Link as LinkIcon, MoreVertical, Volume2, VolumeX, Copy, BookmarkPlus, ThumbsUp, ThumbsDown, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { CommentModal } from "@/components/post/comment-modal";
 import Auth from "@/pages/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 export default function Trends() {
   const { isAuthenticated, user } = useAuth();
@@ -23,6 +30,10 @@ export default function Trends() {
   const tapTimeouts = useRef<Map<number, number>>(new Map());
   const videoObserver = useRef<IntersectionObserver | null>(null);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null);
+  const [shareMenuOpen, setShareMenuOpen] = useState<number | null>(null);
+  const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
+  const [interestedPosts, setInterestedPosts] = useState<Set<number>>(new Set());
+  const [notInterestedPosts, setNotInterestedPosts] = useState<Set<number>>(new Set());
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "videos"],
@@ -251,12 +262,73 @@ export default function Trends() {
       video.muted = newMute;
       setVideoMuteStates(prev => new Map(prev.set(postId, newMute)));
       
-      // Visual feedback for mute toggle
       toast({
         title: newMute ? "Video muted" : "Video unmuted",
         duration: 1000
       });
     }
+  };
+
+  // Share functionality
+  const copyVideoLink = (postId: number) => {
+    const link = `${window.location.origin}/trends?video=${postId}`;
+    navigator.clipboard.writeText(link).then(() => {
+      toast({
+        title: "Link copied to clipboard",
+        duration: 2000
+      });
+    });
+  };
+
+  const shareToCircle = (postId: number) => {
+    window.location.href = `/chats?shareVideo=${postId}`;
+  };
+
+  const shareToExternalApp = (postId: number) => {
+    const link = `${window.location.origin}/trends?video=${postId}`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Check out this video on TrendoTalk',
+        url: link
+      });
+    } else {
+      copyVideoLink(postId);
+    }
+  };
+
+  // Interaction functions
+  const toggleSavePost = (postId: number) => {
+    setSavedPosts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+        toast({ title: "Removed from saved", duration: 1500 });
+      } else {
+        newSet.add(postId);
+        toast({ title: "Saved to collection", duration: 1500 });
+      }
+      return newSet;
+    });
+  };
+
+  const markInterested = (postId: number) => {
+    setInterestedPosts(prev => new Set(prev.add(postId)));
+    setNotInterestedPosts(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(postId);
+      return newSet;
+    });
+    toast({ title: "Marked as interested", duration: 1500 });
+  };
+
+  const markNotInterested = (postId: number) => {
+    setNotInterestedPosts(prev => new Set(prev.add(postId)));
+    setInterestedPosts(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(postId);
+      return newSet;
+    });
+    toast({ title: "Marked as not interested", duration: 1500 });
   };
 
   const followMutation = useMutation({
@@ -323,7 +395,7 @@ export default function Trends() {
       </div>
       
       {/* Video Feed */}
-      <div className="h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide scroll-smooth">
+      <div className="h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide" style={{ scrollBehavior: 'smooth', scrollSnapType: 'y mandatory' }}>
         {isLoading ? (
           <div className="h-screen flex items-center justify-center">
             <div className="text-white">Loading trends...</div>
@@ -339,8 +411,9 @@ export default function Trends() {
           posts.map((post: any, index: number) => (
             <div 
               key={post.id} 
-              className="relative h-[95vh] snap-start overflow-hidden"
+              className="relative h-[100vh] snap-start snap-always overflow-hidden"
               data-post-id={post.id}
+              style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always' }}
               ref={(el) => {
                 if (el && videoObserver.current) {
                   videoObserver.current.observe(el);
@@ -544,15 +617,34 @@ export default function Trends() {
                   </span>
                 </div>
                 
-                {/* Share Button */}
+                {/* Share Button with Dropdown */}
                 <div className="flex flex-col items-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
-                  >
-                    <Share className="w-6 h-6" />
-                  </Button>
+                  <DropdownMenu open={shareMenuOpen === post.id} onOpenChange={(open) => setShareMenuOpen(open ? post.id : null)}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                      >
+                        <Share className="w-6 h-6" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-black/90 border-gray-700 text-white">
+                      <DropdownMenuItem onClick={() => copyVideoLink(post.id)} className="hover:bg-white/10">
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy link
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => shareToCircle(post.id)} className="hover:bg-white/10">
+                        <Users className="w-4 h-4 mr-2" />
+                        Share to Circle
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => shareToExternalApp(post.id)} className="hover:bg-white/10">
+                        <Share className="w-4 h-4 mr-2" />
+                        Share to other apps
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <span className="text-white text-xs font-semibold mt-1">Share</span>
                 </div>
                 
                 {/* Link Button (if link exists) */}
@@ -569,15 +661,39 @@ export default function Trends() {
                   </div>
                 )}
                 
-                {/* More Options */}
+                {/* More Options with Three-Dot Menu */}
                 <div className="flex flex-col items-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
-                  >
-                    <MoreVertical className="w-6 h-6" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                      >
+                        <MoreVertical className="w-6 h-6" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-black/90 border-gray-700 text-white">
+                      <DropdownMenuItem onClick={() => toggleSavePost(post.id)} className="hover:bg-white/10">
+                        <BookmarkPlus className="w-4 h-4 mr-2" />
+                        {savedPosts.has(post.id) ? 'Remove from saved' : 'Save to collection'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-gray-600" />
+                      <DropdownMenuItem onClick={() => markInterested(post.id)} className="hover:bg-white/10">
+                        <ThumbsUp className="w-4 h-4 mr-2" />
+                        Interested
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => markNotInterested(post.id)} className="hover:bg-white/10">
+                        <ThumbsDown className="w-4 h-4 mr-2" />
+                        Not interested
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-gray-600" />
+                      <DropdownMenuItem onClick={() => shareToCircle(post.id)} className="hover:bg-white/10">
+                        <Users className="w-4 h-4 mr-2" />
+                        Add to Circle story
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
               
