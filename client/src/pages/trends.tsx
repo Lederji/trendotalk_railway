@@ -7,15 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, Share, Link as LinkIcon, MoreVertical, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { CommentModal } from "@/components/post/comment-modal";
 import Auth from "@/pages/auth";
 
 export default function Trends() {
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isMuted, setIsMuted] = useState(true);
+  const [videoMuteStates, setVideoMuteStates] = useState<Map<number, boolean>>(new Map());
   const [followingUsers, setFollowingUsers] = useState(new Set<number>());
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
+  const tapTimeouts = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "videos"],
@@ -44,10 +48,56 @@ export default function Trends() {
       if (!response.ok) throw new Error('Failed to like post');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, postId) => {
+      // Update post in cache with new like count
+      queryClient.setQueryData(["/api/posts", "videos"], (oldPosts: any[]) => {
+        if (!oldPosts) return oldPosts;
+        return oldPosts.map(p => 
+          p.id === postId 
+            ? { ...p, likesCount: data.likesCount, isLiked: data.liked }
+            : p
+        );
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     },
   });
+
+  // Video tap handlers
+  const handleVideoTap = (postId: number) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Please login",
+        description: "You need to login to interact with videos",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const timeoutId = tapTimeouts.current.get(postId);
+    if (timeoutId) {
+      // Double tap detected - like the video
+      clearTimeout(timeoutId);
+      tapTimeouts.current.delete(postId);
+      likeMutation.mutate(postId);
+    } else {
+      // Single tap - toggle mute after delay
+      const newTimeoutId = setTimeout(() => {
+        tapTimeouts.current.delete(postId);
+        toggleVideoMute(postId);
+      }, 300);
+      tapTimeouts.current.set(postId, newTimeoutId);
+    }
+  };
+
+  const toggleVideoMute = (postId: number) => {
+    const video = videoRefs.current.get(postId);
+    if (video) {
+      const currentMute = videoMuteStates.get(postId) ?? false;
+      const newMute = !currentMute;
+      video.muted = newMute;
+      setVideoMuteStates(prev => new Map(prev.set(postId, newMute)));
+    }
+  };
 
   const followMutation = useMutation({
     mutationFn: async ({ userId, action }: { userId: number; action: 'follow' | 'unfollow' }) => {
@@ -74,16 +124,9 @@ export default function Trends() {
     },
   });
 
-  const handleVideoTap = (postId: number) => {
-    const video = videoRefs.current.get(postId);
-    if (video) {
-      video.muted = !video.muted;
-      setIsMuted(video.muted);
-    }
-  };
-
-  const handleVideoDoubleTap = (postId: number) => {
-    likeMutation.mutate(postId);
+  const handleComment = (postId: number) => {
+    setSelectedPostId(postId);
+    setCommentModalOpen(true);
   };
 
   const handleFollow = (userId: number) => {
