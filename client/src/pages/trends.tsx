@@ -41,10 +41,10 @@ export default function Trends() {
 
   // Fetch user's following list to maintain persistent follow state
   const { data: followingList = [] } = useQuery({
-    queryKey: ["/api/user/following"],
+    queryKey: ["/api/friends/status"],
     queryFn: async () => {
       if (!isAuthenticated || !user?.id) return [];
-      const response = await fetch(`/api/users/${user.id}/following`, {
+      const response = await fetch(`/api/friends/status`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         }
@@ -270,7 +270,7 @@ export default function Trends() {
       });
       // Invalidate both posts and following list to ensure persistent state
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/following"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/friends/status"] });
     },
   });
 
@@ -326,7 +326,7 @@ export default function Trends() {
           posts.map((post: any, index: number) => (
             <div 
               key={post.id} 
-              className="relative h-[85vh] snap-start overflow-hidden"
+              className="relative h-[95vh] snap-start overflow-hidden"
               data-post-id={post.id}
               ref={(el) => {
                 if (el && videoObserver.current) {
