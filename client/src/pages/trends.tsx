@@ -423,11 +423,7 @@ export default function Trends() {
               className="relative h-[100vh] snap-start snap-always overflow-hidden"
               data-post-id={post.id}
               style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always' }}
-              ref={(el) => {
-                if (el && videoObserver.current) {
-                  videoObserver.current.observe(el);
-                }
-              }}
+
             >
               {/* Video Background with tap controls */}
               <video
