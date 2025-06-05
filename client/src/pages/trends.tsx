@@ -129,6 +129,13 @@ export default function Trends() {
             videoElement.muted = videoMuteStates.get(postId) ?? false;
             videoElement.volume = videoElement.muted ? 0 : 1;
             
+            // For first video, try unmuted autoplay
+            if (videoMuteStates.get(postId) === undefined) {
+              videoElement.muted = false;
+              videoElement.volume = 1;
+              setVideoMuteStates(prev => new Map(prev.set(postId, false)));
+            }
+            
             videoElement
               .play()
               .then(() => {

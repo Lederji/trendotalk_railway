@@ -22,16 +22,8 @@ function Router() {
       <Route path="/trends" component={Trends} />
       <Route path="/create" component={Create} />
       <Route path="/circle" component={Circle} />
-      <Route path="/circle/add-vibe" component={() => {
-        // Navigate to Circle page's vibe section
-        window.location.href = "/circle#vibes";
-        return null;
-      }} />
-      <Route path="/chats" component={() => {
-        // Navigate to Circle page's chat section  
-        window.location.href = "/circle#chats";
-        return null;
-      }} />
+      <Route path="/circle/add-vibe" component={Circle} />
+      <Route path="/chats" component={Circle} />
       <Route path="/chat/:chatId" component={ChatPage} />
       <Route path="/profile/:username?" component={Profile} />
       <Route path="/search" component={SearchPage} />
