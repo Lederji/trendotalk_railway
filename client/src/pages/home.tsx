@@ -24,9 +24,7 @@ const CATEGORIES = [
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
-  const [currentlyPlayingPost, setCurrentlyPlayingPost] = useState<number | null>(null);
-  const videoRefs = useRef<Map<number, HTMLVideoElement[]>>(new Map());
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const { registerVideo, unregisterVideo, observePost, unobservePost } = useVideoAutoplay();
 
   const { data: allPosts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "admin-only"],
