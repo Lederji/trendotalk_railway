@@ -22,6 +22,8 @@ function Router() {
       <Route path="/trends" component={Trends} />
       <Route path="/create" component={Create} />
       <Route path="/circle" component={Circle} />
+      <Route path="/circle/add-vibe" component={NotFound} />
+      <Route path="/chats" component={NotFound} />
       <Route path="/chat/:chatId" component={ChatPage} />
       <Route path="/profile/:username?" component={Profile} />
       <Route path="/search" component={SearchPage} />
