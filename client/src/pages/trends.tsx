@@ -100,67 +100,73 @@ export default function Trends() {
     },
   });
 
-  // Robust video autoplay with immediate playback
+  // Enhanced video autoplay with proper audio switching
   useEffect(() => {
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
+      // Find the most visible video
+      const visibleEntries = entries.filter(entry => entry.isIntersecting && entry.intersectionRatio > 0.6);
+      
+      if (visibleEntries.length > 0) {
+        // Sort by intersection ratio to get the most visible
+        const mostVisible = visibleEntries.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        const postId = parseInt(mostVisible.target.getAttribute('data-post-id') || '0');
         const video = videoRefs.current.get(postId);
         
-        if (!video) return;
-        
-        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-          // Video is in view - start playing immediately
-          if (currentPlayingVideo !== postId) {
-            // Stop all other videos
-            videoRefs.current.forEach((v, id) => {
-              if (v && id !== postId) {
-                v.pause();
-                v.currentTime = 0;
-              }
-            });
-            
-            setCurrentPlayingVideo(postId);
-            
-            // Immediate video playback
-            const startVideo = () => {
+        if (video && currentPlayingVideo !== postId) {
+          // Immediately stop ALL other videos first
+          videoRefs.current.forEach((v, id) => {
+            if (v && id !== postId) {
+              v.pause();
+              v.currentTime = 0;
+              v.muted = true; // Ensure no audio leakage
+            }
+          });
+          
+          setCurrentPlayingVideo(postId);
+          
+          // Start the new video
+          const playNewVideo = async () => {
+            try {
               video.currentTime = 0;
               video.muted = videoMuteStates.get(postId) ?? false;
-              
-              // Force play with user interaction simulation
-              video.play().catch(() => {
-                // If unmuted fails, try muted
-                video.muted = true;
-                setVideoMuteStates(prev => new Map(prev.set(postId, true)));
-                video.play().catch(() => {
-                  // Force play on next tick
-                  requestAnimationFrame(() => {
-                    video.play().catch(console.error);
-                  });
-                });
-              });
-            };
-            
-            // Start immediately
-            startVideo();
-            
-            // Also ensure it plays when ready
-            if (video.readyState < 2) {
-              video.addEventListener('loadeddata', startVideo, { once: true });
+              await video.play();
+            } catch (error) {
+              // Fallback to muted playback
+              video.muted = true;
+              setVideoMuteStates(prev => new Map(prev.set(postId, true)));
+              try {
+                await video.play();
+              } catch (mutedError) {
+                // Force play after brief delay
+                setTimeout(() => {
+                  video.play().catch(console.error);
+                }, 200);
+              }
             }
-          }
-        } else if (entry.intersectionRatio < 0.3) {
-          // Video out of view
-          if (currentPlayingVideo === postId) {
+          };
+          
+          playNewVideo();
+        }
+      }
+      
+      // Pause videos that are completely out of view
+      entries.forEach(entry => {
+        if (entry.intersectionRatio < 0.1) {
+          const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
+          const video = videoRefs.current.get(postId);
+          if (video) {
             video.pause();
-            setCurrentPlayingVideo(null);
+            video.muted = true;
+            if (currentPlayingVideo === postId) {
+              setCurrentPlayingVideo(null);
+            }
           }
         }
       });
     };
 
     videoObserver.current = new IntersectionObserver(observerCallback, {
-      threshold: [0.3, 0.5, 0.8],
+      threshold: [0.1, 0.6, 0.9],
       rootMargin: '0px'
     });
 
@@ -638,6 +644,10 @@ export default function Trends() {
                         <Users className="w-4 h-4 mr-2" />
                         Share to Circle
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => shareToCircle(post.id)} className="hover:bg-white/10">
+                        <Users className="w-4 h-4 mr-2" />
+                        Add to Circle story
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => shareToExternalApp(post.id)} className="hover:bg-white/10">
                         <Share className="w-4 h-4 mr-2" />
                         Share to other apps
@@ -686,11 +696,6 @@ export default function Trends() {
                       <DropdownMenuItem onClick={() => markNotInterested(post.id)} className="hover:bg-white/10">
                         <ThumbsDown className="w-4 h-4 mr-2" />
                         Not interested
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-gray-600" />
-                      <DropdownMenuItem onClick={() => shareToCircle(post.id)} className="hover:bg-white/10">
-                        <Users className="w-4 h-4 mr-2" />
-                        Add to Circle story
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
