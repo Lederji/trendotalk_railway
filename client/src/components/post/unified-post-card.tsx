@@ -51,6 +51,21 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
   const [editModalOpen, setEditModalOpen] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const singleVideoRef = useRef<HTMLVideoElement | null>(null);
+  
+  // Collect video elements for autoplay system
+  const collectVideoRefs = () => {
+    const videos: HTMLVideoElement[] = [];
+    if (isAdminVideoPost) {
+      videoRefs.current.forEach(video => {
+        if (video) videos.push(video);
+      });
+    } else if (singleVideoRef.current) {
+      videos.push(singleVideoRef.current);
+    }
+    if (videos.length > 0 && onVideoRefsReady) {
+      onVideoRefsReady(post.id, videos);
+    }
+  };
 
   // Determine if this is an admin video post or regular post
   const isAdminVideoPost = post.isAdminPost && (post.video1Url || post.video2Url || post.video3Url);
@@ -275,7 +290,13 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
                 {adminVideos.map((videoUrl, index) => (
                   <div key={`video-${post.id}-${index}`} className="relative h-full overflow-hidden">
                     <video
-                      ref={(el) => (videoRefs.current[index] = el)}
+                      ref={(el) => {
+                        videoRefs.current[index] = el;
+                        if (el) {
+                          // Collect video refs when mounted
+                          setTimeout(collectVideoRefs, 100);
+                        }
+                      }}
                       src={videoUrl || ""}
                       className="w-full h-full object-cover cursor-pointer"
                       loop
@@ -461,7 +482,13 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
               {post.videoUrl ? (
                 <div className="relative h-full overflow-hidden">
                   <video
-                    ref={singleVideoRef}
+                    ref={(el) => {
+                      singleVideoRef.current = el;
+                      if (el) {
+                        // Collect video refs when mounted
+                        setTimeout(collectVideoRefs, 100);
+                      }
+                    }}
                     src={post.videoUrl}
                     className="w-full h-full object-cover cursor-pointer"
                     loop

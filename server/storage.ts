@@ -1,5 +1,5 @@
 import { 
-  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages,
+  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications,
   type User, type InsertUser, type Post, type InsertPost, 
   type Comment, type InsertComment, type Like, type Dislike, type Vote, type Story, 
   type InsertStory, type Follow, type PostWithUser, type StoryWithUser, type UserProfile 
