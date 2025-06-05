@@ -88,62 +88,72 @@ export default function Trends() {
     },
   });
 
-  // Setup intersection observer for video autoplay with optimized performance
+  // Robust intersection observer for video autoplay
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-    
     videoObserver.current = new IntersectionObserver(
       (entries) => {
-        // Debounce observer callbacks for better performance
-        if (timeoutId) clearTimeout(timeoutId);
-        
-        timeoutId = setTimeout(() => {
-          entries.forEach((entry) => {
-            const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
-            const video = videoRefs.current.get(postId);
-            
-            if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
-              // Video is clearly visible - play it immediately
-              if (video && currentPlayingVideo !== postId) {
-                // Pause all other videos first
-                videoRefs.current.forEach((v, id) => {
-                  if (v && id !== postId) {
-                    v.pause();
-                  }
-                });
-                
-                setCurrentPlayingVideo(postId);
-                video.currentTime = 0; // Start from beginning
-                video.play().catch(() => {
-                  // If autoplay fails, try with muted first
-                  video.muted = true;
-                  video.play().catch(console.error);
-                });
-              }
-            } else if (entry.intersectionRatio < 0.2) {
-              // Video is mostly out of view - pause it
-              if (video && currentPlayingVideo === postId) {
-                video.pause();
-                setCurrentPlayingVideo(null);
+        entries.forEach((entry) => {
+          const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
+          const video = videoRefs.current.get(postId);
+          
+          if (!video) return;
+          
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            // Video is visible - play it and pause others
+            if (currentPlayingVideo !== postId) {
+              // Pause all other videos immediately
+              videoRefs.current.forEach((v, id) => {
+                if (v && id !== postId && !v.paused) {
+                  v.pause();
+                  v.currentTime = 0;
+                }
+              });
+              
+              setCurrentPlayingVideo(postId);
+              
+              // Ensure video is ready and play
+              if (video.readyState >= 2) {
+                video.currentTime = 0;
+                const playPromise = video.play();
+                if (playPromise) {
+                  playPromise.catch(() => {
+                    // Fallback: try muted autoplay
+                    video.muted = true;
+                    video.play().catch(console.error);
+                  });
+                }
+              } else {
+                // Wait for video to load
+                const onCanPlay = () => {
+                  video.currentTime = 0;
+                  video.play().catch(() => {
+                    video.muted = true;
+                    video.play().catch(console.error);
+                  });
+                  video.removeEventListener('canplay', onCanPlay);
+                };
+                video.addEventListener('canplay', onCanPlay);
               }
             }
-          });
-        }, 100); // Debounce by 100ms
+          } else if (entry.intersectionRatio < 0.3) {
+            // Video is out of view - pause it
+            if (currentPlayingVideo === postId && !video.paused) {
+              video.pause();
+              setCurrentPlayingVideo(null);
+            }
+          }
+        });
       },
       {
-        threshold: [0.2, 0.7],
-        rootMargin: '-10px'
+        threshold: [0.3, 0.5, 0.8],
+        rootMargin: '0px'
       }
     );
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
       if (videoObserver.current) {
         videoObserver.current.disconnect();
       }
-      // Clean up video refs and timeouts
-      tapTimeouts.current.forEach(timeout => clearTimeout(timeout));
-      tapTimeouts.current.clear();
     };
   }, [currentPlayingVideo]);
 
@@ -163,8 +173,8 @@ export default function Trends() {
     };
   }, []);
 
-  // Mobile-optimized tap detection system
-  const handleVideoTap = (postId: number, event: React.MouseEvent | React.TouchEvent) => {
+  // Simple and reliable tap detection for mobile
+  const handleVideoClick = (postId: number, event: React.MouseEvent) => {
     if (!isAuthenticated) {
       toast({
         title: "Please login",
@@ -177,58 +187,57 @@ export default function Trends() {
     event.preventDefault();
     event.stopPropagation();
 
-    const now = Date.now();
-    const lastTapTime = tapTimeouts.current.get(postId) || 0;
-    const timeDiff = now - lastTapTime;
-    
-    if (timeDiff < 400 && timeDiff > 50) {
-      // Double tap detected - like the video
-      tapTimeouts.current.delete(postId);
-      likeMutation.mutate(postId);
-      
-      // Visual feedback for double tap with heart animation
-      const target = event.currentTarget as HTMLElement;
-      const heart = document.createElement('div');
-      heart.innerHTML = '❤️';
-      heart.style.cssText = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 60px;
-        pointer-events: none;
-        z-index: 1000;
-        animation: heartPop 0.6s ease-out forwards;
-      `;
-      
-      // Add keyframe animation
-      if (!document.querySelector('#heartAnimation')) {
-        const style = document.createElement('style');
-        style.id = 'heartAnimation';
-        style.textContent = `
-          @keyframes heartPop {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-          }
-        `;
-        document.head.appendChild(style);
-      }
-      
-      target.appendChild(heart);
-      setTimeout(() => heart.remove(), 600);
-      
-    } else if (timeDiff > 400) {
-      // Single tap - start timer for mute toggle
-      tapTimeouts.current.set(postId, now);
-      setTimeout(() => {
-        const currentTime = tapTimeouts.current.get(postId);
-        if (currentTime === now) {
-          // Single tap confirmed - toggle mute
-          toggleVideoMute(postId);
-        }
-      }, 400);
+    // Always toggle mute on single click
+    toggleVideoMute(postId);
+  };
+
+  const handleVideoDoubleClick = (postId: number, event: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Please login", 
+        description: "You need to login to interact with videos",
+        variant: "destructive"
+      });
+      return;
     }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Like the video on double click
+    likeMutation.mutate(postId);
+    
+    // Visual feedback for double tap
+    const target = event.currentTarget as HTMLElement;
+    const heart = document.createElement('div');
+    heart.innerHTML = '❤️';
+    heart.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 60px;
+      pointer-events: none;
+      z-index: 1000;
+      animation: heartPop 0.6s ease-out forwards;
+    `;
+    
+    // Add keyframe animation if not exists
+    if (!document.querySelector('#heartAnimation')) {
+      const style = document.createElement('style');
+      style.id = 'heartAnimation';
+      style.textContent = `
+        @keyframes heartPop {
+          0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+          50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    target.appendChild(heart);
+    setTimeout(() => heart.remove(), 600);
   };
 
   const toggleVideoMute = (postId: number) => {
@@ -344,6 +353,10 @@ export default function Trends() {
                       el.muted = false;
                       setVideoMuteStates(prev => new Map(prev.set(post.id, false)));
                     }
+                    // Ensure video loads properly
+                    el.load();
+                  } else {
+                    videoRefs.current.delete(post.id);
                   }
                 }}
                 src={post.videoUrl}
@@ -352,8 +365,8 @@ export default function Trends() {
                 loop
                 playsInline
                 preload="metadata"
-                onClick={(e) => handleVideoTap(post.id, e)}
-                onTouchEnd={(e) => handleVideoTap(post.id, e)}
+                onClick={(e) => handleVideoClick(post.id, e)}
+                onDoubleClick={(e) => handleVideoDoubleClick(post.id, e)}
               />
               
               {/* Audio indicator */}
