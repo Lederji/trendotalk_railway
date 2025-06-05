@@ -1,0 +1,112 @@
+This issue is common when implementing a vertical scroll of video reels (like Instagram or TikTok). The problem occurs because:
+
+The previously playing video is not paused.
+
+The newly visible reel video is not autoplaying automatically.
+
+You have to interact manually with the page (click Like/Share) to trigger the next video's play, likely due to browser autoplay policy or missing logic on scroll detection.
+
+
+
+---
+
+✅ Your Goal:
+
+When the user scrolls to a new reel:
+
+✅ Pause the previous video.
+
+✅ Autoplay the current video without requiring manual interaction.
+
+✅ Ensure only one video plays at a time.
+
+
+
+
+---
+
+✅ Solution
+
+Here’s how to fix it in vanilla JavaScript (React version below too):
+
+HTML Example:
+
+<div class="reel">
+  <video src="video1.mp4" muted loop playsinline></video>
+</div>
+<div class="reel">
+  <video src="video2.mp4" muted loop playsinline></video>
+</div>
+<!-- Add as many reels as you want -->
+
+JavaScript Fix (Vanilla JS):
+
+const videos = document.querySelectorAll('.reel video');
+
+function handleScroll() {
+  videos.forEach((video) => {
+    const rect = video.getBoundingClientRect();
+    const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+
+    if (isVisible) {
+      video.play();
+    } else {
+      video.pause();
+    }
+  });
+}
+
+window.addEventListener('scroll', handleScroll);
+window.addEventListener('load', handleScroll); // Trigger on page load
+
+
+---
+
+✅ React Version (if you're using React):
+
+import { useEffect } from "react";
+
+const useAutoPauseVideos = () => {
+  useEffect(() => {
+    const videos = document.querySelectorAll("video");
+
+    const handleScroll = () => {
+      videos.forEach((video) => {
+        const rect = video.getBoundingClientRect();
+        const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+
+        if (isVisible) {
+          video.play().catch(() => {}); // avoid autoplay error
+        } else {
+          video.pause();
+        }
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("load", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("load", handleScroll);
+    };
+  }, []);
+};
+
+export default useAutoPauseVideos;
+
+Then call useAutoPauseVideos() in your Reels page component.
+
+
+---
+
+⚠ Also Important:
+
+Make sure videos have muted and playsinline attributes. Most browsers only autoplay muted videos.
+
+If you use frameworks like Swiper or IntersectionObserver for smoother reel detection, let me know — I can optimize it further.
+
+
+
+---
+
+Would you like me to rewrite your actual code if you paste your reels.html or React component here?

@@ -28,7 +28,7 @@ export default function Trends() {
   const [currentPlayingVideo, setCurrentPlayingVideo] = useState<number | null>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const tapTimeouts = useRef<Map<number, number>>(new Map());
-  const videoObserver = useRef<IntersectionObserver | null>(null);
+
   const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null);
   const [shareMenuOpen, setShareMenuOpen] = useState<number | null>(null);
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
@@ -100,115 +100,79 @@ export default function Trends() {
     },
   });
 
-  // Scroll-triggered video autoplay with forced interaction compliance
+  // Simple scroll-based video autoplay (ChatGPT solution)
   useEffect(() => {
-    let isFirstInteraction = true;
-    
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      // Find the most visible video
-      let bestVideo: { id: number; ratio: number } | null = null;
-      
-      entries.forEach((entry) => {
-        const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
-        const video = videoRefs.current.get(postId);
-        
+    const handleScroll = () => {
+      videoRefs.current.forEach((video, postId) => {
         if (!video) return;
         
-        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-          if (!bestVideo || entry.intersectionRatio > bestVideo.ratio) {
-            bestVideo = { id: postId, ratio: entry.intersectionRatio };
-          }
-        }
+        const rect = video.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
         
-        // Force pause videos that are clearly out of view
-        if (entry.intersectionRatio < 0.3) {
-          video.pause();
-          video.volume = 0;
-          video.muted = true;
-        }
-      });
-      
-      // Switch to the best video if it's different
-      if (bestVideo && bestVideo.id !== currentPlayingVideo) {
-        console.log(`Auto-switching to video ${bestVideo.id} (${(bestVideo.ratio * 100).toFixed(1)}% visible)`);
-        
-        // Stop all other videos immediately
-        videoRefs.current.forEach((v, id) => {
-          if (id !== bestVideo!.id) {
-            v.pause();
-            v.currentTime = 0;
-            v.volume = 0;
-            v.muted = true;
-          }
-        });
-        
-        setCurrentPlayingVideo(bestVideo.id);
-        
-        // Auto-start the new video
-        const targetVideo = videoRefs.current.get(bestVideo.id);
-        if (targetVideo) {
-          const autoPlayVideo = async () => {
-            targetVideo.currentTime = 0;
-            targetVideo.muted = videoMuteStates.get(bestVideo!.id) ?? false;
-            targetVideo.volume = targetVideo.muted ? 0 : 1;
-            
+        // Check if video is visible in viewport (at least 60% visible)
+        const isVisible = rect.top >= -rect.height * 0.4 && 
+                         rect.bottom <= windowHeight + rect.height * 0.4 &&
+                         rect.top < windowHeight * 0.8 && 
+                         rect.bottom > windowHeight * 0.2;
+
+        if (isVisible && currentPlayingVideo !== postId) {
+          // Pause all other videos first
+          videoRefs.current.forEach((v, id) => {
+            if (id !== postId && v) {
+              v.pause();
+              v.volume = 0;
+              v.muted = true;
+            }
+          });
+          
+          // Set new playing video
+          setCurrentPlayingVideo(postId);
+          
+          // Start the visible video
+          const startVideo = async () => {
             try {
-              // Force unmuted autoplay for scroll-triggered videos
-              if (isFirstInteraction) {
-                // First video can be unmuted if user has interacted with page
-                targetVideo.muted = false;
-                targetVideo.volume = 1;
-                isFirstInteraction = false;
-              }
+              video.currentTime = 0;
+              video.muted = videoMuteStates.get(postId) ?? false;
+              video.volume = video.muted ? 0 : 1;
               
-              await targetVideo.play();
-              console.log(`Auto-started video ${bestVideo!.id} ${targetVideo.muted ? '(muted)' : '(with sound)'}`);
+              await video.play();
+              console.log(`Scroll-triggered video ${postId} ${video.muted ? '(muted)' : '(with sound)'}`);
             } catch (error) {
               // Fallback to muted autoplay
-              console.log(`Auto-play blocked, trying muted for video ${bestVideo!.id}`);
-              targetVideo.muted = true;
-              targetVideo.volume = 0;
-              setVideoMuteStates(prev => new Map(prev.set(bestVideo!.id, true)));
-              
+              video.muted = true;
+              video.volume = 0;
+              setVideoMuteStates(prev => new Map(prev.set(postId, true)));
               try {
-                await targetVideo.play();
-                console.log(`Successfully auto-started video ${bestVideo!.id} (muted)`);
+                await video.play();
+                console.log(`Scroll-triggered video ${postId} (muted fallback)`);
               } catch (retryError) {
-                // Final fallback with user interaction simulation
-                setTimeout(async () => {
-                  try {
-                    await targetVideo.play();
-                  } catch (finalError) {
-                    console.log(`Failed to auto-start video ${bestVideo!.id}:`, finalError);
-                  }
-                }, 100);
+                console.log(`Failed to autoplay video ${postId}:`, retryError);
               }
             }
           };
           
-          autoPlayVideo();
+          startVideo();
+        } else if (!isVisible && currentPlayingVideo === postId) {
+          // Pause video that's out of view
+          video.pause();
+          video.volume = 0;
+          video.muted = true;
+          console.log(`Paused video ${postId} - out of view`);
+          setCurrentPlayingVideo(null);
         }
-      } else if (!bestVideo && currentPlayingVideo) {
-        // No video is visible enough - stop current
-        console.log(`No video visible enough, stopping video ${currentPlayingVideo}`);
-        videoRefs.current.forEach((v) => {
-          v.pause();
-          v.volume = 0;
-          v.muted = true;
-        });
-        setCurrentPlayingVideo(null);
-      }
+      });
     };
 
-    videoObserver.current = new IntersectionObserver(observerCallback, {
-      threshold: [0.3, 0.5, 0.7, 0.9],
-      rootMargin: '-50px 0px -50px 0px' // Require video to be more centered
-    });
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('load', handleScroll);
+    
+    // Trigger on mount
+    handleScroll();
 
     return () => {
-      if (videoObserver.current) {
-        videoObserver.current.disconnect();
-      }
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('load', handleScroll);
     };
   }, [currentPlayingVideo, videoMuteStates]);
 
