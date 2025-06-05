@@ -163,8 +163,8 @@ export default function Trends() {
     };
   }, []);
 
-  // Simplified and reliable tap detection system
-  const handleVideoTap = (postId: number, event: React.MouseEvent) => {
+  // Mobile-optimized tap detection system
+  const handleVideoTap = (postId: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isAuthenticated) {
       toast({
         title: "Please login",
@@ -178,22 +178,56 @@ export default function Trends() {
     event.stopPropagation();
 
     const now = Date.now();
-    const lastTap = tapTimeouts.current.get(postId) || 0;
+    const lastTapTime = tapTimeouts.current.get(postId) || 0;
+    const timeDiff = now - lastTapTime;
     
-    if (now - lastTap < 300) {
+    if (timeDiff < 400 && timeDiff > 50) {
       // Double tap detected - like the video
       tapTimeouts.current.delete(postId);
       likeMutation.mutate(postId);
       
-      // Visual feedback for double tap
-      toast({
-        title: "❤️ Liked!",
-        duration: 1000
-      });
-    } else {
-      // Single tap - toggle mute immediately
-      toggleVideoMute(postId);
+      // Visual feedback for double tap with heart animation
+      const target = event.currentTarget as HTMLElement;
+      const heart = document.createElement('div');
+      heart.innerHTML = '❤️';
+      heart.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 60px;
+        pointer-events: none;
+        z-index: 1000;
+        animation: heartPop 0.6s ease-out forwards;
+      `;
+      
+      // Add keyframe animation
+      if (!document.querySelector('#heartAnimation')) {
+        const style = document.createElement('style');
+        style.id = 'heartAnimation';
+        style.textContent = `
+          @keyframes heartPop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      
+      target.appendChild(heart);
+      setTimeout(() => heart.remove(), 600);
+      
+    } else if (timeDiff > 400) {
+      // Single tap - start timer for mute toggle
       tapTimeouts.current.set(postId, now);
+      setTimeout(() => {
+        const currentTime = tapTimeouts.current.get(postId);
+        if (currentTime === now) {
+          // Single tap confirmed - toggle mute
+          toggleVideoMute(postId);
+        }
+      }, 400);
     }
   };
 
@@ -292,7 +326,7 @@ export default function Trends() {
           posts.map((post: any, index: number) => (
             <div 
               key={post.id} 
-              className="relative h-screen snap-start overflow-hidden"
+              className="relative h-[85vh] snap-start overflow-hidden"
               data-post-id={post.id}
               ref={(el) => {
                 if (el && videoObserver.current) {
@@ -319,6 +353,7 @@ export default function Trends() {
                 playsInline
                 preload="metadata"
                 onClick={(e) => handleVideoTap(post.id, e)}
+                onTouchEnd={(e) => handleVideoTap(post.id, e)}
               />
               
               {/* Audio indicator */}
@@ -415,7 +450,7 @@ export default function Trends() {
               </div>
               
               {/* Bottom Content */}
-              <div className="absolute bottom-4 left-4 right-20">
+              <div className="absolute bottom-8 left-4 right-20">
                 {/* Username, Avatar and Follow Button */}
                 <div className="flex items-center space-x-3 mb-3">
                   <Avatar className="w-8 h-8 ring-2 ring-white">
