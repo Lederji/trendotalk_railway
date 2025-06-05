@@ -11,6 +11,7 @@ export function useVideoAutoplay(): VideoAutoplayHook {
   const videoRefs = useRef<Map<number, HTMLVideoElement[]>>(new Map());
   const observerRef = useRef<IntersectionObserver | null>(null);
   const currentPlayingPost = useRef<number | null>(null);
+  const userUnmutedGlobal = useRef<boolean>(false); // Persistent unmute state
 
   const pauseAllVideos = useCallback(() => {
     videoRefs.current.forEach((videos) => {
@@ -27,7 +28,17 @@ export function useVideoAutoplay(): VideoAutoplayHook {
     if (videos) {
       videos.forEach(video => {
         if (video && video.paused) {
+          video.muted = !userUnmutedGlobal.current; // Use global unmute state
           video.play().catch(console.error);
+          
+          // Add click handler to toggle mute and persist state
+          const handleVideoClick = () => {
+            video.muted = !video.muted;
+            userUnmutedGlobal.current = !video.muted;
+          };
+          
+          video.removeEventListener('click', handleVideoClick);
+          video.addEventListener('click', handleVideoClick);
         }
       });
     }

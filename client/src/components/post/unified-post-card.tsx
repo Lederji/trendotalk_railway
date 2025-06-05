@@ -39,9 +39,10 @@ interface UnifiedPostCardProps {
     username: string;
     isAdmin: boolean;
   } | null;
+  onVideoRefsReady?: (postId: number, videos: HTMLVideoElement[]) => void;
 }
 
-export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
+export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: UnifiedPostCardProps) {
   const [expandedContent, setExpandedContent] = useState(false);
   const [activeVideo, setActiveVideo] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);

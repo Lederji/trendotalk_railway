@@ -149,11 +149,23 @@ export default function Home() {
         ) : (
           <div className="space-y-6">
             {filteredPosts.map((post: any) => (
-              <UnifiedPostCard 
-                key={post.id} 
-                post={post} 
-                currentUser={user}
-              />
+              <div 
+                key={post.id}
+                ref={(element) => {
+                  if (element) {
+                    observePost(post.id, element);
+                  }
+                }}
+                data-post-id={post.id}
+              >
+                <UnifiedPostCard 
+                  post={post} 
+                  currentUser={user}
+                  onVideoRefsReady={(postId, videos) => {
+                    videos.forEach(video => registerVideo(postId, video));
+                  }}
+                />
+              </div>
             ))}
           </div>
         )}

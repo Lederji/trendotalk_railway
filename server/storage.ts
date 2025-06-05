@@ -1949,7 +1949,7 @@ export class DatabaseStorage implements IStorage {
 
   async createNotification(userId: number, type: string, message: string, fromUserId?: number, postId?: number): Promise<void> {
     try {
-      await db.insert(notificationsTable).values({
+      await db.insert(notifications).values({
         userId: userId,
         type: type,
         message: message,
@@ -1989,6 +1989,200 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error marking notification as read:', error);
       return false;
+    }
+  }
+
+  // Admin methods implementation
+  async getAllUsers(): Promise<User[]> {
+    const allUsers = await db.select().from(users);
+    return allUsers;
+  }
+
+  async getAllPosts(): Promise<Post[]> {
+    const allPosts = await db.select().from(posts);
+    return allPosts;
+  }
+
+  async getAllPostsForAdmin(): Promise<PostWithUser[]> {
+    const postsWithUsers = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          avatar: users.avatar,
+          isAdmin: users.isAdmin,
+        },
+      })
+      .from(posts)
+      .innerJoin(users, eq(posts.userId, users.id))
+      .orderBy(desc(posts.createdAt));
+
+    return postsWithUsers.map(row => ({
+      ...row.post,
+      content: row.post.caption || row.post.title || '',
+      user: row.user,
+    }));
+  }
+
+  async banUser(userId: number, reason: string): Promise<boolean> {
+    try {
+      await db
+        .update(users)
+        .set({ isBanned: true, banReason: reason })
+        .where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error('Error banning user:', error);
+      return false;
+    }
+  }
+
+  async unbanUser(userId: number): Promise<boolean> {
+    try {
+      await db
+        .update(users)
+        .set({ isBanned: false, banReason: null })
+        .where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error('Error unbanning user:', error);
+      return false;
+    }
+  }
+
+  async verifyUser(userId: number): Promise<boolean> {
+    try {
+      await db
+        .update(users)
+        .set({ isVerified: true })
+        .where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error('Error verifying user:', error);
+      return false;
+    }
+  }
+
+  async deleteUser(userId: number): Promise<boolean> {
+    try {
+      await db.delete(posts).where(eq(posts.userId, userId));
+      await db.delete(comments).where(eq(comments.userId, userId));
+      await db.delete(likes).where(eq(likes.userId, userId));
+      await db.delete(follows).where(
+        or(eq(follows.followerId, userId), eq(follows.followingId, userId))
+      );
+      await db.delete(users).where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
+  }
+
+  async adminDeletePost(postId: number): Promise<boolean> {
+    try {
+      await db.delete(comments).where(eq(comments.postId, postId));
+      await db.delete(likes).where(eq(likes.postId, postId));
+      await db.delete(posts).where(eq(posts.id, postId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      return false;
+    }
+  }
+
+  async sendAdminMessage(userId: number, message: string, fromAdminId: number): Promise<boolean> {
+    try {
+      await this.createNotification(userId, 'admin_message', message, fromAdminId);
+      return true;
+    } catch (error) {
+      console.error('Error sending admin message:', error);
+      return false;
+    }
+  }
+
+  async sendBroadcastNotification(message: string, userIds?: number[]): Promise<boolean> {
+    try {
+      if (userIds && userIds.length > 0) {
+        for (const userId of userIds) {
+          await this.createNotification(userId, 'admin_broadcast', message);
+        }
+      } else {
+        const allUsers = await this.getAllUsers();
+        for (const user of allUsers) {
+          await this.createNotification(user.id, 'admin_broadcast', message);
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error('Error sending broadcast notification:', error);
+      return false;
+    }
+  }
+
+  async getUserActivityLogs(userId: number): Promise<any[]> {
+    try {
+      const userPosts = await this.getUserPosts(userId);
+      const userComments = await db
+        .select()
+        .from(comments)
+        .where(eq(comments.userId, userId))
+        .orderBy(desc(comments.createdAt));
+      
+      const activities = [
+        ...userPosts.map(post => ({
+          type: 'post',
+          action: 'created post',
+          details: post.title || post.caption,
+          timestamp: post.createdAt
+        })),
+        ...userComments.map(comment => ({
+          type: 'comment',
+          action: 'posted comment',
+          details: comment.content,
+          timestamp: comment.createdAt
+        }))
+      ];
+      
+      return activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } catch (error) {
+      console.error('Error getting user activity logs:', error);
+      return [];
+    }
+  }
+
+  async updateAppSettings(settings: any): Promise<boolean> {
+    try {
+      console.log('App settings updated:', settings);
+      return true;
+    } catch (error) {
+      console.error('Error updating app settings:', error);
+      return false;
+    }
+  }
+
+  async getReportedContent(): Promise<any[]> {
+    try {
+      return [];
+    } catch (error) {
+      console.error('Error getting reported content:', error);
+      return [];
+    }
+  }
+
+  async updatePost(id: number, userId: number, updates: Partial<Post>): Promise<Post | undefined> {
+    try {
+      const [updatedPost] = await db
+        .update(posts)
+        .set(updates)
+        .where(and(eq(posts.id, id), eq(posts.userId, userId)))
+        .returning();
+      
+      return updatedPost;
+    } catch (error) {
+      console.error('Error updating post:', error);
+      return undefined;
     }
   }
 
