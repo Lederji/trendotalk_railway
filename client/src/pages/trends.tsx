@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigation } from "@/components/layout/navigation";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,8 +18,10 @@ export default function Trends() {
   const [followingUsers, setFollowingUsers] = useState(new Set<number>());
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [currentPlayingVideo, setCurrentPlayingVideo] = useState<number | null>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const tapTimeouts = useRef<Map<number, NodeJS.Timeout>>(new Map());
+  const videoObserver = useRef<IntersectionObserver | null>(null);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "videos"],
@@ -61,6 +63,51 @@ export default function Trends() {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     },
   });
+
+  // Setup intersection observer for video autoplay
+  useEffect(() => {
+    videoObserver.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
+          const video = videoRefs.current.get(postId);
+          
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            // Video is mostly visible - play it
+            if (video && currentPlayingVideo !== postId) {
+              // Pause all other videos first
+              videoRefs.current.forEach((v, id) => {
+                if (v && id !== postId) {
+                  v.pause();
+                  v.currentTime = 0; // Reset to start
+                }
+              });
+              
+              setCurrentPlayingVideo(postId);
+              video.currentTime = 0; // Start from beginning
+              video.play().catch(console.error);
+            }
+          } else if (entry.intersectionRatio < 0.3 && currentPlayingVideo === postId) {
+            // Video is mostly out of view - pause it
+            if (video) {
+              video.pause();
+              setCurrentPlayingVideo(null);
+            }
+          }
+        });
+      },
+      {
+        threshold: [0.3, 0.6],
+        rootMargin: '-20px'
+      }
+    );
+
+    return () => {
+      if (videoObserver.current) {
+        videoObserver.current.disconnect();
+      }
+    };
+  }, [currentPlayingVideo]);
 
   // Video tap handlers
   const handleVideoTap = (postId: number) => {
@@ -135,6 +182,17 @@ export default function Trends() {
       userId,
       action: isFollowing ? 'unfollow' : 'follow'
     });
+    
+    // Update local state immediately for better UX
+    setFollowingUsers(prev => {
+      const newSet = new Set(prev);
+      if (isFollowing) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
   };
 
   if (!isAuthenticated) {
@@ -163,18 +221,34 @@ export default function Trends() {
           </div>
         ) : (
           posts.map((post: any, index: number) => (
-            <div key={post.id} className="relative h-screen snap-start overflow-hidden">
+            <div 
+              key={post.id} 
+              className="relative h-screen snap-start overflow-hidden"
+              data-post-id={post.id}
+              ref={(el) => {
+                if (el && videoObserver.current) {
+                  videoObserver.current.observe(el);
+                }
+              }}
+            >
               {/* Video Background with tap controls */}
               <video
                 ref={(el) => {
-                  if (el) videoRefs.current.set(post.id, el);
+                  if (el) {
+                    videoRefs.current.set(post.id, el);
+                    // Set initial mute state to false (unmuted) for trends section
+                    if (!videoMuteStates.has(post.id)) {
+                      el.muted = false;
+                      setVideoMuteStates(prev => new Map(prev.set(post.id, false)));
+                    }
+                  }
                 }}
                 src={post.videoUrl}
                 className="absolute inset-0 w-full h-full object-cover cursor-pointer"
-                autoPlay
                 muted={videoMuteStates.get(post.id) ?? false}
                 loop
                 playsInline
+                preload="metadata"
                 onClick={() => handleVideoTap(post.id)}
               />
               
@@ -219,6 +293,7 @@ export default function Trends() {
                     variant="ghost"
                     size="sm"
                     className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
+                    onClick={() => handleComment(post.id)}
                   >
                     <MessageCircle className="w-7 h-7" />
                   </Button>
