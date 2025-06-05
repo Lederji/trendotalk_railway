@@ -172,11 +172,10 @@ export default function Trends() {
                 src={post.videoUrl}
                 className="absolute inset-0 w-full h-full object-cover cursor-pointer"
                 autoPlay
-                muted={isMuted}
+                muted={videoMuteStates.get(post.id) ?? false}
                 loop
                 playsInline
                 onClick={() => handleVideoTap(post.id)}
-                onDoubleClick={() => handleVideoDoubleTap(post.id)}
               />
               
               {/* Audio indicator */}
@@ -187,7 +186,7 @@ export default function Trends() {
                   className="w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 p-0"
                   onClick={() => handleVideoTap(post.id)}
                 >
-                  {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  {videoMuteStates.get(post.id) ?? false ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                 </Button>
               </div>
               
@@ -202,7 +201,7 @@ export default function Trends() {
                     variant="ghost"
                     size="sm"
                     className="w-12 h-12 rounded-full text-white hover:bg-white/20 p-0"
-                    onClick={() => handleVideoDoubleTap(post.id)}
+                    onClick={() => likeMutation.mutate(post.id)}
                   >
                     <Heart className={`w-7 h-7 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                   </Button>
@@ -310,6 +309,19 @@ export default function Trends() {
       </div>
 
       <Navigation />
+      
+      {/* Comment Modal */}
+      {selectedPostId && (
+        <CommentModal 
+          isOpen={commentModalOpen}
+          onClose={() => {
+            setCommentModalOpen(false);
+            setSelectedPostId(null);
+          }}
+          postId={selectedPostId}
+          currentUser={user}
+        />
+      )}
     </div>
   );
 }
