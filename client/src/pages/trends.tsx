@@ -100,70 +100,82 @@ export default function Trends() {
     },
   });
 
-  // Robust video autoplay with forced switching
+  // Enhanced video autoplay with guaranteed stopping and starting
   useEffect(() => {
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      // Process all entries to find what should be playing
+      let newPlayingVideo: number | null = null;
+      let maxRatio = 0;
+      
       entries.forEach((entry) => {
         const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
         const video = videoRefs.current.get(postId);
         
         if (!video) return;
         
-        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-          // Video is in view - switch to this video
-          if (currentPlayingVideo !== postId) {
-            console.log(`Switching to video ${postId}, stopping ${currentPlayingVideo}`);
-            
-            // Force stop all other videos immediately
-            videoRefs.current.forEach((v, id) => {
-              if (v && id !== postId) {
-                v.pause();
-                v.currentTime = 0;
-                v.volume = 0;
-                v.muted = true;
-              }
-            });
-            
-            // Set new playing video
-            setCurrentPlayingVideo(postId);
-            
-            // Start new video immediately
-            const startVideo = async () => {
-              video.currentTime = 0;
-              video.muted = videoMuteStates.get(postId) ?? false;
-              video.volume = video.muted ? 0 : 1;
-              
-              try {
-                await video.play();
-                console.log(`Started playing video ${postId}`);
-              } catch (error) {
-                console.log(`Unmuted play failed for ${postId}, trying muted`);
-                video.muted = true;
-                video.volume = 0;
-                setVideoMuteStates(prev => new Map(prev.set(postId, true)));
-                await video.play().catch(() => {
-                  setTimeout(() => video.play().catch(console.error), 100);
-                });
-              }
-            };
-            
-            startVideo();
-          }
-        } else if (entry.intersectionRatio < 0.3) {
-          // Video is out of view - force stop
-          if (currentPlayingVideo === postId) {
-            console.log(`Stopping video ${postId} - out of view`);
-            video.pause();
-            video.volume = 0;
-            video.muted = true;
-            setCurrentPlayingVideo(null);
-          }
+        if (entry.isIntersecting && entry.intersectionRatio > 0.6 && entry.intersectionRatio > maxRatio) {
+          maxRatio = entry.intersectionRatio;
+          newPlayingVideo = postId;
+        }
+        
+        // Always pause videos that are out of view
+        if (entry.intersectionRatio < 0.2) {
+          video.pause();
+          video.volume = 0;
+          video.muted = true;
         }
       });
+      
+      // Switch to new video if different from current
+      if (newPlayingVideo && newPlayingVideo !== currentPlayingVideo) {
+        console.log(`Switching from video ${currentPlayingVideo} to video ${newPlayingVideo}`);
+        
+        // Force stop ALL videos first
+        videoRefs.current.forEach((v, id) => {
+          v.pause();
+          v.currentTime = 0;
+          v.volume = 0;
+          v.muted = true;
+        });
+        
+        setCurrentPlayingVideo(newPlayingVideo);
+        
+        // Start the new video
+        const newVideo = videoRefs.current.get(newPlayingVideo);
+        if (newVideo) {
+          const playNewVideo = async () => {
+            newVideo.currentTime = 0;
+            newVideo.muted = videoMuteStates.get(newPlayingVideo) ?? false;
+            newVideo.volume = newVideo.muted ? 0 : 1;
+            
+            try {
+              await newVideo.play();
+              console.log(`Successfully started video ${newPlayingVideo}`);
+            } catch (error) {
+              console.log(`Muted fallback for video ${newPlayingVideo}`);
+              newVideo.muted = true;
+              newVideo.volume = 0;
+              setVideoMuteStates(prev => new Map(prev.set(newPlayingVideo!, true)));
+              await newVideo.play().catch(console.error);
+            }
+          };
+          
+          playNewVideo();
+        }
+      } else if (!newPlayingVideo && currentPlayingVideo) {
+        // No video should be playing
+        console.log(`Stopping all videos, no video in view`);
+        videoRefs.current.forEach((v) => {
+          v.pause();
+          v.volume = 0;
+          v.muted = true;
+        });
+        setCurrentPlayingVideo(null);
+      }
     };
 
     videoObserver.current = new IntersectionObserver(observerCallback, {
-      threshold: [0.3, 0.5, 0.8],
+      threshold: [0.2, 0.6, 0.9],
       rootMargin: '0px'
     });
 
