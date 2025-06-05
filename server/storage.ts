@@ -19,6 +19,21 @@ export interface IStorage {
   // Post editing
   updatePost(id: number, userId: number, updates: Partial<Post>): Promise<Post | undefined>;
   
+  // Admin methods
+  getAllUsers(): Promise<User[]>;
+  getAllPosts(): Promise<Post[]>;
+  getAllPostsForAdmin(): Promise<PostWithUser[]>;
+  banUser(userId: number, reason: string): Promise<boolean>;
+  unbanUser(userId: number): Promise<boolean>;
+  verifyUser(userId: number): Promise<boolean>;
+  deleteUser(userId: number): Promise<boolean>;
+  adminDeletePost(postId: number): Promise<boolean>;
+  sendAdminMessage(userId: number, message: string, fromAdminId: number): Promise<boolean>;
+  sendBroadcastNotification(message: string, userIds?: number[]): Promise<boolean>;
+  getUserActivityLogs(userId: number): Promise<any[]>;
+  updateAppSettings(settings: any): Promise<boolean>;
+  getReportedContent(): Promise<any[]>;
+  
   // Post methods
   createPost(post: InsertPost & { userId: number }): Promise<Post>;
   getPostById(id: number): Promise<PostWithUser | undefined>;
@@ -654,6 +669,139 @@ export class MemStorage implements IStorage {
     );
     
     return postsWithUsers;
+  }
+
+  // Admin methods implementation
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async getAllPosts(): Promise<Post[]> {
+    return Array.from(this.posts.values());
+  }
+
+  async getAllPostsForAdmin(): Promise<PostWithUser[]> {
+    const posts = Array.from(this.posts.values());
+    const postsWithUsers = await Promise.all(
+      posts.map(async (post) => {
+        const user = await this.getUser(post.userId);
+        return {
+          ...post,
+          content: post.caption || post.title || '',
+          user: {
+            id: user!.id,
+            username: user!.username,
+            avatar: user!.avatar,
+            isAdmin: user!.isAdmin
+          }
+        } as PostWithUser;
+      })
+    );
+    
+    return postsWithUsers.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async banUser(userId: number, reason: string): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (!user) return false;
+    
+    const updatedUser = { ...user, isBanned: true, banReason: reason };
+    this.users.set(userId, updatedUser);
+    return true;
+  }
+
+  async unbanUser(userId: number): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (!user) return false;
+    
+    const updatedUser = { ...user, isBanned: false, banReason: undefined };
+    this.users.set(userId, updatedUser);
+    return true;
+  }
+
+  async verifyUser(userId: number): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (!user) return false;
+    
+    const updatedUser = { ...user, isVerified: true };
+    this.users.set(userId, updatedUser);
+    return true;
+  }
+
+  async deleteUser(userId: number): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (!user) return false;
+    
+    // Delete user's posts
+    Array.from(this.posts.entries()).forEach(([postId, post]) => {
+      if (post.userId === userId) {
+        this.posts.delete(postId);
+      }
+    });
+    
+    // Delete user's comments
+    Array.from(this.comments.entries()).forEach(([commentId, comment]) => {
+      if (comment.userId === userId) {
+        this.comments.delete(commentId);
+      }
+    });
+    
+    // Delete user's likes
+    Array.from(this.likes.entries()).forEach(([likeId, like]) => {
+      if (like.userId === userId) {
+        this.likes.delete(likeId);
+      }
+    });
+    
+    // Delete user
+    this.users.delete(userId);
+    return true;
+  }
+
+  async adminDeletePost(postId: number): Promise<boolean> {
+    const post = this.posts.get(postId);
+    if (!post) return false;
+    
+    // Delete related comments and likes
+    Array.from(this.comments.entries()).forEach(([commentId, comment]) => {
+      if (comment.postId === postId) {
+        this.comments.delete(commentId);
+      }
+    });
+    
+    Array.from(this.likes.entries()).forEach(([likeId, like]) => {
+      if (like.postId === postId) {
+        this.likes.delete(likeId);
+      }
+    });
+    
+    this.posts.delete(postId);
+    return true;
+  }
+
+  async sendAdminMessage(userId: number, message: string, fromAdminId: number): Promise<boolean> {
+    // In memory implementation - would store in messages table in real app
+    return true;
+  }
+
+  async sendBroadcastNotification(message: string, userIds?: number[]): Promise<boolean> {
+    // In memory implementation - would send push notifications in real app
+    return true;
+  }
+
+  async getUserActivityLogs(userId: number): Promise<any[]> {
+    // In memory implementation - would track user activities in real app
+    return [];
+  }
+
+  async updateAppSettings(settings: any): Promise<boolean> {
+    // In memory implementation - would store in settings table in real app
+    return true;
+  }
+
+  async getReportedContent(): Promise<any[]> {
+    // In memory implementation - would return reported posts/users in real app
+    return [];
   }
 }
 
