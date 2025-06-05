@@ -111,28 +111,41 @@ export default function Trends() {
               
               setCurrentPlayingVideo(postId);
               
-              // Ensure video is ready and play
-              if (video.readyState >= 2) {
-                video.currentTime = 0;
-                const playPromise = video.play();
-                if (playPromise) {
-                  playPromise.catch(() => {
-                    // Fallback: try muted autoplay
+              // Force immediate play attempt for better performance
+              video.currentTime = 0;
+              
+              // Try to play immediately with fallback strategy
+              const playVideo = async () => {
+                try {
+                  await video.play();
+                } catch (error) {
+                  // If play fails, try with muted audio
+                  try {
                     video.muted = true;
-                    video.play().catch(console.error);
-                  });
+                    setVideoMuteStates(prev => new Map(prev.set(postId, true)));
+                    await video.play();
+                  } catch (mutedError) {
+                    console.error(`Failed to play video ${postId}:`, mutedError);
+                  }
                 }
+              };
+              
+              if (video.readyState >= 2) {
+                playVideo();
               } else {
-                // Wait for video to load
-                const onCanPlay = () => {
-                  video.currentTime = 0;
-                  video.play().catch(() => {
-                    video.muted = true;
-                    video.play().catch(console.error);
-                  });
-                  video.removeEventListener('canplay', onCanPlay);
+                // For large videos, start playing as soon as enough data is loaded
+                const onLoadedData = () => {
+                  playVideo();
+                  video.removeEventListener('loadeddata', onLoadedData);
                 };
-                video.addEventListener('canplay', onCanPlay);
+                video.addEventListener('loadeddata', onLoadedData);
+                
+                // Timeout fallback for very slow loading videos
+                setTimeout(() => {
+                  if (video.paused && currentPlayingVideo === postId) {
+                    playVideo();
+                  }
+                }, 2000);
               }
             }
           } else if (entry.intersectionRatio < 0.3) {
@@ -258,8 +271,9 @@ export default function Trends() {
 
   const followMutation = useMutation({
     mutationFn: async ({ userId, action }: { userId: number; action: 'follow' | 'unfollow' }) => {
-      const response = await fetch(`/api/users/${userId}/${action}`, {
-        method: "POST",
+      const method = action === 'unfollow' ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/users/${userId}/follow`, {
+        method,
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
         },
@@ -364,9 +378,36 @@ export default function Trends() {
                 muted={videoMuteStates.get(post.id) ?? false}
                 loop
                 playsInline
-                preload="metadata"
+                preload="auto"
                 onClick={(e) => handleVideoClick(post.id, e)}
                 onDoubleClick={(e) => handleVideoDoubleClick(post.id, e)}
+                onTouchStart={(e) => {
+                  const now = Date.now();
+                  const lastTouch = tapTimeouts.current.get(post.id) || 0;
+                  if (now - lastTouch < 300) {
+                    // Double tap
+                    e.preventDefault();
+                    handleVideoDoubleClick(post.id, e as any);
+                  } else {
+                    // Single tap
+                    tapTimeouts.current.set(post.id, now);
+                    setTimeout(() => {
+                      const current = tapTimeouts.current.get(post.id);
+                      if (current === now) {
+                        handleVideoClick(post.id, e as any);
+                      }
+                    }, 300);
+                  }
+                }}
+                onLoadStart={() => {
+                  console.log(`Video ${post.id} loading started`);
+                }}
+                onCanPlay={() => {
+                  console.log(`Video ${post.id} can play`);
+                }}
+                onError={() => {
+                  console.error(`Video ${post.id} failed to load`);
+                }}
               />
               
               {/* Audio indicator */}
