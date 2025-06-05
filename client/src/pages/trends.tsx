@@ -89,7 +89,7 @@ export default function Trends() {
     },
   });
 
-  // Enhanced intersection observer with forced autoplay
+  // Robust video autoplay with immediate playback
   useEffect(() => {
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
       entries.forEach((entry) => {
@@ -98,47 +98,47 @@ export default function Trends() {
         
         if (!video) return;
         
-        if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-          // Video is in view - force play immediately
+        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+          // Video is in view - start playing immediately
           if (currentPlayingVideo !== postId) {
-            // Pause all other videos
+            // Stop all other videos
             videoRefs.current.forEach((v, id) => {
               if (v && id !== postId) {
                 v.pause();
+                v.currentTime = 0;
               }
             });
             
             setCurrentPlayingVideo(postId);
             
-            // Aggressive autoplay strategy
-            const forcePlay = async () => {
+            // Immediate video playback
+            const startVideo = () => {
               video.currentTime = 0;
               video.muted = videoMuteStates.get(postId) ?? false;
               
-              try {
-                await video.play();
-              } catch (error) {
-                // Force muted playback
+              // Force play with user interaction simulation
+              video.play().catch(() => {
+                // If unmuted fails, try muted
                 video.muted = true;
                 setVideoMuteStates(prev => new Map(prev.set(postId, true)));
-                await video.play().catch(() => {
-                  // Last resort - try after brief delay
-                  setTimeout(() => {
+                video.play().catch(() => {
+                  // Force play on next tick
+                  requestAnimationFrame(() => {
                     video.play().catch(console.error);
-                  }, 500);
+                  });
                 });
-              }
+              });
             };
             
-            // Try immediate play
-            forcePlay();
+            // Start immediately
+            startVideo();
             
-            // Also try when video is loaded if not already playing
-            if (video.readyState < 3) {
-              video.addEventListener('canplaythrough', forcePlay, { once: true });
+            // Also ensure it plays when ready
+            if (video.readyState < 2) {
+              video.addEventListener('loadeddata', startVideo, { once: true });
             }
           }
-        } else if (entry.intersectionRatio < 0.2) {
+        } else if (entry.intersectionRatio < 0.3) {
           // Video out of view
           if (currentPlayingVideo === postId) {
             video.pause();
@@ -149,8 +149,8 @@ export default function Trends() {
     };
 
     videoObserver.current = new IntersectionObserver(observerCallback, {
-      threshold: [0.2, 0.6, 0.9],
-      rootMargin: '-10px'
+      threshold: [0.3, 0.5, 0.8],
+      rootMargin: '0px'
     });
 
     return () => {
@@ -368,12 +368,33 @@ export default function Trends() {
                 playsInline
                 preload="auto"
                 onLoadedData={() => {
-                  // When video data is loaded, check if it should be playing
+                  // Force video to play immediately when data loads
                   const video = videoRefs.current.get(post.id);
-                  if (video && currentPlayingVideo === post.id) {
+                  if (video) {
+                    // Force autoplay by simulating user interaction
+                    const tryPlay = () => {
+                      video.muted = videoMuteStates.get(post.id) ?? false;
+                      video.play().catch(() => {
+                        video.muted = true;
+                        setVideoMuteStates(prev => new Map(prev.set(post.id, true)));
+                        video.play().catch(() => {
+                          // Force play after minimal delay
+                          setTimeout(() => video.play().catch(console.error), 100);
+                        });
+                      });
+                    };
+                    
+                    if (currentPlayingVideo === post.id) {
+                      tryPlay();
+                    }
+                  }
+                }}
+                onCanPlay={() => {
+                  // Additional trigger when video can play
+                  const video = videoRefs.current.get(post.id);
+                  if (video && currentPlayingVideo === post.id && video.paused) {
                     video.play().catch(() => {
                       video.muted = true;
-                      setVideoMuteStates(prev => new Map(prev.set(post.id, true)));
                       video.play().catch(console.error);
                     });
                   }
@@ -381,6 +402,7 @@ export default function Trends() {
                 onClick={(e) => handleVideoClick(post.id, e)}
                 onDoubleClick={(e) => handleVideoDoubleClick(post.id, e)}
                 onTouchStart={(e) => {
+                  e.preventDefault();
                   const touch = e.touches[0];
                   setTouchStart({
                     x: touch.clientX,
@@ -389,6 +411,8 @@ export default function Trends() {
                   });
                 }}
                 onTouchEnd={(e) => {
+                  e.preventDefault();
+                  
                   if (!isAuthenticated) {
                     toast({
                       title: "Please login",
@@ -406,54 +430,57 @@ export default function Trends() {
                   const deltaTime = Date.now() - touchStart.time;
                   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-                  // Check for swipe right to share
-                  if (deltaX > 100 && Math.abs(deltaY) < 100 && deltaTime < 500) {
-                    // Swipe right detected - redirect to chat with video
+                  // Swipe right to share
+                  if (deltaX > 120 && Math.abs(deltaY) < 80 && deltaTime < 600) {
                     window.location.href = `/chats?shareVideo=${post.id}`;
+                    setTouchStart(null);
                     return;
                   }
 
-                  // Check for tap (small movement, short time)
-                  if (distance < 30 && deltaTime < 300) {
-                    // Check for double tap
+                  // Tap detection
+                  if (distance < 50 && deltaTime < 400) {
                     const lastTap = tapTimeouts.current.get(post.id) || 0;
                     const now = Date.now();
                     
-                    if (now - lastTap < 300) {
-                      // Double tap - like video
-                      e.preventDefault();
+                    if (now - lastTap < 400) {
+                      // Double tap - like
                       likeMutation.mutate(post.id);
                       tapTimeouts.current.delete(post.id);
                       
-                      // Visual feedback for double tap
-                      const target = e.currentTarget as HTMLElement;
+                      // Heart animation
+                      const videoElement = e.currentTarget as HTMLElement;
                       const heart = document.createElement('div');
                       heart.innerHTML = '❤️';
                       heart.style.cssText = `
                         position: absolute;
                         top: 50%;
                         left: 50%;
-                        transform: translate(-50%, -50%);
-                        font-size: 3rem;
+                        transform: translate(-50%, -50%) scale(0);
+                        font-size: 4rem;
                         pointer-events: none;
-                        z-index: 1000;
-                        animation: heartPop 0.6s ease-out;
+                        z-index: 9999;
+                        transition: all 0.3s ease;
                       `;
-                      target.appendChild(heart);
+                      videoElement.appendChild(heart);
+                      
+                      requestAnimationFrame(() => {
+                        heart.style.transform = 'translate(-50%, -50%) scale(1.2)';
+                        heart.style.opacity = '1';
+                      });
+                      
                       setTimeout(() => {
-                        if (heart.parentNode) {
-                          heart.parentNode.removeChild(heart);
-                        }
-                      }, 600);
+                        heart.style.transform = 'translate(-50%, -50%) scale(0)';
+                        heart.style.opacity = '0';
+                        setTimeout(() => heart.remove(), 300);
+                      }, 400);
                     } else {
-                      // Single tap - toggle mute after delay
+                      // Single tap - mute/unmute
                       tapTimeouts.current.set(post.id, now);
                       setTimeout(() => {
-                        const currentTap = tapTimeouts.current.get(post.id);
-                        if (currentTap === now) {
+                        if (tapTimeouts.current.get(post.id) === now) {
                           toggleVideoMute(post.id);
                         }
-                      }, 300);
+                      }, 400);
                     }
                   }
 
