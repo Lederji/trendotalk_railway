@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home, TrendingUp, Plus, Users, User } from "lucide-react";
+import { Home, TrendingUp, Plus, Users, User, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 const navigationItems = [
@@ -15,10 +15,15 @@ export function Navigation() {
   const [location] = useLocation();
   const { user } = useAuth();
 
+  // Add admin link if user is admin
+  const items = user?.isAdmin 
+    ? [...navigationItems, { icon: Settings, label: "Admin", href: "/admin" }]
+    : navigationItems;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
       <div className="flex items-center justify-around py-2 px-2">
-        {navigationItems.map((item) => {
+        {items.map((item) => {
           const isActive = location === item.href || 
             (item.href === "/profile" && location.startsWith("/profile"));
           

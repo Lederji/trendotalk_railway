@@ -12,6 +12,7 @@ import Profile from "@/pages/profile";
 import Auth from "@/pages/auth";
 import SearchPage from "@/pages/search";
 import ChatPage from "@/pages/chat";
+import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/profile/:username?" component={Profile} />
       <Route path="/search" component={SearchPage} />
       <Route path="/auth" component={Auth} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
