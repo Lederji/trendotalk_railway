@@ -20,7 +20,7 @@ export default function Trends() {
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [currentPlayingVideo, setCurrentPlayingVideo] = useState<number | null>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
-  const tapTimeouts = useRef<Map<number, NodeJS.Timeout>>(new Map());
+  const tapTimeouts = useRef<Map<number, number>>(new Map());
   const videoObserver = useRef<IntersectionObserver | null>(null);
 
   const { data: posts = [], isLoading } = useQuery({
@@ -38,6 +38,30 @@ export default function Trends() {
       return allPosts.filter((post: any) => post.videoUrl);
     },
   });
+
+  // Fetch user's following list to maintain persistent follow state
+  const { data: followingList = [] } = useQuery({
+    queryKey: ["/api/user/following"],
+    queryFn: async () => {
+      if (!isAuthenticated || !user?.id) return [];
+      const response = await fetch(`/api/users/${user.id}/following`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: isAuthenticated && !!user?.id
+  });
+
+  // Update following state when data is fetched
+  useEffect(() => {
+    if (followingList.length > 0) {
+      const followingIds = new Set<number>(followingList.map((user: any) => Number(user.id)));
+      setFollowingUsers(followingIds);
+    }
+  }, [followingList]);
 
   const likeMutation = useMutation({
     mutationFn: async (postId: number) => {
@@ -64,45 +88,56 @@ export default function Trends() {
     },
   });
 
-  // Setup intersection observer for video autoplay
+  // Setup intersection observer for video autoplay with optimized performance
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     videoObserver.current = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
-          const video = videoRefs.current.get(postId);
-          
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-            // Video is mostly visible - play it
-            if (video && currentPlayingVideo !== postId) {
-              // Pause all other videos first
-              videoRefs.current.forEach((v, id) => {
-                if (v && id !== postId) {
-                  v.pause();
-                  v.currentTime = 0; // Reset to start
-                }
-              });
-              
-              setCurrentPlayingVideo(postId);
-              video.currentTime = 0; // Start from beginning
-              video.play().catch(console.error);
+        // Debounce observer callbacks for better performance
+        if (timeoutId) clearTimeout(timeoutId);
+        
+        timeoutId = setTimeout(() => {
+          entries.forEach((entry) => {
+            const postId = parseInt(entry.target.getAttribute('data-post-id') || '0');
+            const video = videoRefs.current.get(postId);
+            
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+              // Video is clearly visible - play it immediately
+              if (video && currentPlayingVideo !== postId) {
+                // Pause all other videos first
+                videoRefs.current.forEach((v, id) => {
+                  if (v && id !== postId) {
+                    v.pause();
+                  }
+                });
+                
+                setCurrentPlayingVideo(postId);
+                video.currentTime = 0; // Start from beginning
+                video.play().catch(() => {
+                  // If autoplay fails, try with muted first
+                  video.muted = true;
+                  video.play().catch(console.error);
+                });
+              }
+            } else if (entry.intersectionRatio < 0.2) {
+              // Video is mostly out of view - pause it
+              if (video && currentPlayingVideo === postId) {
+                video.pause();
+                setCurrentPlayingVideo(null);
+              }
             }
-          } else if (entry.intersectionRatio < 0.3 && currentPlayingVideo === postId) {
-            // Video is mostly out of view - pause it
-            if (video) {
-              video.pause();
-              setCurrentPlayingVideo(null);
-            }
-          }
-        });
+          });
+        }, 100); // Debounce by 100ms
       },
       {
-        threshold: [0.3, 0.6],
-        rootMargin: '-20px'
+        threshold: [0.2, 0.7],
+        rootMargin: '-10px'
       }
     );
 
     return () => {
+      if (timeoutId) clearTimeout(timeoutId);
       if (videoObserver.current) {
         videoObserver.current.disconnect();
       }
@@ -128,8 +163,8 @@ export default function Trends() {
     };
   }, []);
 
-  // Video tap handlers
-  const handleVideoTap = (postId: number) => {
+  // Enhanced tap detection system for reliable single/double tap
+  const handleVideoTap = (postId: number, event: React.MouseEvent) => {
     if (!isAuthenticated) {
       toast({
         title: "Please login",
@@ -139,19 +174,34 @@ export default function Trends() {
       return;
     }
 
-    const timeoutId = tapTimeouts.current.get(postId);
-    if (timeoutId) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const now = Date.now();
+    const lastTap = tapTimeouts.current.get(postId);
+    
+    if (lastTap && (now - lastTap) < 300) {
       // Double tap detected - like the video
-      clearTimeout(timeoutId);
       tapTimeouts.current.delete(postId);
       likeMutation.mutate(postId);
+      
+      // Visual feedback for double tap
+      const target = event.currentTarget as HTMLElement;
+      target.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        target.style.transform = 'scale(1)';
+      }, 150);
     } else {
-      // Single tap - toggle mute after delay
-      const newTimeoutId = setTimeout(() => {
-        tapTimeouts.current.delete(postId);
-        toggleVideoMute(postId);
+      // Potential single tap - wait for double tap timeout
+      tapTimeouts.current.set(postId, now);
+      setTimeout(() => {
+        const currentTap = tapTimeouts.current.get(postId);
+        if (currentTap === now) {
+          // Single tap confirmed - toggle mute
+          tapTimeouts.current.delete(postId);
+          toggleVideoMute(postId);
+        }
       }, 300);
-      tapTimeouts.current.set(postId, newTimeoutId);
     }
   };
 
@@ -162,6 +212,12 @@ export default function Trends() {
       const newMute = !currentMute;
       video.muted = newMute;
       setVideoMuteStates(prev => new Map(prev.set(postId, newMute)));
+      
+      // Visual feedback for mute toggle
+      toast({
+        title: newMute ? "Video muted" : "Video unmuted",
+        duration: 1000
+      });
     }
   };
 
@@ -186,7 +242,9 @@ export default function Trends() {
         }
         return newSet;
       });
+      // Invalidate both posts and following list to ensure persistent state
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/following"] });
     },
   });
 
