@@ -106,8 +106,27 @@ export default function Trends() {
       if (videoObserver.current) {
         videoObserver.current.disconnect();
       }
+      // Clean up video refs and timeouts
+      tapTimeouts.current.forEach(timeout => clearTimeout(timeout));
+      tapTimeouts.current.clear();
     };
   }, [currentPlayingVideo]);
+
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      // Pause all videos and reset on unmount
+      videoRefs.current.forEach(video => {
+        if (video) {
+          video.pause();
+          video.currentTime = 0;
+        }
+      });
+      videoRefs.current.clear();
+      tapTimeouts.current.forEach(timeout => clearTimeout(timeout));
+      tapTimeouts.current.clear();
+    };
+  }, []);
 
   // Video tap handlers
   const handleVideoTap = (postId: number) => {
