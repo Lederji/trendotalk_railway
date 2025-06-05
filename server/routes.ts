@@ -34,6 +34,9 @@ const upload = multer({
 // Session middleware (simplified for in-memory storage)
 const sessions = new Map<string, { userId: number; username: string }>();
 
+// Make sessions globally available for admin routes
+(global as any).sessions = sessions;
+
 function generateSessionId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }

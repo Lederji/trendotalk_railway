@@ -137,7 +137,16 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
       const response = await apiRequest("POST", `/api/posts/${post.id}/like`);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Update post in cache with new like count
+      queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
+        if (!oldPosts) return oldPosts;
+        return oldPosts.map(p => 
+          p.id === post.id 
+            ? { ...p, likesCount: data.likesCount, isLiked: data.liked }
+            : p
+        );
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     }
   });
@@ -147,7 +156,16 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
       const response = await apiRequest("POST", `/api/posts/${post.id}/dislike`);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Update post in cache with new dislike count
+      queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
+        if (!oldPosts) return oldPosts;
+        return oldPosts.map(p => 
+          p.id === post.id 
+            ? { ...p, dislikesCount: data.dislikesCount, isDisliked: data.disliked }
+            : p
+        );
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     }
   });
@@ -157,7 +175,16 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
       const response = await apiRequest("POST", `/api/posts/${post.id}/vote`);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Update post in cache with new vote count
+      queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
+        if (!oldPosts) return oldPosts;
+        return oldPosts.map(p => 
+          p.id === post.id 
+            ? { ...p, votesCount: data.votesCount, isVoted: data.voted }
+            : p
+        );
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     }
   });
@@ -193,10 +220,17 @@ export function UnifiedPostCard({ post, currentUser }: UnifiedPostCardProps) {
 
   const deletePostMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("DELETE", `/api/posts/${post.id}`);
+      // Use admin delete endpoint if user is admin
+      const endpoint = currentUser?.isAdmin ? `/api/admin/posts/${post.id}` : `/api/posts/${post.id}`;
+      const response = await apiRequest("DELETE", endpoint);
       return response.json();
     },
     onSuccess: () => {
+      // Remove post from cache immediately
+      queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
+        if (!oldPosts) return oldPosts;
+        return oldPosts.filter(p => p.id !== post.id);
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     }
   });

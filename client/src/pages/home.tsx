@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Hash } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Auth from "@/pages/auth";
 
 const CATEGORIES = [
@@ -23,6 +23,9 @@ const CATEGORIES = [
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [currentlyPlayingPost, setCurrentlyPlayingPost] = useState<number | null>(null);
+  const videoRefs = useRef<Map<number, HTMLVideoElement[]>>(new Map());
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const { data: allPosts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "admin-only"],
