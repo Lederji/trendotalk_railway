@@ -1249,15 +1249,23 @@ export class DatabaseStorage implements IStorage {
 
   async toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number }> {
     try {
+      // Check for existing like
       const [existingLike] = await db
         .select()
         .from(likes)
-        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId), eq(likes.type, 'like')));
+
+      // Check for existing dislike (for mutual exclusivity)
+      const [existingDislike] = await db
+        .select()
+        .from(likes)
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId), eq(likes.type, 'dislike')));
 
       if (existingLike) {
+        // Remove like
         await db
           .delete(likes)
-          .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+          .where(and(eq(likes.postId, postId), eq(likes.userId, userId), eq(likes.type, 'like')));
         
         await db
           .update(posts)
@@ -1267,9 +1275,22 @@ export class DatabaseStorage implements IStorage {
         const [post] = await db.select().from(posts).where(eq(posts.id, postId));
         return { liked: false, likesCount: post?.likesCount || 0 };
       } else {
+        // Remove dislike if exists (mutual exclusivity)
+        if (existingDislike) {
+          await db
+            .delete(likes)
+            .where(and(eq(likes.postId, postId), eq(likes.userId, userId), eq(likes.type, 'dislike')));
+          
+          await db
+            .update(posts)
+            .set({ dislikesCount: sql`${posts.dislikesCount} - 1` })
+            .where(eq(posts.id, postId));
+        }
+
+        // Add like
         await db
           .insert(likes)
-          .values({ postId, userId });
+          .values({ postId, userId, type: 'like', createdAt: new Date() });
         
         await db
           .update(posts)
@@ -1286,13 +1307,17 @@ export class DatabaseStorage implements IStorage {
             .where(eq(users.id, userId));
           
           if (liker) {
-            await this.createNotification(
-              post.userId,
-              'like',
-              `${liker.username} liked your post`,
-              userId,
-              postId
-            );
+            try {
+              await this.createNotification(
+                post.userId,
+                'like',
+                `${liker.username} liked your post`,
+                userId,
+                postId
+              );
+            } catch (notifError) {
+              console.error('Error creating notification:', notifError);
+            }
           }
         }
         
@@ -1306,15 +1331,23 @@ export class DatabaseStorage implements IStorage {
 
   async toggleDislike(postId: number, userId: number): Promise<{ disliked: boolean; dislikesCount: number }> {
     try {
+      // Check for existing dislike
       const [existingDislike] = await db
         .select()
-        .from(dislikes)
-        .where(and(eq(dislikes.postId, postId), eq(dislikes.userId, userId)));
+        .from(likes)
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId), eq(likes.type, 'dislike')));
+
+      // Check for existing like (for mutual exclusivity)
+      const [existingLike] = await db
+        .select()
+        .from(likes)
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId), eq(likes.type, 'like')));
 
       if (existingDislike) {
+        // Remove dislike
         await db
-          .delete(dislikes)
-          .where(and(eq(dislikes.postId, postId), eq(dislikes.userId, userId)));
+          .delete(likes)
+          .where(and(eq(likes.postId, postId), eq(likes.userId, userId), eq(likes.type, 'dislike')));
         
         await db
           .update(posts)
@@ -1324,9 +1357,22 @@ export class DatabaseStorage implements IStorage {
         const [post] = await db.select().from(posts).where(eq(posts.id, postId));
         return { disliked: false, dislikesCount: post?.dislikesCount || 0 };
       } else {
+        // Remove like if exists (mutual exclusivity)
+        if (existingLike) {
+          await db
+            .delete(likes)
+            .where(and(eq(likes.postId, postId), eq(likes.userId, userId), eq(likes.type, 'like')));
+          
+          await db
+            .update(posts)
+            .set({ likesCount: sql`${posts.likesCount} - 1` })
+            .where(eq(posts.id, postId));
+        }
+
+        // Add dislike
         await db
-          .insert(dislikes)
-          .values({ postId, userId });
+          .insert(likes)
+          .values({ postId, userId, type: 'dislike', createdAt: new Date() });
         
         await db
           .update(posts)
@@ -1903,7 +1949,7 @@ export class DatabaseStorage implements IStorage {
 
   async createNotification(userId: number, type: string, message: string, fromUserId?: number, postId?: number): Promise<void> {
     try {
-      await db.insert(notifications).values({
+      await db.insert(notificationsTable).values({
         userId: userId,
         type: type,
         message: message,

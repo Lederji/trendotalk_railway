@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Hash } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useVideoAutoplay } from "@/hooks/use-video-autoplay";
 import Auth from "@/pages/auth";
 
 const CATEGORIES = [
