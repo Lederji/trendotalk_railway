@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Navigation } from "@/components/layout/navigation";
@@ -23,6 +23,35 @@ export default function Circle() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [messageText, setMessageText] = useState("");
+  const [activeTab, setActiveTab] = useState("chats");
+
+  // Handle URL hash navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'vibes') {
+        // Scroll to vibes section
+        const vibesSection = document.getElementById('vibes-section');
+        if (vibesSection) {
+          vibesSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else if (hash === 'chats') {
+        setActiveTab('chats');
+        // Scroll to chats section
+        const chatsSection = document.getElementById('chats-section');
+        if (chatsSection) {
+          chatsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    };
+
+    // Handle initial hash
+    handleHashChange();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const { data: searchResults = [] } = useQuery({
     queryKey: ["/api/users/search", searchQuery],
@@ -208,7 +237,7 @@ export default function Circle() {
         </Card>
 
         {/* Circle's Vibe */}
-        <Card className="mb-6">
+        <Card className="mb-6" id="vibes-section">
           <CardHeader>
             <CardTitle>Circle's Vibe</CardTitle>
           </CardHeader>
@@ -290,7 +319,7 @@ export default function Circle() {
         </Card>
 
         {/* Tabs for Chats and Requests */}
-        <Tabs defaultValue="chats" className="w-full">
+        <Tabs defaultValue={activeTab} className="w-full" id="chats-section">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="chats" className="flex items-center">
               <MessageCircle className="w-4 h-4 mr-2" />
