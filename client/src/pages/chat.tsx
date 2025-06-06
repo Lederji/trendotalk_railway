@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Plus, Phone, Video, MoreVertical } from "lucide-react";
+import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Phone, Video, MoreVertical, FileText, MapPin, User, Calendar, Headphones, BarChart3, CreditCard, ImageIcon, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ChatPage() {
@@ -19,7 +19,7 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -317,8 +317,8 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input - Instagram Style */}
-      <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0">
+      {/* WhatsApp-Style Message Input */}
+      <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0 relative">
         {/* File Preview */}
         {selectedFile && (
           <div className="mb-3 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
@@ -338,38 +338,104 @@ export default function ChatPage() {
             </Button>
           </div>
         )}
-        
-        <div className="flex items-end space-x-3">
-          {/* Attachment Options */}
-          <div className="flex space-x-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full w-8 h-8"
-              onClick={() => imageInputRef.current?.click()}
-            >
-              <Image className="w-4 h-4 text-gray-500" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full w-8 h-8"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip className="w-4 h-4 text-gray-500" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full w-8 h-8"
-            >
-              <Camera className="w-4 h-4 text-gray-500" />
-            </Button>
+
+        {/* WhatsApp Attachment Menu */}
+        {showAttachmentMenu && (
+          <div className="absolute bottom-20 left-4 right-4 bg-gray-900 rounded-2xl p-6 z-50">
+            <div className="grid grid-cols-4 gap-6">
+              {/* Gallery */}
+              <div className="flex flex-col items-center space-y-2">
+                <Button
+                  className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600"
+                  onClick={() => {
+                    imageInputRef.current?.click();
+                    setShowAttachmentMenu(false);
+                  }}
+                >
+                  <ImageIcon className="w-6 h-6 text-white" />
+                </Button>
+                <span className="text-xs text-white">Gallery</span>
+              </div>
+
+              {/* Camera */}
+              <div className="flex flex-col items-center space-y-2">
+                <Button className="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600">
+                  <Camera className="w-6 h-6 text-white" />
+                </Button>
+                <span className="text-xs text-white">Camera</span>
+              </div>
+
+              {/* Location */}
+              <div className="flex flex-col items-center space-y-2">
+                <Button className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-600">
+                  <MapPin className="w-6 h-6 text-white" />
+                </Button>
+                <span className="text-xs text-white">Location</span>
+              </div>
+
+              {/* Contact */}
+              <div className="flex flex-col items-center space-y-2">
+                <Button className="w-12 h-12 rounded-full bg-blue-400 hover:bg-blue-500">
+                  <User className="w-6 h-6 text-white" />
+                </Button>
+                <span className="text-xs text-white">Contact</span>
+              </div>
+
+              {/* Document */}
+              <div className="flex flex-col items-center space-y-2">
+                <Button
+                  className="w-12 h-12 rounded-full bg-purple-500 hover:bg-purple-600"
+                  onClick={() => {
+                    fileInputRef.current?.click();
+                    setShowAttachmentMenu(false);
+                  }}
+                >
+                  <FileText className="w-6 h-6 text-white" />
+                </Button>
+                <span className="text-xs text-white">Document</span>
+              </div>
+
+              {/* Audio */}
+              <div className="flex flex-col items-center space-y-2">
+                <Button className="w-12 h-12 rounded-full bg-orange-500 hover:bg-orange-600">
+                  <Headphones className="w-6 h-6 text-white" />
+                </Button>
+                <span className="text-xs text-white">Audio</span>
+              </div>
+
+              {/* Poll */}
+              <div className="flex flex-col items-center space-y-2">
+                <Button className="w-12 h-12 rounded-full bg-yellow-500 hover:bg-yellow-600">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </Button>
+                <span className="text-xs text-white">Poll</span>
+              </div>
+
+              {/* Payment */}
+              <div className="flex flex-col items-center space-y-2">
+                <Button className="w-12 h-12 rounded-full bg-teal-500 hover:bg-teal-600">
+                  <CreditCard className="w-6 h-6 text-white" />
+                </Button>
+                <span className="text-xs text-white">Payment</span>
+              </div>
+            </div>
           </div>
+        )}
+        
+        <div className="flex items-center space-x-3">
+          {/* Attachment Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full w-10 h-10 text-gray-500"
+            onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+          >
+            <Paperclip className="w-5 h-5" />
+          </Button>
           
           {/* Message Input */}
           <div className="flex-1 relative">
-            <div className="flex items-end bg-gray-100 rounded-2xl">
+            <div className="flex items-center bg-gray-100 rounded-2xl">
               <Input
                 value={message}
                 onChange={(e) => {
@@ -377,49 +443,47 @@ export default function ChatPage() {
                   handleTyping();
                 }}
                 onKeyPress={handleKeyPress}
-                placeholder="Message..."
-                className="flex-1 border-0 bg-transparent rounded-2xl px-4 py-2 min-h-[40px] max-h-[120px] resize-none focus:ring-0 focus:outline-none"
+                placeholder="Message"
+                className="flex-1 border-0 bg-transparent rounded-2xl px-4 py-3 min-h-[48px] focus:ring-0 focus:outline-none"
                 disabled={sendMessageMutation.isPending}
               />
               
-              {/* Voice Message Button - WhatsApp Style */}
-              {!message.trim() && !selectedFile && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`rounded-full w-8 h-8 mr-2 ${
-                    isRecording 
-                      ? 'bg-red-500 text-white animate-pulse' 
-                      : 'text-gray-500'
-                  }`}
-                  onMouseDown={startVoiceRecording}
-                  onMouseUp={stopVoiceRecording}
-                  onTouchStart={startVoiceRecording}
-                  onTouchEnd={stopVoiceRecording}
-                >
-                  <Mic className="w-4 h-4" />
-                </Button>
-              )}
+              {/* Camera inside input */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full w-8 h-8 mr-2 text-gray-500"
+              >
+                <Camera className="w-5 h-5" />
+              </Button>
             </div>
           </div>
           
-          {/* Send Button */}
+          {/* Send/Mic Button */}
           {message.trim() || selectedFile ? (
             <Button
               onClick={handleSendMessage}
               disabled={sendMessageMutation.isPending}
-              className="rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 w-8 h-8"
+              className="rounded-full bg-green-500 hover:bg-green-600 w-12 h-12"
               size="icon"
             >
-              <Send className="w-3 h-3" />
+              <Send className="w-5 h-5 text-white" />
             </Button>
           ) : (
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full w-8 h-8"
+              className={`rounded-full w-12 h-12 ${
+                isRecording 
+                  ? 'bg-red-500 text-white animate-pulse' 
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+              onMouseDown={startVoiceRecording}
+              onMouseUp={stopVoiceRecording}
+              onTouchStart={startVoiceRecording}
+              onTouchEnd={stopVoiceRecording}
             >
-              <Plus className="w-4 h-4 text-gray-500" />
+              <Mic className="w-5 h-5" />
             </Button>
           )}
         </div>
