@@ -873,6 +873,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send message
+  app.post('/api/chats/:chatId/messages', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const { message } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ message: 'Message content is required' });
+      }
+      
+      const newMessage = await storage.sendMessage(chatId, req.session.userId, message);
+      res.json(newMessage);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Upload voice message
+  app.post('/api/chats/:chatId/voice', authenticateUser, upload.single('audio'), async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      
+      if (!req.file) {
+        return res.status(400).json({ message: 'Audio file is required' });
+      }
+      
+      // Upload to Cloudinary
+      const audioUrl = await uploadToCloudinary(req.file);
+      
+      // Send voice message
+      const voiceMessage = await storage.sendMessage(chatId, req.session.userId, `🎵 Voice message: ${audioUrl}`);
+      res.json(voiceMessage);
+    } catch (error) {
+      console.error('Error uploading voice message:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

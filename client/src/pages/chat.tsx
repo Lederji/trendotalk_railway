@@ -54,50 +54,15 @@ export default function ChatPage() {
       return response.json();
     },
     enabled: !!chatId,
+    refetchInterval: 500, // Fast polling for near real-time experience
   });
 
-  // WebSocket connection for real-time messaging
+  // Typing indicator state management
   useEffect(() => {
-    if (!user?.id || !chatId) return;
-    
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const websocket = new WebSocket(wsUrl);
-    
-    websocket.onopen = () => {
-      console.log('WebSocket connected');
-      websocket.send(JSON.stringify({
-        type: 'join',
-        userId: user.id,
-        chatId: parseInt(chatId || '0')
-      }));
-      setWs(websocket);
-    };
-    
-    websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      switch (data.type) {
-        case 'typing':
-          setOtherUserTyping(data.isTyping);
-          break;
-        case 'newMessage':
-          queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
-          break;
-      }
-    };
-    
-    websocket.onclose = () => {
-      console.log('WebSocket disconnected');
-      setWs(null);
-    };
-    
-    return () => {
-      if (websocket.readyState === WebSocket.OPEN) {
-        websocket.close();
-      }
-    };
-  }, [user?.id, chatId, queryClient]);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+  }, []);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -112,16 +77,7 @@ export default function ChatPage() {
       if (!response.ok) throw new Error('Failed to send message');
       return response.json();
     },
-    onSuccess: (newMessage) => {
-      // Send WebSocket notification
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'message',
-          chatId: parseInt(chatId || '0'),
-          userId: user?.id,
-          message: newMessage
-        }));
-      }
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
       setMessage("");
       setSelectedFile(null);
@@ -142,16 +98,9 @@ export default function ChatPage() {
   };
 
   const handleTyping = () => {
-    if (!isTyping && ws && ws.readyState === WebSocket.OPEN) {
-      setIsTyping(true);
-      ws.send(JSON.stringify({
-        type: 'typing',
-        chatId: parseInt(chatId || '0'),
-        userId: user?.id,
-        isTyping: true
-      }));
-    }
-
+    // Simple local typing indicator
+    setIsTyping(true);
+    
     // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -159,16 +108,8 @@ export default function ChatPage() {
 
     // Set new timeout to stop typing
     typingTimeoutRef.current = setTimeout(() => {
-      if (isTyping && ws && ws.readyState === WebSocket.OPEN) {
-        setIsTyping(false);
-        ws.send(JSON.stringify({
-          type: 'typing',
-          chatId: parseInt(chatId || '0'),
-          userId: user?.id,
-          isTyping: false
-        }));
-      }
-    }, 1000);
+      setIsTyping(false);
+    }, 2000);
   };
 
   const startVoiceRecording = async () => {
