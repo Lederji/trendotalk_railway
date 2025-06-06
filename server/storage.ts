@@ -52,7 +52,7 @@ export interface IStorage {
   getPostComments(postId: number): Promise<(Comment & { user: Pick<User, 'username' | 'avatar'> })[]>;
   
   // Story methods
-  createStory(story: InsertStory & { userId: number }): Promise<Story>;
+  createStory(story: InsertStory & { userId: number; expiresAt?: Date }): Promise<Story>;
   getActiveStories(): Promise<StoryWithUser[]>;
   getUserStories(userId: number): Promise<Story[]>;
   

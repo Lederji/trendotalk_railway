@@ -470,11 +470,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Set 24-hour expiry for vibes
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+      
       const story = await storage.createStory({
         ...storyData,
         userId: req.user.userId,
         imageUrl,
         videoUrl,
+        expiresAt,
       });
       
       res.json(story);
@@ -493,6 +498,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stories = await storage.getActiveStories();
       res.json(stories);
     } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get user's own vibes
+  app.get('/api/stories/user', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userVibes = await storage.getUserStories(req.user.userId);
+      // Filter out expired vibes (older than 24 hours)
+      const activeVibes = userVibes.filter(vibe => {
+        const now = new Date();
+        const vibeTime = new Date(vibe.createdAt);
+        const hoursDiff = (now.getTime() - vibeTime.getTime()) / (1000 * 60 * 60);
+        return hoursDiff < 24;
+      });
+      res.json(activeVibes);
+    } catch (error) {
+      console.error('Error getting user vibes:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get Circle friends' vibes (only friends who have active vibes)
+  app.get('/api/stories/circle', authenticateUser, async (req: any, res: any) => {
+    try {
+      const friends = await storage.getUserFollowing(req.user.userId);
+      const friendsWithVibes = [];
+      
+      for (const friend of friends) {
+        const friendVibes = await storage.getUserStories(friend.id);
+        // Filter out expired vibes (older than 24 hours)
+        const activeVibes = friendVibes.filter(vibe => {
+          const now = new Date();
+          const vibeTime = new Date(vibe.createdAt);
+          const hoursDiff = (now.getTime() - vibeTime.getTime()) / (1000 * 60 * 60);
+          return hoursDiff < 24;
+        });
+        
+        if (activeVibes.length > 0) {
+          friendsWithVibes.push({
+            ...friend,
+            vibes: activeVibes
+          });
+        }
+      }
+      
+      res.json(friendsWithVibes);
+    } catch (error) {
+      console.error('Error getting circle vibes:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

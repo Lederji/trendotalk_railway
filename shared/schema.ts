@@ -76,6 +76,7 @@ export const stories = pgTable("stories", {
   userId: integer("user_id").notNull().references(() => users.id),
   imageUrl: text("image_url"),
   videoUrl: text("video_url"),
+  title: text("title"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at").notNull(),
 });
