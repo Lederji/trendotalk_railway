@@ -2083,25 +2083,33 @@ export class DatabaseStorage implements IStorage {
   async getFriendRequests(userId: number): Promise<any[]> {
     try {
       const requests = await db
-        .select({
-          id: friendRequests.id,
-          fromUserId: friendRequests.fromUserId,
-          status: friendRequests.status,
-          createdAt: friendRequests.createdAt,
-          user: {
-            id: users.id,
-            username: users.username,
-            avatar: users.avatar
-          }
-        })
+        .select()
         .from(friendRequests)
-        .leftJoin(users, eq(friendRequests.fromUserId, users.id))
         .where(and(
           eq(friendRequests.toUserId, userId),
           eq(friendRequests.status, 'pending')
         ));
       
-      return requests;
+      // Get user details for each request
+      const requestsWithUsers = [];
+      for (const req of requests) {
+        const fromUser = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, req.fromUserId))
+          .limit(1);
+        
+        requestsWithUsers.push({
+          id: req.id,
+          fromUserId: req.fromUserId,
+          toUserId: req.toUserId,
+          status: req.status,
+          createdAt: req.createdAt,
+          user: fromUser[0] || null,
+        });
+      }
+      
+      return requestsWithUsers;
     } catch (error) {
       console.error('Error getting friend requests:', error);
       return [];
