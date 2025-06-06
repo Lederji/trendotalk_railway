@@ -94,13 +94,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = loginSchema.parse(req.body);
       
+      console.log('Login attempt:', { username, password: '***' });
+      
       const user = await storage.getUserByUsername(username);
+      console.log('User found:', user ? { id: user.id, username: user.username, hasPassword: !!user.password } : 'null');
+      
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
       // Use bcrypt to compare password with hashed password
       const isPasswordValid = await bcrypt.compare(password, user.password);
+      console.log('Password validation result:', isPasswordValid);
+      
       if (!isPasswordValid) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
@@ -122,6 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
+        console.error('Login error:', error);
         res.status(500).json({ message: 'Internal server error' });
       }
     }
