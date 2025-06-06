@@ -32,14 +32,14 @@ export default function ChatPage() {
   const { data: chat, isLoading } = useQuery({
     queryKey: ["/api/chats", chatId],
     enabled: !!chatId,
-  });
+  }) as { data: any, isLoading: boolean };
 
   // Fetch messages with fast polling
   const { data: messages = [] } = useQuery({
     queryKey: ["/api/chats", chatId, "messages"],
     enabled: !!chatId,
     refetchInterval: 500, // Fast polling for real-time feel
-  });
+  }) as { data: any[] };
 
   // Send message mutation
   const sendMessageMutation = useMutation({
@@ -230,12 +230,12 @@ export default function ChatPage() {
         <Avatar className="w-10 h-10">
           <AvatarImage src={chat?.user?.avatar} alt={chat?.user?.username} />
           <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-            {chat?.user?.username?.[0]?.toUpperCase()}
+            {chat?.user?.username?.[0]?.toUpperCase() || 'U'}
           </AvatarFallback>
         </Avatar>
         
         <div className="flex-1">
-          <h1 className="font-semibold text-lg">{chat?.user?.username}</h1>
+          <h1 className="font-semibold text-lg">{chat?.user?.username || 'User'}</h1>
           <p className="text-sm text-gray-500">
             {otherUserTyping ? 'Typing...' : 'Active now'}
           </p>
@@ -271,12 +271,12 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
+        {Array.isArray(messages) && messages.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500">No messages yet. Start the conversation!</p>
           </div>
         ) : (
-          messages.map((msg: any) => (
+          Array.isArray(messages) && messages.map((msg: any) => (
             <div
               key={msg.id}
               className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
