@@ -194,7 +194,16 @@ export default function Circle() {
       if (!response.ok) throw new Error('Failed to send message');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newMessage) => {
+      // Immediately update the selected chat with the new message
+      if (selectedChat) {
+        const updatedChat = {
+          ...selectedChat,
+          messages: [...(selectedChat.messages || []), newMessage]
+        };
+        setSelectedChat(updatedChat);
+      }
+      // Also invalidate to get fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
       setMessageText("");
     },

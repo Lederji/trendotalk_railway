@@ -2072,7 +2072,7 @@ export class DatabaseStorage implements IStorage {
         return false; // Request already exists
       }
       
-      // Check if they're already friends
+      // Check if they're already friends - if so, create chat directly
       const alreadyFriends = await db
         .select()
         .from(follows)
@@ -2082,7 +2082,25 @@ export class DatabaseStorage implements IStorage {
         ));
       
       if (alreadyFriends.length > 0) {
-        return false; // Already friends
+        // Check if chat already exists
+        const existingChat = await db
+          .select()
+          .from(chats)
+          .where(or(
+            and(eq(chats.user1Id, Math.min(fromUserId, toUserId)), eq(chats.user2Id, Math.max(fromUserId, toUserId))),
+            and(eq(chats.user1Id, Math.max(fromUserId, toUserId)), eq(chats.user2Id, Math.min(fromUserId, toUserId)))
+          ));
+          
+        if (existingChat.length === 0) {
+          // Create chat for existing friends
+          await db.insert(chats).values({
+            user1Id: Math.min(fromUserId, toUserId),
+            user2Id: Math.max(fromUserId, toUserId),
+            createdAt: new Date()
+          });
+        }
+        
+        return true; // Return success for already connected users
       }
       
       await db.insert(friendRequests).values({
