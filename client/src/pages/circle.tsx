@@ -110,52 +110,54 @@ export default function Circle() {
 
           {/* Circle's Vibe Section */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
               Circle's Vibe
             </h2>
             
-            <div className="flex gap-6 justify-center">
-              <div className="flex flex-col items-center">
-                <div className="relative">
-                  <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
-                    <AvatarImage src={user?.avatar} />
-                    <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
-                      F
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <Plus className="w-3 h-3 text-white" />
+            <div className="bg-white dark:bg-gray-700 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-600">
+              <div className="flex gap-6 justify-center">
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                      <AvatarImage src={user?.avatar} />
+                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
+                        F
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <Plus className="w-3 h-3 text-white" />
+                    </div>
                   </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                    Your vibe
+                  </p>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
-                  Your vibe
-                </p>
-              </div>
 
-              <div className="flex flex-col items-center">
-                <div className="relative">
-                  <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
-                    <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
-                      L
-                    </AvatarFallback>
-                  </Avatar>
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
+                        L
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                    tp-leader
+                  </p>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
-                  tp-leader
-                </p>
-              </div>
 
-              <div className="flex flex-col items-center">
-                <div className="relative">
-                  <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
-                    <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
-                      F
-                    </AvatarFallback>
-                  </Avatar>
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
+                        F
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                    tp-firstuser
+                  </p>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
-                  tp-firstuser
-                </p>
               </div>
             </div>
           </div>
@@ -195,7 +197,7 @@ export default function Circle() {
           </div>
 
           {/* Tab Content */}
-          <div className="h-96 overflow-y-auto">
+          <div className="h-64 overflow-y-auto pb-20">
             {activeTab === "chats" && (
               <div className="p-4 space-y-3">
                 {Array.isArray(chats) && chats.map((chat: any) => (
@@ -316,6 +318,50 @@ export default function Circle() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Bottom Navigation Bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
+          <div className="max-w-md mx-auto">
+            <div className="flex justify-around py-2">
+              <Link href="/" className="flex flex-col items-center p-3 text-gray-500 hover:text-purple-600">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <span className="text-xs mt-1">Home</span>
+              </Link>
+              
+              <Link href="/trends" className="flex flex-col items-center p-3 text-gray-500 hover:text-purple-600">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd"/>
+                </svg>
+                <span className="text-xs mt-1">Trends</span>
+              </Link>
+              
+              <Link href="/create" className="flex flex-col items-center p-3 text-gray-500 hover:text-purple-600">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"/>
+                </svg>
+                <span className="text-xs mt-1">Create</span>
+              </Link>
+              
+              <Link href="/circle" className="flex flex-col items-center p-3">
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                  </svg>
+                </div>
+                <span className="text-xs mt-1 text-purple-600 font-medium">Circle</span>
+              </Link>
+              
+              <Link href="/profile" className="flex flex-col items-center p-3 text-gray-500 hover:text-purple-600">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+                </svg>
+                <span className="text-xs mt-1">Profile</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
