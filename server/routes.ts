@@ -737,11 +737,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/friend-requests/:userId', authenticateUser, async (req: any, res: any) => {
     try {
       const targetUserId = Number(req.params.userId);
-      const success = await storage.sendFriendRequest(req.user.userId, targetUserId);
-      if (!success) {
+      const result = await storage.sendFriendRequest(req.user.userId, targetUserId);
+      
+      if (result === false) {
         return res.status(400).json({ message: 'Cannot send friend request' });
       }
-      res.json({ message: 'Connected successfully', success: true });
+      
+      if (result === 'already_friends') {
+        return res.json({ message: 'Connected successfully', success: true });
+      }
+      
+      res.json({ message: 'Friend request sent', success: true });
     } catch (error) {
       console.error('Error sending friend request:', error);
       res.status(500).json({ message: 'Internal server error' });

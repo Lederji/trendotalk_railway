@@ -2100,7 +2100,7 @@ export class DatabaseStorage implements IStorage {
           });
         }
         
-        return true; // Return success for already connected users
+        return 'already_friends'; // Return specific status for already connected users
       }
       
       await db.insert(friendRequests).values({
@@ -2249,6 +2249,9 @@ export class DatabaseStorage implements IStorage {
           .orderBy(messages.createdAt);
         
         if (otherUser) {
+          console.log(`Chat ${chat.id} messages:`, chatMessages.length, 'messages found');
+          console.log('Sample message:', chatMessages[0]);
+          
           formattedChats.push({
             id: chat.id,
             user: {
@@ -2282,7 +2285,14 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
       
-      return newMessage;
+      // Return message in expected format
+      return {
+        id: newMessage.id,
+        chatId: newMessage.chatId,
+        senderId: newMessage.senderId,
+        content: newMessage.content,
+        createdAt: newMessage.createdAt
+      };
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;
