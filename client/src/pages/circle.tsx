@@ -26,7 +26,17 @@ export default function Circle() {
 
   const { data: searchResults = [] } = useQuery({
     queryKey: ["/api/users/search", searchQuery],
-    enabled: searchQuery.length > 0,
+    queryFn: async () => {
+      if (!searchQuery || searchQuery.length < 2) return [];
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      });
+      if (!response.ok) throw new Error("Search failed");
+      return response.json();
+    },
+    enabled: searchQuery.length >= 2,
   });
 
   const { data: chats = [] } = useQuery({
@@ -100,7 +110,7 @@ export default function Circle() {
       <div className="max-w-md mx-auto bg-white dark:bg-gray-800 min-h-screen">
         {/* Header */}
         <div className="px-6 py-6">
-          <h1 className="text-2xl font-bold text-pink-500 mb-2">Your Circle</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-2">Your Circle</h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
             Connect with friends and share your moments
           </p>
@@ -119,7 +129,7 @@ export default function Circle() {
           {/* Circle's Vibe Section */}
           <div className="mb-8">
             <div className="bg-white dark:bg-gray-700 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-600">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
+              <h2 className="text-xl font-semibold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">
                 Circle's Vibe
               </h2>
               
@@ -135,7 +145,7 @@ export default function Circle() {
                     </Avatar>
                     <button
                       onClick={() => setShowVibeUpload(true)}
-                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center hover:from-pink-600 hover:to-purple-600 transition-all duration-200 shadow-lg"
                     >
                       <Plus className="w-3 h-3 text-white" />
                     </button>
@@ -178,14 +188,14 @@ export default function Circle() {
               onClick={() => setActiveTab("chats")}
               className={`flex-1 px-6 py-4 text-center font-medium ${
                 activeTab === "chats"
-                  ? "text-pink-500 border-b-2 border-pink-500"
+                  ? "text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text border-b-2 border-pink-500"
                   : "text-gray-500 dark:text-gray-400"
               }`}
             >
               <MessageCircle className="w-5 h-5 inline mr-2" />
               Chats
               {Array.isArray(chats) && chats.length > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-pink-100 text-pink-600">
+                <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-pink-100 to-purple-100 text-pink-600">
                   {chats.length}
                 </Badge>
               )}
@@ -194,7 +204,7 @@ export default function Circle() {
               onClick={() => setActiveTab("requests")}
               className={`flex-1 px-6 py-4 text-center font-medium ${
                 activeTab === "requests"
-                  ? "text-pink-500 border-b-2 border-pink-500"
+                  ? "text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text border-b-2 border-pink-500"
                   : "text-gray-500 dark:text-gray-400"
               }`}
             >
@@ -263,7 +273,7 @@ export default function Circle() {
                         size="sm"
                         onClick={() => acceptFriendRequestMutation.mutate(request.id)}
                         disabled={acceptFriendRequestMutation.isPending}
-                        className="bg-pink-500 hover:bg-pink-600 text-white"
+                        className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white transition-all duration-200 shadow-lg"
                       >
                         Accept
                       </Button>
@@ -305,7 +315,7 @@ export default function Circle() {
                             size="sm"
                             onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
                             disabled={sendFriendRequestMutation.isPending}
-                            className="bg-pink-500 hover:bg-pink-600 text-white"
+                            className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white transition-all duration-200 shadow-lg"
                           >
                             <UserPlus className="w-4 h-4 mr-1" />
                             Add to Circle
