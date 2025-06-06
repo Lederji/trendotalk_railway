@@ -188,8 +188,23 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      // TODO: Handle image upload
     }
+  };
+
+  const handleVideoCall = () => {
+    toast({
+      title: "Video Call",
+      description: "Starting video call...",
+    });
+    // Video call implementation would go here
+  };
+
+  const handleVoiceCall = () => {
+    toast({
+      title: "Voice Call", 
+      description: "Starting voice call...",
+    });
+    // Voice call implementation would go here
   };
 
   useEffect(() => {
@@ -250,12 +265,7 @@ export default function ChatPage() {
             variant="ghost"
             size="icon"
             className="rounded-full text-gray-600 hover:bg-gray-100"
-            onClick={() => {
-              toast({
-                title: "Voice Call",
-                description: "Voice calling feature will be available soon",
-              });
-            }}
+            onClick={handleVoiceCall}
           >
             <Phone className="w-5 h-5" />
           </Button>
@@ -403,20 +413,20 @@ export default function ChatPage() {
                 <span className="text-xs text-white">Audio</span>
               </div>
 
-              {/* Poll */}
+              {/* Event */}
               <div className="flex flex-col items-center space-y-2">
-                <Button className="w-12 h-12 rounded-full bg-yellow-500 hover:bg-yellow-600">
-                  <BarChart3 className="w-6 h-6 text-white" />
+                <Button className="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600">
+                  <Calendar className="w-6 h-6 text-white" />
                 </Button>
-                <span className="text-xs text-white">Poll</span>
+                <span className="text-xs text-white">Event</span>
               </div>
 
-              {/* Payment */}
+              {/* AI Images */}
               <div className="flex flex-col items-center space-y-2">
-                <Button className="w-12 h-12 rounded-full bg-teal-500 hover:bg-teal-600">
-                  <CreditCard className="w-6 h-6 text-white" />
+                <Button className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700">
+                  <ImageIcon className="w-6 h-6 text-white" />
                 </Button>
-                <span className="text-xs text-white">Payment</span>
+                <span className="text-xs text-white">AI Images</span>
               </div>
             </div>
           </div>
@@ -448,11 +458,22 @@ export default function ChatPage() {
                 disabled={sendMessageMutation.isPending}
               />
               
+              {/* File icon inside input */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full w-8 h-8 mr-1 text-gray-500"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              
               {/* Camera inside input */}
               <Button
                 variant="ghost"
                 size="icon"
                 className="rounded-full w-8 h-8 mr-2 text-gray-500"
+                onClick={() => imageInputRef.current?.click()}
               >
                 <Camera className="w-5 h-5" />
               </Button>
@@ -464,7 +485,7 @@ export default function ChatPage() {
             <Button
               onClick={handleSendMessage}
               disabled={sendMessageMutation.isPending}
-              className="rounded-full bg-green-500 hover:bg-green-600 w-12 h-12"
+              className="rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 w-12 h-12"
               size="icon"
             >
               <Send className="w-5 h-5 text-white" />
@@ -476,7 +497,7 @@ export default function ChatPage() {
               className={`rounded-full w-12 h-12 ${
                 isRecording 
                   ? 'bg-red-500 text-white animate-pulse' 
-                  : 'bg-green-500 text-white hover:bg-green-600'
+                  : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:opacity-90'
               }`}
               onMouseDown={startVoiceRecording}
               onMouseUp={stopVoiceRecording}
