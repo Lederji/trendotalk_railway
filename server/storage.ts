@@ -2776,7 +2776,7 @@ class HybridStorage extends DatabaseStorage {
   }
 }
 
-export const storage = new HybridStorage();
+export const storage = new MemStorage();
 export const videoCleanup = new VideoCleanupService();
 
 // Schedule cleanup to run every 24 hours

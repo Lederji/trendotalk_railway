@@ -9,22 +9,6 @@ import { Search, UserPlus, MessageCircle, Check, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 
-interface User {
-  id: number;
-  username: string;
-  avatar?: string;
-  isVerified?: boolean;
-}
-
-interface FriendRequest {
-  id: number;
-  fromUserId: number;
-  toUserId: number;
-  status: string;
-  createdAt: string;
-  fromUser: User;
-}
-
 export default function Circle() {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
@@ -126,9 +110,6 @@ export default function Circle() {
     },
   });
 
-  const typedFriendRequests = (friendRequests as FriendRequest[]) || [];
-  const typedSearchResults = (searchResults as User[]) || [];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-600 p-4">
       <div className="max-w-md mx-auto space-y-6">
@@ -139,17 +120,17 @@ export default function Circle() {
         </div>
 
         {/* Friend Requests */}
-        {typedFriendRequests.length > 0 && (
+        {friendRequests.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Friend Requests ({typedFriendRequests.length})</CardTitle>
+              <CardTitle>Friend Requests ({friendRequests.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {typedFriendRequests.map((request: FriendRequest) => (
+              {friendRequests.map((request: any) => (
                 <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={request.fromUser?.avatar} alt={request.fromUser?.username || 'User'} />
+                      <AvatarImage src={request.fromUser?.avatar} />
                       <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
                         {request.fromUser?.username?.[0]?.toUpperCase() || 'U'}
                       </AvatarFallback>
@@ -201,13 +182,13 @@ export default function Circle() {
                 className="pl-10"
               />
             </div>
-            {typedSearchResults.length > 0 && (
+            {searchResults.length > 0 && (
               <div className="space-y-2">
-                {typedSearchResults.map((searchUser: User) => (
+                {searchResults.map((searchUser: any) => (
                   <div key={searchUser.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={searchUser?.avatar} alt={searchUser?.username || 'User'} />
+                        <AvatarImage src={searchUser?.avatar} />
                         <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
                           {searchUser?.username?.[0]?.toUpperCase() || 'U'}
                         </AvatarFallback>
