@@ -2324,6 +2324,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserChats(userId: number): Promise<any[]> {
     try {
+      // Only get chats where users are following each other (friends)
       const userChats = await db
         .select({
           id: chats.id,
@@ -2332,6 +2333,16 @@ export class DatabaseStorage implements IStorage {
           user2Id: chats.user2Id
         })
         .from(chats)
+        .innerJoin(follows, or(
+          and(
+            eq(chats.user1Id, follows.followerId),
+            eq(chats.user2Id, follows.followingId)
+          ),
+          and(
+            eq(chats.user2Id, follows.followerId),
+            eq(chats.user1Id, follows.followingId)
+          )
+        ))
         .where(or(
           eq(chats.user1Id, userId),
           eq(chats.user2Id, userId)
