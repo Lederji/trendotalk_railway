@@ -41,7 +41,7 @@ function generateSessionId(userId: number): string {
   return `${userId}_${Math.random().toString(36).substring(2)}_${Date.now().toString(36)}`;
 }
 
-function authenticateUser(req: any, res: any, next: any) {
+async function authenticateUser(req: any, res: any, next: any) {
   const sessionId = req.headers.authorization?.replace('Bearer ', '');
   if (!sessionId) {
     return res.status(401).json({ message: 'Unauthorized' });
@@ -60,17 +60,18 @@ function authenticateUser(req: any, res: any, next: any) {
     if (parts.length >= 3) {
       const userId = parseInt(parts[0]);
       if (!isNaN(userId)) {
-        const user = Array.from((global as any).storage.users.values()).find((u: any) => u.id === userId);
+        const user = await storage.getUser(userId);
         if (user) {
           // Recreate session
-          sessions.set(sessionId, { userId: user.id, username: user.username });
-          req.user = { userId: user.id, username: user.username };
+          const sessionData = { userId: user.id, username: user.username };
+          sessions.set(sessionId, sessionData);
+          req.user = sessionData;
           return next();
         }
       }
     }
   } catch (error) {
-    // Ignore parsing errors
+    console.error('Session recreation error:', error);
   }
   
   return res.status(401).json({ message: 'Unauthorized' });
