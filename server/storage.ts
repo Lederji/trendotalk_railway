@@ -2237,7 +2237,13 @@ export class DatabaseStorage implements IStorage {
         
         // Get chat messages
         const chatMessages = await db
-          .select()
+          .select({
+            id: messages.id,
+            chatId: messages.chatId,
+            senderId: messages.senderId,
+            content: messages.content,
+            createdAt: messages.createdAt
+          })
           .from(messages)
           .where(eq(messages.chatId, chat.id))
           .orderBy(messages.createdAt);
