@@ -298,7 +298,46 @@ export default function ChatPage() {
         
         <div className="flex-1">
           <h1 className="font-semibold text-lg">{chat.user.username}</h1>
-          <p className="text-sm text-gray-500">Active now</p>
+          <p className="text-sm text-gray-500">
+            {otherUserTyping ? 'Typing...' : 'Active now'}
+          </p>
+        </div>
+        
+        {/* Voice and Video Call Icons */}
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-gray-600 hover:bg-gray-100"
+            onClick={() => {
+              toast({
+                title: "Voice Call",
+                description: "Voice calling feature will be available soon",
+              });
+            }}
+          >
+            <Phone className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-gray-600 hover:bg-gray-100"
+            onClick={() => {
+              toast({
+                title: "Video Call",
+                description: "Video calling feature will be available soon",
+              });
+            }}
+          >
+            <Video className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-gray-600 hover:bg-gray-100"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </Button>
         </div>
       </div>
 
@@ -392,28 +431,39 @@ export default function ChatPage() {
             <div className="flex items-end bg-gray-100 rounded-2xl">
               <Input
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  handleTyping();
+                }}
                 onKeyPress={handleKeyPress}
                 placeholder="Message..."
                 className="flex-1 border-0 bg-transparent rounded-2xl px-4 py-2 min-h-[40px] max-h-[120px] resize-none focus:ring-0 focus:outline-none"
                 disabled={sendMessageMutation.isPending}
               />
               
-              {/* Voice Message Button */}
-              {!message.trim() && (
+              {/* Voice Message Button - WhatsApp Style */}
+              {!message.trim() && !selectedFile && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full w-8 h-8 mr-2"
+                  className={`rounded-full w-8 h-8 mr-2 ${
+                    isRecording 
+                      ? 'bg-red-500 text-white animate-pulse' 
+                      : 'text-gray-500'
+                  }`}
+                  onMouseDown={startVoiceRecording}
+                  onMouseUp={stopVoiceRecording}
+                  onTouchStart={startVoiceRecording}
+                  onTouchEnd={stopVoiceRecording}
                 >
-                  <Mic className="w-4 h-4 text-gray-500" />
+                  <Mic className="w-4 h-4" />
                 </Button>
               )}
             </div>
           </div>
           
           {/* Send Button */}
-          {message.trim() ? (
+          {message.trim() || selectedFile ? (
             <Button
               onClick={handleSendMessage}
               disabled={sendMessageMutation.isPending}
