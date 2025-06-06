@@ -26,11 +26,6 @@ export default function Circle() {
     enabled: searchQuery.length > 0,
   });
 
-  const { data: vibes = [] } = useQuery({
-    queryKey: ["/api/vibes"],
-    refetchInterval: 30000,
-  });
-
   const { data: chats = [] } = useQuery({
     queryKey: ["/api/chats"],
     refetchInterval: 5000,
@@ -92,119 +87,110 @@ export default function Circle() {
     return date.toLocaleDateString('en-GB');
   };
 
-  // Get all users for vibes display including current user
-  const allUsers = [
-    { 
-      id: user?.id, 
-      username: user?.username, 
-      avatar: user?.avatar,
-      isCurrentUser: true 
-    },
-    ...(searchResults.length > 0 ? searchResults : [
-      { id: 3, username: "tp-leader", avatar: null },
-      { id: 4, username: "tp-firstuser", avatar: null }
-    ])
-  ].filter((u, index, self) => 
-    u.id && self.findIndex(user => user.id === u.id) === index
-  ).slice(0, 3);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
-      <div className="max-w-md mx-auto bg-white/90 backdrop-blur-sm dark:bg-gray-800/90 min-h-screen shadow-xl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-md mx-auto bg-white dark:bg-gray-800 min-h-screen">
         {/* Header */}
         <div className="px-6 py-6">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Your Circle</h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                Connect with friends
-              </p>
-            </div>
-            
-            {/* Search Bar */}
-            <div className="relative w-48">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gradient-to-r from-purple-50 to-pink-50 dark:bg-gray-700 border border-purple-200 dark:border-purple-600 rounded-full h-10 text-sm focus:border-purple-400 focus:ring-purple-400"
-              />
-            </div>
+          <h1 className="text-2xl font-bold text-pink-500 mb-2">Your Circle</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
+            Connect with friends and share your moments
+          </p>
+
+          {/* Search Bar */}
+          <div className="relative mb-8">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search users by username..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-gray-100 dark:bg-gray-700 border-none rounded-full h-12"
+            />
           </div>
 
           {/* Circle's Vibe Section */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
               Circle's Vibe
             </h2>
             
             <div className="flex gap-6 justify-center">
-              {allUsers.map((vibeUser, index) => (
-                <div key={vibeUser.id || index} className="flex flex-col items-center">
-                  <div className="relative">
-                    <Avatar className="w-16 h-16 border-4 border-gradient-to-r from-purple-300 to-pink-300 shadow-lg">
-                      <AvatarImage src={vibeUser.avatar} />
-                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-lg font-semibold">
-                        {vibeUser.isCurrentUser ? "F" : 
-                         vibeUser.username === "tp-leader" ? "L" : 
-                         vibeUser.username === "tp-firstuser" ? "F" : 
-                         vibeUser.username?.charAt(3)?.toUpperCase() || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    {vibeUser.isCurrentUser && (
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
-                        <Plus className="w-3 h-3 text-white" />
-                      </div>
-                    )}
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                    <AvatarImage src={user?.avatar} />
+                    <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
+                      F
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Plus className="w-3 h-3 text-white" />
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center font-medium">
-                    {vibeUser.isCurrentUser ? "Your vibe" : 
-                     vibeUser.username === "tp-leader" ? "tp-leader" : 
-                     vibeUser.username === "tp-firstuser" ? "tp-firstuser" : 
-                     vibeUser.username}
-                  </p>
                 </div>
-              ))}
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                  Your vibe
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                    <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
+                      L
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                  tp-leader
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                    <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
+                      F
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                  tp-firstuser
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Bottom Section */}
-        <div className="bg-gradient-to-br from-white to-purple-50/30 dark:bg-gray-800 border-t border-purple-200 dark:border-purple-700">
+        <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
           {/* Tab Navigation */}
-          <div className="flex border-b border-purple-200 dark:border-purple-700">
+          <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setActiveTab("chats")}
-              className={`flex-1 px-6 py-4 text-center font-medium transition-all ${
+              className={`flex-1 px-6 py-4 text-center font-medium ${
                 activeTab === "chats"
-                  ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 border-b-2 border-gradient-to-r from-purple-500 to-pink-500"
-                  : "text-gray-500 dark:text-gray-400 hover:text-purple-500"
+                  ? "text-pink-500 border-b-2 border-pink-500"
+                  : "text-gray-500 dark:text-gray-400"
               }`}
             >
               <MessageCircle className="w-5 h-5 inline mr-2" />
               Chats
-              {chats.length > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
+              {Array.isArray(chats) && chats.length > 0 && (
+                <Badge variant="secondary" className="ml-2 bg-pink-100 text-pink-600">
                   {chats.length}
                 </Badge>
               )}
             </button>
             <button
               onClick={() => setActiveTab("requests")}
-              className={`flex-1 px-6 py-4 text-center font-medium transition-all ${
+              className={`flex-1 px-6 py-4 text-center font-medium ${
                 activeTab === "requests"
-                  ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 border-b-2 border-gradient-to-r from-purple-500 to-pink-500"
-                  : "text-gray-500 dark:text-gray-400 hover:text-purple-500"
+                  ? "text-pink-500 border-b-2 border-pink-500"
+                  : "text-gray-500 dark:text-gray-400"
               }`}
             >
               <UserPlus className="w-5 h-5 inline mr-2" />
               Requests
-              {friendRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
-                  {friendRequests.length}
-                </Badge>
-              )}
             </button>
           </div>
 
@@ -212,7 +198,7 @@ export default function Circle() {
           <div className="h-96 overflow-y-auto">
             {activeTab === "chats" && (
               <div className="p-4 space-y-3">
-                {chats.map((chat: any) => (
+                {Array.isArray(chats) && chats.map((chat: any) => (
                   <Link key={chat.id} href={`/chat/${chat.id}`} className="block">
                     <div className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
                       <Avatar className="w-12 h-12">
@@ -237,7 +223,7 @@ export default function Circle() {
                     </div>
                   </Link>
                 ))}
-                {chats.length === 0 && (
+                {(!Array.isArray(chats) || chats.length === 0) && (
                   <div className="text-center py-8 text-gray-500">
                     <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p>No conversations yet</p>
@@ -249,7 +235,7 @@ export default function Circle() {
 
             {activeTab === "requests" && (
               <div className="p-4 space-y-3">
-                {friendRequests.map((request: any) => (
+                {Array.isArray(friendRequests) && friendRequests.map((request: any) => (
                   <div key={request.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <Avatar className="w-12 h-12">
                       <AvatarImage src={request.user?.avatar} />
@@ -268,14 +254,14 @@ export default function Circle() {
                         size="sm"
                         onClick={() => acceptFriendRequestMutation.mutate(request.id)}
                         disabled={acceptFriendRequestMutation.isPending}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md"
+                        className="bg-pink-500 hover:bg-pink-600 text-white"
                       >
                         Accept
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                        className="text-gray-600"
                       >
                         Decline
                       </Button>
@@ -284,7 +270,7 @@ export default function Circle() {
                 ))}
 
                 {/* Search Results */}
-                {searchQuery && searchResults.length > 0 && (
+                {searchQuery && Array.isArray(searchResults) && searchResults.length > 0 && (
                   <div className="mt-6">
                     <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
                       Search Results
@@ -310,7 +296,7 @@ export default function Circle() {
                             size="sm"
                             onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
                             disabled={sendFriendRequestMutation.isPending}
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md"
+                            className="bg-pink-500 hover:bg-pink-600 text-white"
                           >
                             <UserPlus className="w-4 h-4 mr-1" />
                             Add
@@ -321,7 +307,7 @@ export default function Circle() {
                   </div>
                 )}
 
-                {friendRequests.length === 0 && !searchQuery && (
+                {(!Array.isArray(friendRequests) || friendRequests.length === 0) && !searchQuery && (
                   <div className="text-center py-8 text-gray-500">
                     <UserPlus className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p>No friend requests</p>
