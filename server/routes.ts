@@ -61,6 +61,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userData = insertUserSchema.parse(req.body);
       
+      // Convert username to lowercase for consistency
+      userData.username = userData.username.toLowerCase();
+      
       // Check username availability
       const isAvailable = await storage.checkUsernameAvailability(userData.username);
       if (!isAvailable) {
@@ -94,7 +97,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = loginSchema.parse(req.body);
       
-      const user = await storage.getUserByUsername(username);
+      // Convert username to lowercase for case-insensitive login
+      const user = await storage.getUserByUsername(username.toLowerCase());
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }

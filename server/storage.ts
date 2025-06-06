@@ -91,6 +91,8 @@ export class MemStorage implements IStorage {
   private likes: Map<number, Like> = new Map();
   private stories: Map<number, Story> = new Map();
   private follows: Map<number, Follow> = new Map();
+  private friendRequests: Map<number, any> = new Map();
+  private chats: Map<number, any> = new Map();
   
   private currentUserId = 1;
   private currentPostId = 1;
@@ -98,6 +100,8 @@ export class MemStorage implements IStorage {
   private currentLikeId = 1;
   private currentStoryId = 1;
   private currentFollowId = 1;
+  private currentFriendRequestId = 1;
+  private currentChatId = 1;
 
   constructor() {
     this.seedData();

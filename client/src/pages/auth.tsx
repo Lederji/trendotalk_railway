@@ -336,9 +336,9 @@ export default function Auth() {
                     name="bio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bio (Optional)</FormLabel>
+                        <FormLabel>Name (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="Tell us about yourself" {...field} />
+                          <Input placeholder="Enter your name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
