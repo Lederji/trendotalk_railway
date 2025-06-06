@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, MessageCircle, UserPlus, Check, X, Send, Upload, Camera, Video } from "lucide-react";
+import { Search, MessageCircle, UserPlus, Check, X, Send, Upload, Camera, Video, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import Auth from "./auth";
@@ -189,9 +189,10 @@ export default function Circle() {
 
   const uploadVibeMutation = useMutation({
     mutationFn: async ({ file, title }: { file: File; title: string }) => {
+      setIsUploading(true);
       const formData = new FormData();
       formData.append('media', file);
-      formData.append('caption', title);
+      formData.append('title', title);
       
       const response = await fetch('/api/stories', {
         method: 'POST',
@@ -205,17 +206,27 @@ export default function Circle() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/friends/status"] });
-      toast({ title: "Vibe uploaded successfully!" });
-      setVibeUploadOpen(false);
+      // Invalidate and refetch vibe-related queries
+      queryClient.invalidateQueries({ queryKey: ["/api/stories/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stories/circle"] });
+      
+      // Reset form
       setSelectedFile(null);
-      setVibeTitle("");
       setFilePreview(null);
+      setVibeTitle("");
+      setVibeUploadOpen(false);
+      setIsUploading(false);
+      
+      toast({
+        title: "Vibe shared!",
+        description: "Your vibe has been shared with your Circle for 24 hours",
+      });
     },
     onError: () => {
+      setIsUploading(false);
       toast({ 
-        title: "Failed to upload vibe", 
-        description: "Please try again",
+        title: "Upload failed", 
+        description: "Failed to share your vibe. Please try again.",
         variant: "destructive" 
       });
     },
@@ -400,8 +411,11 @@ export default function Circle() {
                       )}
                     </Avatar>
                     <div 
-                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center cursor-pointer hover:bg-blue-600"
-                      onClick={() => document.getElementById('vibe-file-input')?.click()}
+                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center cursor-pointer hover:bg-blue-600 z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        document.getElementById('vibe-file-input')?.click();
+                      }}
                     >
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -464,6 +478,85 @@ export default function Circle() {
             </ScrollArea>
           </CardContent>
         </Card>
+
+        {/* Vibe Viewer Modal */}
+        <Dialog open={vibeViewerOpen} onOpenChange={setVibeViewerOpen}>
+          <DialogContent className="sm:max-w-md p-0 bg-black">
+            <div className="relative aspect-[9/16] w-full max-w-sm mx-auto">
+              {viewingVibes.length > 0 && (
+                <div className="relative w-full h-full">
+                  {viewingVibes[currentVibeIndex]?.imageUrl ? (
+                    <img 
+                      src={viewingVibes[currentVibeIndex].imageUrl} 
+                      alt={`${viewingUsername}'s vibe`}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : viewingVibes[currentVibeIndex]?.videoUrl ? (
+                    <video 
+                      src={viewingVibes[currentVibeIndex].videoUrl} 
+                      className="w-full h-full object-cover rounded-lg"
+                      controls
+                      autoPlay
+                      muted
+                    />
+                  ) : null}
+                  
+                  {/* Title overlay */}
+                  {viewingVibes[currentVibeIndex]?.title && (
+                    <div className="absolute bottom-4 left-4 right-4 bg-black/50 text-white p-2 rounded text-sm backdrop-blur-sm">
+                      {viewingVibes[currentVibeIndex].title}
+                    </div>
+                  )}
+                  
+                  {/* User info overlay */}
+                  <div className="absolute top-4 left-4 flex items-center space-x-2">
+                    <Avatar className="w-8 h-8 ring-2 ring-white">
+                      <AvatarImage src={user?.avatar} alt={viewingUsername} />
+                      <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm">
+                        {viewingUsername[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-white font-medium text-sm">{viewingUsername}</span>
+                  </div>
+                  
+                  {/* Navigation arrows if multiple vibes */}
+                  {viewingVibes.length > 1 && (
+                    <>
+                      {currentVibeIndex > 0 && (
+                        <button
+                          onClick={() => setCurrentVibeIndex(currentVibeIndex - 1)}
+                          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                      )}
+                      {currentVibeIndex < viewingVibes.length - 1 && (
+                        <button
+                          onClick={() => setCurrentVibeIndex(currentVibeIndex + 1)}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      )}
+                      
+                      {/* Dots indicator */}
+                      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex space-x-1">
+                        {viewingVibes.map((_, index) => (
+                          <div
+                            key={index}
+                            className={`w-2 h-2 rounded-full ${
+                              index === currentVibeIndex ? 'bg-white' : 'bg-white/50'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Tabs for Chats and Requests */}
         <Tabs defaultValue={activeTab} className="w-full" id="chats-section">
