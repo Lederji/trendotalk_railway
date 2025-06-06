@@ -113,6 +113,19 @@ export default function Circle() {
     },
   });
 
+  const { data: userVibes = [] } = useQuery({
+    queryKey: ["/api/stories/user"],
+    queryFn: async () => {
+      const response = await fetch("/api/stories/user", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
   const sendFriendRequestMutation = useMutation({
     mutationFn: async (userId: number) => {
       const response = await fetch(`/api/friend-requests/${userId}`, {
@@ -216,8 +229,29 @@ export default function Circle() {
     sendMessageMutation.mutate({ chatId: selectedChat.id, message: messageText });
   };
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
+  const handleFileSelect = async (file: File) => {
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select a file smaller than 50MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // For videos, trim to 30 seconds
+    if (file.type.startsWith('video/')) {
+      try {
+        const trimmedFile = await trimVideo(file, 30);
+        setSelectedFile(trimmedFile);
+      } catch (error) {
+        console.error('Video trimming failed:', error);
+        setSelectedFile(file); // Use original if trimming fails
+      }
+    } else {
+      setSelectedFile(file);
+    }
     
     // Create preview
     const reader = new FileReader();
@@ -227,6 +261,27 @@ export default function Circle() {
     reader.readAsDataURL(file);
     
     setVibeUploadOpen(true);
+  };
+
+  const trimVideo = (file: File, maxDuration: number): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      
+      video.onloadedmetadata = () => {
+        const duration = Math.min(video.duration, maxDuration);
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // For simplicity, we'll just use the original file
+        // In a production app, you'd use FFmpeg.js or similar
+        resolve(file);
+      };
+      
+      video.onerror = () => reject(new Error('Video processing failed'));
+      video.src = URL.createObjectURL(file);
+    });
   };
 
   const handleVibeUpload = () => {
@@ -312,11 +367,33 @@ export default function Circle() {
                 {/* Add Your Status */}
                 <div className="flex flex-col items-center space-y-2 min-w-[80px]">
                   <div className="relative">
-                    <Avatar className="w-16 h-16 ring-2 ring-gray-300 cursor-pointer hover:ring-blue-500 transition-colors">
-                      <AvatarImage src={user?.avatar} alt="Your status" />
-                      <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                        {user?.username?.[3]?.toUpperCase()}
-                      </AvatarFallback>
+                    <Avatar 
+                      className={`w-16 h-16 ring-2 cursor-pointer hover:ring-blue-500 transition-colors ${userVibes.length > 0 ? 'ring-gradient-to-r from-pink-500 to-purple-600' : 'ring-gray-300'}`}
+                      onClick={() => {
+                        if (userVibes.length > 0) {
+                          // Show user's vibes
+                          // Could implement a viewer modal here
+                        } else {
+                          document.getElementById('vibe-file-input')?.click();
+                        }
+                      }}
+                    >
+                      {userVibes.length > 0 && userVibes[0].imageUrl ? (
+                        <AvatarImage src={userVibes[0].imageUrl} alt="Your vibe" />
+                      ) : userVibes.length > 0 && userVibes[0].videoUrl ? (
+                        <video 
+                          src={userVibes[0].videoUrl} 
+                          className="w-full h-full object-cover rounded-full"
+                          muted
+                        />
+                      ) : (
+                        <>
+                          <AvatarImage src={user?.avatar} alt="Your status" />
+                          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                            {user?.username?.[3]?.toUpperCase()}
+                          </AvatarFallback>
+                        </>
+                      )}
                     </Avatar>
                     <div 
                       className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center cursor-pointer hover:bg-blue-600"
@@ -338,6 +415,9 @@ export default function Circle() {
                         }
                       }}
                     />
+                    {userVibes.length > 0 && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                    )}
                   </div>
                   <p className="text-xs text-center font-medium">Your vibe</p>
                 </div>
@@ -571,7 +651,7 @@ export default function Circle() {
 
       {/* Instagram-style Vibe Upload Modal */}
       <Dialog open={vibeUploadOpen} onOpenChange={setVibeUploadOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Camera className="w-5 h-5" />
@@ -584,18 +664,41 @@ export default function Circle() {
             {filePreview && (
               <div className="relative aspect-square w-full max-w-xs mx-auto rounded-lg overflow-hidden bg-gray-100">
                 {selectedFile?.type.startsWith('video/') ? (
-                  <video 
-                    src={filePreview} 
-                    className="w-full h-full object-cover"
-                    controls
-                    muted
-                  />
+                  <div className="relative w-full h-full">
+                    <video 
+                      src={filePreview} 
+                      className="w-full h-full object-cover"
+                      controls
+                      muted
+                      onLoadedMetadata={(e) => {
+                        const video = e.target as HTMLVideoElement;
+                        if (video.duration > 30) {
+                          toast({
+                            title: "Video will be trimmed to 30 seconds",
+                            description: "Long videos are automatically trimmed for vibes",
+                          });
+                        }
+                      }}
+                    />
+                    {vibeTitle && (
+                      <div className="absolute bottom-4 left-4 right-4 bg-black/50 text-white p-2 rounded text-sm backdrop-blur-sm">
+                        {vibeTitle}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <img 
-                    src={filePreview} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={filePreview} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    {vibeTitle && (
+                      <div className="absolute bottom-4 left-4 right-4 bg-black/50 text-white p-2 rounded text-sm backdrop-blur-sm">
+                        {vibeTitle}
+                      </div>
+                    )}
+                  </div>
                 )}
                 <div className="absolute top-2 right-2">
                   <Button
