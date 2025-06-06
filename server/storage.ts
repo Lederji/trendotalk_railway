@@ -103,13 +103,12 @@ export class MemStorage implements IStorage {
     this.seedData();
   }
 
-  private async seedData() {
-    // Create admin user with hashed password
-    const hashedAdminPassword = await bcrypt.hash("IpjDr620911@TrendoTalk", 10);
+  private seedData() {
+    // Create admin user with pre-hashed password
     const admin: User = {
       id: this.currentUserId++,
       username: "ipj.trendotalk",
-      password: hashedAdminPassword,
+      password: "$2b$10$ArRSRqxl3oWTY4IuFN6iIOt5tZB1HHO1RNdFc1r6aZJBpMR.7zNpO", // IpjDr620911@TrendoTalk
       bio: "Official TrendoTalk Account",
       isAdmin: true,
       avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
@@ -119,7 +118,7 @@ export class MemStorage implements IStorage {
     };
     this.users.set(admin.id, admin);
 
-    // Create some sample users
+    // Create sample users with pre-hashed password
     const sampleUsers = [
       {
         username: "tp-firstuser",
@@ -148,8 +147,8 @@ export class MemStorage implements IStorage {
       }
     ];
 
-    // Hash password for sample users
-    const hashedSamplePassword = await bcrypt.hash("password123", 10);
+    // Pre-hashed password for "password123"
+    const hashedSamplePassword = "$2b$10$E0b4Eowzbl61x7ipLzgejOQnzQIry/uIMSRcnAXj9FyIw2uiYx132";
     
     sampleUsers.forEach(userData => {
       const user: User = {
