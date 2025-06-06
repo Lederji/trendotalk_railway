@@ -644,9 +644,9 @@ export default function Circle() {
                           </Avatar>
                         )}
                         <div className={`max-w-xs px-4 py-2 rounded-2xl shadow-sm ${message.senderId === user?.id ? 'bg-blue-500 text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'}`}>
-                          <p className="text-sm leading-relaxed">{message.content}</p>
+                          <p className="text-sm leading-relaxed">{message.message || message.content}</p>
                           <p className={`text-xs mt-1 ${message.senderId === user?.id ? 'text-blue-100' : 'text-gray-400'}`}>
-                            {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(message.createdAt || message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </div>
@@ -710,7 +710,7 @@ export default function Circle() {
                           <div className="flex-1">
                             <h3 className="font-semibold">{chat.user.username}</h3>
                             <p className="text-sm text-gray-500 truncate">
-                              {chat.lastMessage || "Start a conversation"}
+                              {chat.lastMessage?.message || chat.lastMessage?.content || "Start a conversation"}
                             </p>
                           </div>
                           <div className="text-xs text-gray-400">
