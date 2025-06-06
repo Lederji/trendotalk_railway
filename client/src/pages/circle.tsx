@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, MessageCircle, UserPlus, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
+import { Navigation } from "@/components/layout/navigation";
 
 export default function Circle() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -321,49 +322,8 @@ export default function Circle() {
           </div>
         </div>
 
-        {/* Bottom Navigation Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
-          <div className="max-w-md mx-auto">
-            <div className="flex justify-around py-2">
-              <Link href="/" className="flex flex-col items-center p-3 text-gray-500 hover:text-purple-600">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-                </svg>
-                <span className="text-xs mt-1">Home</span>
-              </Link>
-              
-              <Link href="/trends" className="flex flex-col items-center p-3 text-gray-500 hover:text-purple-600">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd"/>
-                </svg>
-                <span className="text-xs mt-1">Trends</span>
-              </Link>
-              
-              <Link href="/create" className="flex flex-col items-center p-3 text-gray-500 hover:text-purple-600">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"/>
-                </svg>
-                <span className="text-xs mt-1">Create</span>
-              </Link>
-              
-              <Link href="/circle" className="flex flex-col items-center p-3">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-                  </svg>
-                </div>
-                <span className="text-xs mt-1 text-purple-600 font-medium">Circle</span>
-              </Link>
-              
-              <Link href="/profile" className="flex flex-col items-center p-3 text-gray-500 hover:text-purple-600">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-                </svg>
-                <span className="text-xs mt-1">Profile</span>
-              </Link>
-            </div>
-          </div>
-        </div>
+        {/* Bottom Navigation */}
+        <Navigation />
       </div>
     </div>
   );
