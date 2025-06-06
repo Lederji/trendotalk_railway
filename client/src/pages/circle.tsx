@@ -116,7 +116,7 @@ export default function Circle() {
                 Circle's Vibe
               </h2>
               
-              <div className="flex gap-6 justify-center">
+              <div className="flex gap-6 justify-start">
                 <div className="flex flex-col items-center">
                   <div className="relative">
                     <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
