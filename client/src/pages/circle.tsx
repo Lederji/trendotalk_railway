@@ -9,10 +9,12 @@ import { Search, MessageCircle, UserPlus, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { Navigation } from "@/components/layout/navigation";
+import { VibeUpload } from "@/components/vibe/vibe-upload";
 
 export default function Circle() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("chats");
+  const [showVibeUpload, setShowVibeUpload] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -30,6 +32,11 @@ export default function Circle() {
   const { data: chats = [] } = useQuery({
     queryKey: ["/api/chats"],
     refetchInterval: 5000,
+  });
+
+  const { data: vibes = [] } = useQuery({
+    queryKey: ["/api/vibes"],
+    refetchInterval: 10000,
   });
 
   const sendFriendRequestMutation = useMutation({
@@ -117,48 +124,47 @@ export default function Circle() {
               </h2>
               
               <div className="flex gap-6 justify-start">
+                {/* Current User Vibe */}
                 <div className="flex flex-col items-center">
                   <div className="relative">
-                    <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                    <Avatar className="w-16 h-16 border-4 border-white shadow-lg cursor-pointer">
                       <AvatarImage src={user?.avatar} />
                       <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
-                        F
+                        {user?.username?.charAt(3)?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                    <button
+                      onClick={() => setShowVibeUpload(true)}
+                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+                    >
                       <Plus className="w-3 h-3 text-white" />
-                    </div>
+                    </button>
                   </div>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
                     Your vibe
                   </p>
                 </div>
 
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
-                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
-                        L
-                      </AvatarFallback>
-                    </Avatar>
+                {/* Friend Vibes - Only show users who have active vibes */}
+                {Array.isArray(vibes) && vibes.filter((vibe: any) => {
+                  if (!vibe.user || vibe.user.id === user?.id) return false;
+                  const vibeAge = new Date().getTime() - new Date(vibe.createdAt).getTime();
+                  return vibeAge < 24 * 60 * 60 * 1000; // Only show vibes less than 24 hours old
+                }).slice(0, 2).map((vibe: any) => (
+                  <div key={vibe.id} className="flex flex-col items-center">
+                    <div className="relative">
+                      <Avatar className="w-16 h-16 border-4 border-white shadow-lg cursor-pointer">
+                        <AvatarImage src={vibe.user?.avatar} />
+                        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
+                          {vibe.user?.username?.charAt(3)?.toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                      {vibe.user?.username?.replace('tp-', '') || 'Unknown'}
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
-                    tp-leader
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
-                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
-                        F
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
-                    tp-firstuser
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -324,6 +330,11 @@ export default function Circle() {
 
         {/* Bottom Navigation */}
         <Navigation />
+
+        {/* Vibe Upload Modal */}
+        {showVibeUpload && (
+          <VibeUpload onClose={() => setShowVibeUpload(false)} />
+        )}
       </div>
     </div>
   );
