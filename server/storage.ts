@@ -2570,7 +2570,213 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+// Hybrid storage: Database for posts/users, Memory for chats/friend requests
+class HybridStorage extends DatabaseStorage {
+  private memFriendRequests: Map<number, any> = new Map();
+  private memChats: Map<number, any> = new Map();
+  private memMessages: Map<number, any> = new Map();
+  private currentFriendRequestId = 1;
+  private currentChatId = 1;
+  private currentMessageId = 1;
+
+  constructor() {
+    super();
+    this.seedChatData();
+  }
+
+  private seedChatData() {
+    // Create sample chats
+    const chat1 = {
+      id: 1,
+      participants: [2, 3], // tp-firstuser and tp-leader
+      createdAt: new Date(),
+      lastMessage: "Hello there!",
+      lastMessageTime: new Date().toISOString()
+    };
+    
+    const chat2 = {
+      id: 2,
+      participants: [3, 2], // tp-leader and tp-firstuser
+      createdAt: new Date(),
+      lastMessage: "How are you?",
+      lastMessageTime: new Date().toISOString()
+    };
+
+    this.memChats.set(1, chat1);
+    this.memChats.set(2, chat2);
+    this.currentChatId = 3;
+
+    // Create sample messages
+    const message1 = {
+      id: 1,
+      chatId: 1,
+      senderId: 2,
+      content: "Hello there!",
+      createdAt: new Date().toISOString()
+    };
+
+    const message2 = {
+      id: 2,
+      chatId: 1,
+      senderId: 3,
+      content: "Hi! How are you doing?",
+      createdAt: new Date().toISOString()
+    };
+
+    this.memMessages.set(1, message1);
+    this.memMessages.set(2, message2);
+    this.currentMessageId = 3;
+  }
+
+  // Override friend request methods to use memory
+  async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
+    try {
+      if (fromUserId === toUserId) return false;
+
+      // Check if request already exists
+      const existing = Array.from(this.memFriendRequests.values()).find(req =>
+        (req.fromUserId === fromUserId && req.toUserId === toUserId) ||
+        (req.fromUserId === toUserId && req.toUserId === fromUserId)
+      );
+
+      if (existing) return false;
+
+      const request = {
+        id: this.currentFriendRequestId++,
+        fromUserId,
+        toUserId,
+        status: 'pending',
+        createdAt: new Date()
+      };
+
+      this.memFriendRequests.set(request.id, request);
+      return true;
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      return false;
+    }
+  }
+
+  async getFriendRequests(userId: number): Promise<any[]> {
+    const requests = Array.from(this.memFriendRequests.values())
+      .filter(req => req.toUserId === userId && req.status === 'pending');
+    
+    const requestsWithUsers = [];
+    for (const req of requests) {
+      const fromUser = await this.getUser(req.fromUserId);
+      if (fromUser) {
+        requestsWithUsers.push({
+          ...req,
+          fromUser: {
+            id: fromUser.id,
+            username: fromUser.username,
+            avatar: fromUser.avatar
+          }
+        });
+      }
+    }
+    return requestsWithUsers;
+  }
+
+  async acceptFriendRequest(requestId: number, userId: number): Promise<boolean> {
+    try {
+      const request = this.memFriendRequests.get(requestId);
+      if (!request || request.toUserId !== userId) return false;
+
+      // Add mutual follows
+      await this.followUser(request.fromUserId, request.toUserId);
+      await this.followUser(request.toUserId, request.fromUserId);
+
+      // Create chat between users
+      const chat = {
+        id: this.currentChatId++,
+        participants: [request.fromUserId, request.toUserId],
+        createdAt: new Date(),
+        lastMessage: "",
+        lastMessageTime: new Date().toISOString()
+      };
+      this.memChats.set(chat.id, chat);
+
+      // Remove request
+      this.memFriendRequests.delete(requestId);
+      return true;
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      return false;
+    }
+  }
+
+  async rejectFriendRequest(requestId: number, userId: number): Promise<boolean> {
+    const request = this.memFriendRequests.get(requestId);
+    if (!request || request.toUserId !== userId) return false;
+    
+    this.memFriendRequests.delete(requestId);
+    return true;
+  }
+
+  // Override chat methods to use memory
+  async getUserChats(userId: number): Promise<any[]> {
+    const userChats = Array.from(this.memChats.values())
+      .filter(chat => chat.participants.includes(userId));
+
+    const chatsWithUsers = [];
+    for (const chat of userChats) {
+      const otherUserId = chat.participants.find(id => id !== userId);
+      const otherUser = await this.getUser(otherUserId);
+      
+      if (otherUser) {
+        const messages = Array.from(this.memMessages.values())
+          .filter(msg => msg.chatId === chat.id)
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+        chatsWithUsers.push({
+          id: chat.id,
+          user: {
+            id: otherUser.id,
+            username: otherUser.username,
+            avatar: otherUser.avatar
+          },
+          messages,
+          lastMessage: chat.lastMessage,
+          lastMessageTime: chat.lastMessageTime
+        });
+      }
+    }
+    
+    return chatsWithUsers;
+  }
+
+  async sendMessage(chatId: number, senderId: number, message: string): Promise<any> {
+    try {
+      const chat = this.memChats.get(chatId);
+      if (!chat || !chat.participants.includes(senderId)) {
+        throw new Error('Access denied to chat');
+      }
+
+      const newMessage = {
+        id: this.currentMessageId++,
+        chatId,
+        senderId,
+        content: message,
+        createdAt: new Date().toISOString()
+      };
+
+      this.memMessages.set(newMessage.id, newMessage);
+
+      // Update chat last message
+      chat.lastMessage = message;
+      chat.lastMessageTime = newMessage.createdAt;
+      this.memChats.set(chatId, chat);
+
+      return newMessage;
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  }
+}
+
+export const storage = new HybridStorage();
 export const videoCleanup = new VideoCleanupService();
 
 // Schedule cleanup to run every 24 hours
