@@ -65,6 +65,12 @@ export default function Circle() {
     enabled: searchQuery.length > 0,
   });
 
+  // Type cast the data
+  const typedFriendRequests = (friendRequests as FriendRequest[]) || [];
+  const typedUserStories = (userStories as Story[]) || [];
+  const typedSearchResults = (searchResults as User[]) || [];
+  const typedStories = (stories as StoryWithUser[]) || [];
+
   const sendFriendRequestMutation = useMutation({
     mutationFn: async (userId: number) => {
       const response = await fetch(`/api/friend-requests/${userId}`, {
@@ -217,26 +223,26 @@ export default function Circle() {
         </div>
 
         {/* Friend Requests */}
-        {friendRequests.length > 0 && (
+        {typedFriendRequests.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                Friend Requests ({friendRequests.length})
+                Friend Requests ({typedFriendRequests.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {friendRequests.map((request: FriendRequest) => (
+              {typedFriendRequests.map((request: FriendRequest) => (
                 <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={request.fromUser.avatar} alt={request.fromUser.username} />
+                      <AvatarImage src={request.fromUser?.avatar} alt={request.fromUser?.username || 'User'} />
                       <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                        {request.fromUser.username[0]?.toUpperCase()}
+                        {request.fromUser?.username?.[0]?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{request.fromUser.username}</p>
+                      <p className="font-medium">{request.fromUser?.username || 'Unknown User'}</p>
                       <p className="text-sm text-gray-500">wants to connect</p>
                     </div>
                   </div>
@@ -305,7 +311,7 @@ export default function Circle() {
         </Card>
 
         {/* Your Stories */}
-        {userStories.length > 0 && (
+        {typedUserStories.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -315,7 +321,7 @@ export default function Circle() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
-                {userStories.map((story: Story) => (
+                {typedUserStories.map((story: Story) => (
                   <div key={story.id} className="relative aspect-square rounded-lg overflow-hidden">
                     {story.imageUrl ? (
                       <img
@@ -364,20 +370,20 @@ export default function Circle() {
                 className="pl-10"
               />
             </div>
-            {searchResults.length > 0 && (
+            {typedSearchResults.length > 0 && (
               <div className="space-y-2">
-                {searchResults.map((searchUser: User) => (
+                {typedSearchResults.map((searchUser: User) => (
                   <div key={searchUser.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={searchUser.avatar} alt={searchUser.username} />
+                        <AvatarImage src={searchUser?.avatar} alt={searchUser?.username || 'User'} />
                         <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                          {searchUser.username[0]?.toUpperCase()}
+                          {searchUser?.username?.[0]?.toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{searchUser.username}</p>
-                        {searchUser.isVerified && (
+                        <p className="font-medium">{searchUser?.username || 'Unknown User'}</p>
+                        {searchUser?.isVerified && (
                           <p className="text-sm text-blue-500">Verified</p>
                         )}
                       </div>
@@ -408,14 +414,14 @@ export default function Circle() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {stories.length === 0 ? (
+            {typedStories.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>No stories from your circle yet</p>
                 <p className="text-sm mt-2">Connect with friends to see their stories here</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                {stories.map((story: StoryWithUser) => (
+                {typedStories.map((story: StoryWithUser) => (
                   <div key={story.id} className="relative aspect-square rounded-lg overflow-hidden">
                     {story.imageUrl ? (
                       <img
