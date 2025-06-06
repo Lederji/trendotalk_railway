@@ -69,7 +69,7 @@ export default function ChatPage() {
       websocket.send(JSON.stringify({
         type: 'join',
         userId: user.id,
-        chatId: parseInt(chatId)
+        chatId: parseInt(chatId || '0')
       }));
       setWs(websocket);
     };
@@ -117,7 +117,7 @@ export default function ChatPage() {
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'message',
-          chatId: parseInt(chatId),
+          chatId: parseInt(chatId || '0'),
           userId: user?.id,
           message: newMessage
         }));
@@ -146,7 +146,7 @@ export default function ChatPage() {
       setIsTyping(true);
       ws.send(JSON.stringify({
         type: 'typing',
-        chatId: parseInt(chatId),
+        chatId: parseInt(chatId || '0'),
         userId: user?.id,
         isTyping: true
       }));
@@ -163,7 +163,7 @@ export default function ChatPage() {
         setIsTyping(false);
         ws.send(JSON.stringify({
           type: 'typing',
-          chatId: parseInt(chatId),
+          chatId: parseInt(chatId || '0'),
           userId: user?.id,
           isTyping: false
         }));
