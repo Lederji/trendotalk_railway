@@ -464,14 +464,15 @@ export class MemStorage implements IStorage {
     return commentsWithUsers.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 
-  async createStory(storyData: InsertStory & { userId: number }): Promise<Story> {
+  async createStory(storyData: InsertStory & { userId: number; expiresAt?: Date }): Promise<Story> {
     const story: Story = {
       id: this.currentStoryId++,
       userId: storyData.userId,
       imageUrl: storyData.imageUrl || null,
       videoUrl: storyData.videoUrl || null,
+      title: storyData.title || null,
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+      expiresAt: storyData.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
     };
     
     this.stories.set(story.id, story);
@@ -1483,7 +1484,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createStory(story: InsertStory & { userId: number }): Promise<Story> {
+  async createStory(story: InsertStory & { userId: number; expiresAt?: Date }): Promise<Story> {
     try {
       // Clean up existing stories for this user if they're posting within 24 hours
       const existingStories = await db
@@ -1505,8 +1506,10 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24);
+      const expiresAt = story.expiresAt || new Date();
+      if (!story.expiresAt) {
+        expiresAt.setHours(expiresAt.getHours() + 24);
+      }
       
       const [newStory] = await db
         .insert(stories)

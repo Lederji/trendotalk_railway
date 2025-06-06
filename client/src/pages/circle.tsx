@@ -30,6 +30,11 @@ export default function Circle() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [vibeTitle, setVibeTitle] = useState("");
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [vibeViewerOpen, setVibeViewerOpen] = useState(false);
+  const [viewingVibes, setViewingVibes] = useState<any[]>([]);
+  const [viewingUsername, setViewingUsername] = useState("");
+  const [currentVibeIndex, setCurrentVibeIndex] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Handle URL hash navigation
   useEffect(() => {
@@ -100,15 +105,15 @@ export default function Circle() {
     },
   });
 
-  const { data: friendStatus = [] } = useQuery({
-    queryKey: ["/api/friends/status"],
+  const { data: circleVibes = [] } = useQuery({
+    queryKey: ["/api/stories/circle"],
     queryFn: async () => {
-      const response = await fetch("/api/friends/status", {
+      const response = await fetch("/api/stories/circle", {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         }
       });
-      if (!response.ok) throw new Error('Failed to fetch friend status');
+      if (!response.ok) return [];
       return response.json();
     },
   });
@@ -368,13 +373,12 @@ export default function Circle() {
                 <div className="flex flex-col items-center space-y-2 min-w-[80px]">
                   <div className="relative">
                     <Avatar 
-                      className={`w-16 h-16 ring-2 cursor-pointer hover:ring-blue-500 transition-colors ${userVibes.length > 0 ? 'ring-gradient-to-r from-pink-500 to-purple-600' : 'ring-gray-300'}`}
+                      className={`w-16 h-16 ring-2 cursor-pointer hover:ring-blue-500 transition-colors ${userVibes.length > 0 ? 'ring-pink-500' : 'ring-gray-300'}`}
                       onClick={() => {
                         if (userVibes.length > 0) {
-                          // Show user's vibes
-                          // Could implement a viewer modal here
-                        } else {
-                          document.getElementById('vibe-file-input')?.click();
+                          setViewingVibes(userVibes);
+                          setViewingUsername(user?.username || '');
+                          setVibeViewerOpen(true);
                         }
                       }}
                     >
@@ -422,19 +426,36 @@ export default function Circle() {
                   <p className="text-xs text-center font-medium">Your vibe</p>
                 </div>
 
-                {/* Friends' Status */}
-                {friendStatus.map((friend: any) => (
+                {/* Friends' Vibes - Only show friends who have active vibes */}
+                {circleVibes.map((friend: any) => (
                   <div key={friend.id} className="flex flex-col items-center space-y-2 min-w-[80px]">
                     <div className="relative">
-                      <Avatar className={`w-16 h-16 ring-2 cursor-pointer ${friend.hasStory ? 'ring-gradient-to-r from-pink-500 to-purple-600' : 'ring-gray-300'}`}>
-                        <AvatarImage src={friend.avatar} alt={friend.username} />
-                        <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                          {friend.username[3]?.toUpperCase()}
-                        </AvatarFallback>
+                      <Avatar 
+                        className="w-16 h-16 ring-2 ring-pink-500 cursor-pointer hover:ring-blue-500 transition-colors"
+                        onClick={() => {
+                          setViewingVibes(friend.vibes);
+                          setViewingUsername(friend.username);
+                          setVibeViewerOpen(true);
+                        }}
+                      >
+                        {friend.vibes[0]?.imageUrl ? (
+                          <AvatarImage src={friend.vibes[0].imageUrl} alt={`${friend.username}'s vibe`} />
+                        ) : friend.vibes[0]?.videoUrl ? (
+                          <video 
+                            src={friend.vibes[0].videoUrl} 
+                            className="w-full h-full object-cover rounded-full"
+                            muted
+                          />
+                        ) : (
+                          <>
+                            <AvatarImage src={friend.avatar} alt={`${friend.username}'s status`} />
+                            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                              {friend.username[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </>
+                        )}
                       </Avatar>
-                      {friend.hasStory && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
-                      )}
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
                     </div>
                     <p className="text-xs text-center font-medium truncate w-full">{friend.username}</p>
                   </div>
