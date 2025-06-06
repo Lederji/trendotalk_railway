@@ -56,6 +56,11 @@ export interface IStorage {
   getActiveStories(): Promise<StoryWithUser[]>;
   getUserStories(userId: number): Promise<Story[]>;
   
+  // Vibe methods
+  createVibe(vibe: any): Promise<any>;
+  getActiveVibes(): Promise<any[]>;
+  getUserVibes(userId: number): Promise<any[]>;
+  
   // Follow methods
   followUser(followerId: number, followingId: number): Promise<boolean>;
   unfollowUser(followerId: number, followingId: number): Promise<boolean>;

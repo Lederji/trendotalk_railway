@@ -81,6 +81,17 @@ export const stories = pgTable("stories", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+export const vibes = pgTable("vibes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  title: text("title"),
+  content: text("content"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 export const follows = pgTable("follows", {
   id: serial("id").primaryKey(),
   followerId: integer("follower_id").notNull().references(() => users.id),
