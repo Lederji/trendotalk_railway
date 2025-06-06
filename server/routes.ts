@@ -43,6 +43,7 @@ function generateSessionId(userId: number): string {
 
 async function authenticateUser(req: any, res: any, next: any) {
   const sessionId = req.headers.authorization?.replace('Bearer ', '');
+  
   if (!sessionId) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
@@ -57,10 +58,13 @@ async function authenticateUser(req: any, res: any, next: any) {
   // SessionId format: userId_randomString_timestamp
   try {
     const parts = sessionId.split('_');
+    
     if (parts.length >= 3) {
       const userId = parseInt(parts[0]);
+      
       if (!isNaN(userId)) {
         const user = await storage.getUser(userId);
+        
         if (user) {
           // Recreate session
           const sessionData = { userId: user.id, username: user.username };
