@@ -33,8 +33,13 @@ export default function Circle() {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
         },
       });
-      if (!response.ok) throw new Error("Search failed");
-      return response.json();
+      if (!response.ok) {
+        console.error("Search request failed:", response.status, response.statusText);
+        throw new Error("Search failed");
+      }
+      const data = await response.json();
+      console.log("Search results:", data);
+      return data;
     },
     enabled: searchQuery.length >= 2,
   });
@@ -219,7 +224,9 @@ export default function Circle() {
           <div className="h-64 overflow-y-auto pb-20">
             {activeTab === "chats" && (
               <div className="p-4 space-y-3">
-                {Array.isArray(chats) && chats.map((chat: any) => (
+                {Array.isArray(chats) && chats.filter((chat: any, index: number, self: any[]) => 
+                  index === self.findIndex((c: any) => c.user?.id === chat.user?.id)
+                ).map((chat: any) => (
                   <Link key={chat.id} href={`/chat/${chat.id}`} className="block">
                     <div className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
                       <Avatar className="w-12 h-12">
