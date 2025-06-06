@@ -169,6 +169,13 @@ export const insertStorySchema = createInsertSchema(stories).omit({
   userId: true,
 });
 
+export const insertVibeSchema = createInsertSchema(vibes).omit({
+  id: true,
+  createdAt: true,
+  expiresAt: true,
+  userId: true,
+});
+
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -186,6 +193,8 @@ export type Dislike = typeof dislikes.$inferSelect;
 export type Vote = typeof votes.$inferSelect;
 export type Story = typeof stories.$inferSelect;
 export type InsertStory = z.infer<typeof insertStorySchema>;
+export type Vibe = typeof vibes.$inferSelect;
+export type InsertVibe = z.infer<typeof insertVibeSchema>;
 export type Follow = typeof follows.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 
@@ -198,6 +207,10 @@ export type PostWithUser = Post & {
 
 export type StoryWithUser = Story & {
   user: Pick<User, 'username' | 'avatar'>;
+};
+
+export type VibeWithUser = Vibe & {
+  user: Pick<User, 'id' | 'username' | 'avatar'>;
 };
 
 export type UserProfile = User & {

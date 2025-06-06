@@ -2,7 +2,7 @@ import {
   users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications, vibes,
   type User, type InsertUser, type Post, type InsertPost, 
   type Comment, type InsertComment, type Like, type Dislike, type Vote, type Story, 
-  type InsertStory, type Follow, type PostWithUser, type StoryWithUser, type UserProfile 
+  type InsertStory, type Vibe, type InsertVibe, type Follow, type PostWithUser, type StoryWithUser, type VibeWithUser, type UserProfile 
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
@@ -57,9 +57,9 @@ export interface IStorage {
   getUserStories(userId: number): Promise<Story[]>;
   
   // Vibe methods
-  createVibe(vibe: any): Promise<any>;
-  getActiveVibes(): Promise<any[]>;
-  getUserVibes(userId: number): Promise<any[]>;
+  createVibe(vibe: InsertVibe & { userId: number; expiresAt?: Date }): Promise<Vibe>;
+  getActiveVibes(): Promise<VibeWithUser[]>;
+  getUserVibes(userId: number): Promise<Vibe[]>;
   
   // Follow methods
   followUser(followerId: number, followingId: number): Promise<boolean>;
