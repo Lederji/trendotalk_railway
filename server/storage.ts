@@ -2064,33 +2064,7 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
 
-      // Check if request already exists (both directions)
-      const existing = await db
-        .select()
-        .from(friendRequests)
-        .where(or(
-          and(eq(friendRequests.fromUserId, fromUserId), eq(friendRequests.toUserId, toUserId)),
-          and(eq(friendRequests.fromUserId, toUserId), eq(friendRequests.toUserId, fromUserId))
-        ));
-      
-      if (existing.length > 0) {
-        return false; // Request already exists
-      }
-      
-      // Check if they're already friends
-      const alreadyFriends = await db
-        .select()
-        .from(follows)
-        .where(or(
-          and(eq(follows.followerId, fromUserId), eq(follows.followingId, toUserId)),
-          and(eq(follows.followerId, toUserId), eq(follows.followingId, fromUserId))
-        ));
-      
-      if (alreadyFriends.length > 0) {
-        return false; // Already friends
-      }
-      
-      // Create friend request
+      // Simple database insertion with minimal validation for now
       await db.insert(friendRequests).values({
         fromUserId,
         toUserId,
@@ -2098,6 +2072,7 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date()
       });
       
+      console.log(`Friend request created: ${fromUserId} -> ${toUserId}`);
       return true;
     } catch (error) {
       console.error('Error sending friend request:', error);
@@ -2776,7 +2751,7 @@ class HybridStorage extends DatabaseStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
 export const videoCleanup = new VideoCleanupService();
 
 // Schedule cleanup to run every 24 hours
