@@ -308,7 +308,7 @@ export default function Circle() {
                             className="bg-pink-500 hover:bg-pink-600 text-white"
                           >
                             <UserPlus className="w-4 h-4 mr-1" />
-                            Add
+                            Add to Circle
                           </Button>
                         )}
                       </div>
