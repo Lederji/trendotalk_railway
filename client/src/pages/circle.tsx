@@ -642,6 +642,12 @@ export default function Circle() {
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ backgroundImage: 'linear-gradient(to bottom, #1e3a8a, #059669)', minHeight: 'calc(100vh - 140px)' }}>
+                    {console.log('Selected chat messages:', selectedChat.messages?.length || 0)}
+                    {selectedChat.messages?.length === 0 && (
+                      <div className="text-center text-white/70 mt-8">
+                        <p>No messages yet. Start the conversation!</p>
+                      </div>
+                    )}
                     {selectedChat.messages?.map((message: any) => (
                       <div key={message.id} className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
                         {message.senderId !== user?.id && (
