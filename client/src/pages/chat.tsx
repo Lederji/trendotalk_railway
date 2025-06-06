@@ -44,6 +44,13 @@ export default function ChatPage() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
+      const sessionId = localStorage.getItem('sessionId');
+      const headers: Record<string, string> = {};
+      
+      if (sessionId) {
+        headers["Authorization"] = `Bearer ${sessionId}`;
+      }
+      
       if (selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
@@ -51,17 +58,22 @@ export default function ChatPage() {
         
         const response = await fetch(`/api/chats/${chatId}/upload`, {
           method: 'POST',
+          headers: {
+            ...headers
+          },
           body: formData,
         });
+        if (!response.ok) throw new Error('Failed to send file');
         return response.json();
       } else {
+        headers["Content-Type"] = "application/json";
+        
         const response = await fetch(`/api/chats/${chatId}/messages`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({ message: content }),
         });
+        if (!response.ok) throw new Error('Failed to send message');
         return response.json();
       }
     },
@@ -288,11 +300,11 @@ export default function ChatPage() {
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
-                <p className="text-sm">{msg.content}</p>
+                <p className="text-sm">{msg.message || msg.content}</p>
                 <p className={`text-xs mt-1 ${
                   msg.senderId === user?.id ? 'text-white/70' : 'text-gray-500'
                 }`}>
-                  {new Date(msg.timestamp).toLocaleTimeString([], { 
+                  {new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                   })}

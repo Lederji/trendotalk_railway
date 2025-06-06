@@ -920,7 +920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Message content is required' });
       }
       
-      const newMessage = await storage.sendMessage(chatId, req.session.userId, message);
+      const newMessage = await storage.sendMessage(chatId, req.user.userId, message);
       res.json(newMessage);
     } catch (error) {
       console.error('Error sending message:', error);
