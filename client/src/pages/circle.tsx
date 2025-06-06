@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, MessageCircle, UserPlus, Check, X, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Search, MessageCircle, UserPlus, Check, X, Send, Upload, Camera, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import Auth from "./auth";
@@ -24,6 +26,10 @@ export default function Circle() {
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [messageText, setMessageText] = useState("");
   const [activeTab, setActiveTab] = useState("chats");
+  const [vibeUploadOpen, setVibeUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [vibeTitle, setVibeTitle] = useState("");
+  const [filePreview, setFilePreview] = useState<string | null>(null);
 
   // Handle URL hash navigation
   useEffect(() => {
@@ -163,6 +169,40 @@ export default function Circle() {
     },
   });
 
+  const uploadVibeMutation = useMutation({
+    mutationFn: async ({ file, title }: { file: File; title: string }) => {
+      const formData = new FormData();
+      formData.append('media', file);
+      formData.append('caption', title);
+      
+      const response = await fetch('/api/stories', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) throw new Error('Failed to upload vibe');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/friends/status"] });
+      toast({ title: "Vibe uploaded successfully!" });
+      setVibeUploadOpen(false);
+      setSelectedFile(null);
+      setVibeTitle("");
+      setFilePreview(null);
+    },
+    onError: () => {
+      toast({ 
+        title: "Failed to upload vibe", 
+        description: "Please try again",
+        variant: "destructive" 
+      });
+    },
+  });
+
   const handleSendFriendRequest = (userId: number) => {
     sendFriendRequestMutation.mutate(userId);
   };
@@ -174,6 +214,31 @@ export default function Circle() {
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedChat) return;
     sendMessageMutation.mutate({ chatId: selectedChat.id, message: messageText });
+  };
+
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setFilePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    
+    setVibeUploadOpen(true);
+  };
+
+  const handleVibeUpload = () => {
+    if (!selectedFile || !vibeTitle.trim()) {
+      toast({
+        title: "Please select a file and add a title",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    uploadVibeMutation.mutate({ file: selectedFile, title: vibeTitle });
   };
 
   if (!isAuthenticated) {
@@ -255,40 +320,21 @@ export default function Circle() {
                     </Avatar>
                     <div 
                       className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center cursor-pointer hover:bg-blue-600"
-                      onClick={() => document.getElementById('status-upload')?.click()}
+                      onClick={() => document.getElementById('vibe-file-input')?.click()}
                     >
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
                     </div>
                     <input
-                      id="status-upload"
+                      id="vibe-file-input"
                       type="file"
                       accept="image/*,video/*"
                       className="hidden"
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          try {
-                            const formData = new FormData();
-                            formData.append('media', file);
-                            formData.append('caption', '');
-                            
-                            const response = await fetch('/api/stories', {
-                              method: 'POST',
-                              headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
-                              },
-                              body: formData,
-                            });
-                            
-                            if (response.ok) {
-                              // Refresh stories
-                              window.location.reload();
-                            }
-                          } catch (error) {
-                            console.error('Error uploading status:', error);
-                          }
+                          handleFileSelect(file);
                         }
                       }}
                     />
@@ -522,6 +568,109 @@ export default function Circle() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Instagram-style Vibe Upload Modal */}
+      <Dialog open={vibeUploadOpen} onOpenChange={setVibeUploadOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="w-5 h-5" />
+              Add Your Vibe
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* File Preview */}
+            {filePreview && (
+              <div className="relative aspect-square w-full max-w-xs mx-auto rounded-lg overflow-hidden bg-gray-100">
+                {selectedFile?.type.startsWith('video/') ? (
+                  <video 
+                    src={filePreview} 
+                    className="w-full h-full object-cover"
+                    controls
+                    muted
+                  />
+                ) : (
+                  <img 
+                    src={filePreview} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <div className="absolute top-2 right-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setFilePreview(null);
+                      setVibeTitle("");
+                    }}
+                    className="w-8 h-8 p-0 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Title Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Add a title for your vibe</label>
+              <Textarea
+                placeholder="What's on your mind?"
+                value={vibeTitle}
+                onChange={(e) => setVibeTitle(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+
+            {/* File Type Indicator */}
+            {selectedFile && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                {selectedFile.type.startsWith('video/') ? (
+                  <Video className="w-4 h-4" />
+                ) : (
+                  <Camera className="w-4 h-4" />
+                )}
+                <span>{selectedFile.name}</span>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setVibeUploadOpen(false);
+                setSelectedFile(null);
+                setFilePreview(null);
+                setVibeTitle("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleVibeUpload}
+              disabled={!selectedFile || !vibeTitle.trim() || uploadVibeMutation.isPending}
+              className="bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600"
+            >
+              {uploadVibeMutation.isPending ? (
+                <>
+                  <Upload className="w-4 h-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Share Vibe
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Navigation />
     </div>
