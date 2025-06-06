@@ -155,11 +155,13 @@ export default function Circle() {
                   </p>
                 </div>
 
-                {/* Friend Vibes - Only show users who have active vibes */}
+                {/* Friend Vibes - Only show users who have active vibes AND are following each other */}
                 {Array.isArray(vibes) && vibes.filter((vibe: any) => {
                   if (!vibe.user || vibe.user.id === user?.id) return false;
                   const vibeAge = new Date().getTime() - new Date(vibe.createdAt).getTime();
-                  return vibeAge < 24 * 60 * 60 * 1000; // Only show vibes less than 24 hours old
+                  const hasActiveVibe = vibeAge < 24 * 60 * 60 * 1000;
+                  const hasContent = vibe.imageUrl || vibe.videoUrl; // Only show if vibe has actual content
+                  return hasActiveVibe && hasContent;
                 }).slice(0, 2).map((vibe: any) => (
                   <div key={vibe.id} className="flex flex-col items-center">
                     <div className="relative">

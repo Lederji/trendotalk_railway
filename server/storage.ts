@@ -2324,7 +2324,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserChats(userId: number): Promise<any[]> {
     try {
-      // Only get chats where users are following each other (friends)
+      // Get chats where both users are following each other (mutual friendship)
       const userChats = await db
         .select({
           id: chats.id,
@@ -2333,24 +2333,41 @@ export class DatabaseStorage implements IStorage {
           user2Id: chats.user2Id
         })
         .from(chats)
-        .innerJoin(follows, or(
-          and(
-            eq(chats.user1Id, follows.followerId),
-            eq(chats.user2Id, follows.followingId)
-          ),
-          and(
-            eq(chats.user2Id, follows.followerId),
-            eq(chats.user1Id, follows.followingId)
-          )
-        ))
         .where(or(
           eq(chats.user1Id, userId),
           eq(chats.user2Id, userId)
         ));
       
-      // Get the other user details and messages for each chat
-      const formattedChats = [];
+      // Filter chats to only include mutual friends
+      const validChats = [];
       for (const chat of userChats) {
+        const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
+        
+        // Check if both users are following each other
+        const [follow1] = await db
+          .select()
+          .from(follows)
+          .where(and(
+            eq(follows.followerId, userId),
+            eq(follows.followingId, otherUserId)
+          ));
+          
+        const [follow2] = await db
+          .select()
+          .from(follows)
+          .where(and(
+            eq(follows.followerId, otherUserId),
+            eq(follows.followingId, userId)
+          ));
+        
+        if (follow1 && follow2) {
+          validChats.push(chat);
+        }
+      }
+      
+      // Get the other user details and messages for each valid chat
+      const formattedChats = [];
+      for (const chat of validChats) {
         const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
         const [otherUser] = await db
           .select()
