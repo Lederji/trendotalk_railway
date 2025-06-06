@@ -1,12 +1,12 @@
 import { 
-  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications,
+  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications, vibes,
   type User, type InsertUser, type Post, type InsertPost, 
   type Comment, type InsertComment, type Like, type Dislike, type Vote, type Story, 
   type InsertStory, type Follow, type PostWithUser, type StoryWithUser, type UserProfile 
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { eq, and, desc, sql, notInArray, or, ilike } from "drizzle-orm";
+import { eq, and, desc, sql, notInArray, or, ilike, gt } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -2536,6 +2536,67 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error updating post:', error);
       return undefined;
+    }
+  }
+
+  async createVibe(vibeData: any): Promise<any> {
+    try {
+      const [vibe] = await db
+        .insert(vibes)
+        .values({
+          ...vibeData,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+        })
+        .returning();
+      
+      return vibe;
+    } catch (error) {
+      console.error('Error creating vibe:', error);
+      throw error;
+    }
+  }
+
+  async getActiveVibes(): Promise<any[]> {
+    try {
+      const activeVibes = await db
+        .select()
+        .from(vibes)
+        .where(gt(vibes.expiresAt, new Date()))
+        .orderBy(desc(vibes.createdAt));
+
+      const vibesWithUsers = [];
+      for (const vibe of activeVibes) {
+        const user = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, vibe.userId))
+          .limit(1);
+
+        vibesWithUsers.push({
+          ...vibe,
+          user: user[0] || null,
+        });
+      }
+
+      return vibesWithUsers;
+    } catch (error) {
+      console.error('Error getting active vibes:', error);
+      return [];
+    }
+  }
+
+  async getUserVibes(userId: number): Promise<any[]> {
+    try {
+      const userVibes = await db
+        .select()
+        .from(vibes)
+        .where(and(eq(vibes.userId, userId), gt(vibes.expiresAt, new Date())))
+        .orderBy(desc(vibes.createdAt));
+
+      return userVibes;
+    } catch (error) {
+      console.error('Error getting user vibes:', error);
+      return [];
     }
   }
 
