@@ -164,6 +164,120 @@ export class MemStorage implements IStorage {
       };
       this.users.set(user.id, user);
     });
+    
+    // Create sample posts
+    this.createSamplePosts();
+    
+    // Create sample stories
+    this.createSampleStories();
+    
+    // Create sample chats
+    this.createSampleChats();
+  }
+  
+  private createSamplePosts() {
+    const samplePosts = [
+      {
+        title: "Welcome to TrendoTalk!",
+        content: "Join our amazing community and start sharing your thoughts with the world. Experience the future of social media with our innovative features.",
+        mediaUrl: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        userId: 1
+      },
+      {
+        title: "Creative Design Inspiration",
+        content: "Exploring new horizons in digital art and creative expression. What inspires your creativity today?",
+        mediaUrl: "https://images.unsplash.com/photo-1558655146-9f40138edfeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        userId: 2
+      },
+      {
+        title: "Tech Innovation",
+        content: "The future of technology is here! Sharing insights about the latest developments in AI and machine learning.",
+        mediaUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        userId: 3
+      },
+      {
+        title: "Adventure Awaits",
+        content: "Just returned from an amazing hiking trip! Nature has so much to offer when we take the time to explore.",
+        mediaUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        userId: 4
+      },
+      {
+        title: "Community Building",
+        content: "Building meaningful connections in our digital age. How do you connect with others in your community?",
+        mediaUrl: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        userId: 5
+      }
+    ];
+    
+    samplePosts.forEach(postData => {
+      const post: Post = {
+        id: this.currentPostId++,
+        userId: postData.userId,
+        title: postData.title,
+        content: postData.content,
+        mediaUrl: postData.mediaUrl,
+        mediaType: 'image',
+        likesCount: Math.floor(Math.random() * 100) + 10,
+        dislikesCount: Math.floor(Math.random() * 10),
+        votesCount: Math.floor(Math.random() * 50) + 5,
+        commentsCount: Math.floor(Math.random() * 20) + 2,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+      };
+      this.posts.set(post.id, post);
+    });
+  }
+  
+  private createSampleStories() {
+    const stories = [
+      {
+        userId: 2,
+        imageUrl: "https://images.unsplash.com/photo-1542596768-5d1d21f1cf98?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=400",
+        title: "Morning Coffee"
+      },
+      {
+        userId: 3,
+        imageUrl: "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=400",
+        title: "Workspace Setup"
+      },
+      {
+        userId: 4,
+        imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=400",
+        title: "Mountain View"
+      }
+    ];
+    
+    stories.forEach(storyData => {
+      const story: Story = {
+        id: this.currentStoryId++,
+        userId: storyData.userId,
+        imageUrl: storyData.imageUrl,
+        videoUrl: null,
+        title: storyData.title,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date()
+      };
+      this.stories.set(story.id, story);
+    });
+  }
+  
+  private createSampleChats() {
+    // Create follows between users for chat functionality
+    const follows = [
+      { followerId: 2, followingId: 3 },
+      { followerId: 3, followingId: 2 },
+      { followerId: 2, followingId: 4 },
+      { followerId: 4, followingId: 2 }
+    ];
+    
+    follows.forEach(followData => {
+      const follow: Follow = {
+        id: this.currentFollowId++,
+        followerId: followData.followerId,
+        followingId: followData.followingId,
+        createdAt: new Date()
+      };
+      this.follows.set(follow.id, follow);
+    });
   }
 
   async getUser(id: number): Promise<User | undefined> {
