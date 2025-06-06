@@ -750,28 +750,174 @@ export class MemStorage implements IStorage {
   }
 
   async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
-    // Simple in-memory implementation
-    return true;
+    try {
+      // Check if request already exists
+      const existingRequest = Array.from(this.friendRequests.values()).find(
+        req => req.fromUserId === fromUserId && req.toUserId === toUserId && req.status === 'pending'
+      );
+      
+      if (existingRequest) {
+        return false; // Request already exists
+      }
+      
+      // Create new friend request
+      const friendRequest = {
+        id: this.currentFriendRequestId++,
+        fromUserId,
+        toUserId,
+        status: 'pending',
+        createdAt: new Date()
+      };
+      
+      this.friendRequests.set(friendRequest.id, friendRequest);
+      return true;
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      return false;
+    }
   }
 
   async getFriendRequests(userId: number): Promise<any[]> {
-    return [];
+    try {
+      const requests = Array.from(this.friendRequests.values())
+        .filter(req => req.toUserId === userId && req.status === 'pending')
+        .map(req => {
+          const fromUser = this.users.get(req.fromUserId);
+          return {
+            id: req.id,
+            fromUserId: req.fromUserId,
+            status: req.status,
+            createdAt: req.createdAt,
+            user: {
+              id: fromUser?.id,
+              username: fromUser?.username,
+              avatar: fromUser?.avatar
+            }
+          };
+        });
+      
+      return requests;
+    } catch (error) {
+      console.error('Error getting friend requests:', error);
+      return [];
+    }
   }
 
   async acceptFriendRequest(requestId: number, userId: number): Promise<boolean> {
-    return true;
+    try {
+      const request = this.friendRequests.get(requestId);
+      if (!request || request.toUserId !== userId || request.status !== 'pending') {
+        return false;
+      }
+      
+      // Create mutual follow relationship
+      const follow1 = {
+        id: this.currentFollowId++,
+        followerId: request.fromUserId,
+        followingId: request.toUserId,
+        createdAt: new Date()
+      };
+      
+      const follow2 = {
+        id: this.currentFollowId++,
+        followerId: request.toUserId,
+        followingId: request.fromUserId,
+        createdAt: new Date()
+      };
+      
+      this.follows.set(follow1.id, follow1);
+      this.follows.set(follow2.id, follow2);
+      
+      // Create chat between users
+      const chat = {
+        id: this.currentChatId++,
+        user1Id: Math.min(request.fromUserId, request.toUserId),
+        user2Id: Math.max(request.fromUserId, request.toUserId),
+        createdAt: new Date(),
+        messages: []
+      };
+      
+      this.chats.set(chat.id, chat);
+      
+      // Update request status
+      request.status = 'accepted';
+      this.friendRequests.set(requestId, request);
+      
+      return true;
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      return false;
+    }
   }
 
   async rejectFriendRequest(requestId: number, userId: number): Promise<boolean> {
-    return true;
+    try {
+      const request = this.friendRequests.get(requestId);
+      if (!request || request.toUserId !== userId || request.status !== 'pending') {
+        return false;
+      }
+      
+      // Update request status
+      request.status = 'rejected';
+      this.friendRequests.set(requestId, request);
+      
+      return true;
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      return false;
+    }
   }
 
   async getUserChats(userId: number): Promise<any[]> {
-    return [];
+    try {
+      const userChats = Array.from(this.chats.values())
+        .filter(chat => chat.user1Id === userId || chat.user2Id === userId)
+        .map(chat => {
+          const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
+          const otherUser = this.users.get(otherUserId);
+          
+          return {
+            id: chat.id,
+            user: {
+              id: otherUser?.id,
+              username: otherUser?.username,
+              avatar: otherUser?.avatar
+            },
+            lastMessage: chat.messages?.length > 0 ? chat.messages[chat.messages.length - 1] : null,
+            createdAt: chat.createdAt
+          };
+        });
+      
+      return userChats;
+    } catch (error) {
+      console.error('Error getting user chats:', error);
+      return [];
+    }
   }
 
   async sendMessage(chatId: number, senderId: number, message: string): Promise<any> {
-    return {};
+    try {
+      const chat = this.chats.get(chatId);
+      if (!chat) {
+        throw new Error('Chat not found');
+      }
+      
+      const newMessage = {
+        id: Date.now(), // Simple ID generation
+        senderId,
+        message,
+        createdAt: new Date()
+      };
+      
+      chat.messages = chat.messages || [];
+      chat.messages.push(newMessage);
+      this.chats.set(chatId, chat);
+      
+      return newMessage;
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
   }
 
   async searchPosts(query: string): Promise<PostWithUser[]> {
