@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Phone, Video, MoreVertical, FileText, MapPin, User, Calendar, Headphones, BarChart3, CreditCard, ImageIcon, Plus } from "lucide-react";
+import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Phone, Video, MoreVertical, FileText, MapPin, User, Calendar, Headphones, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ChatPage() {
@@ -14,6 +14,7 @@ export default function ChatPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -25,57 +26,44 @@ export default function ChatPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const queryClient = useQueryClient();
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Fetch chat data
   const { data: chat, isLoading } = useQuery({
     queryKey: ["/api/chats", chatId],
-    queryFn: async () => {
-      const response = await fetch(`/api/chats/${chatId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch chat');
-      return response.json();
-    },
     enabled: !!chatId,
   });
 
+  // Fetch messages with fast polling
   const { data: messages = [] } = useQuery({
     queryKey: ["/api/chats", chatId, "messages"],
-    queryFn: async () => {
-      const response = await fetch(`/api/chats/${chatId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch messages');
-      return response.json();
-    },
     enabled: !!chatId,
-    refetchInterval: 500, // Fast polling for near real-time experience
+    refetchInterval: 500, // Fast polling for real-time feel
   });
 
-  // Typing indicator state management
-  useEffect(() => {
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-  }, []);
-
+  // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await fetch(`/api/chats/${chatId}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        },
-        body: JSON.stringify({ message: content }),
-      });
-      if (!response.ok) throw new Error('Failed to send message');
-      return response.json();
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('message', content || 'Shared a file');
+        
+        const response = await fetch(`/api/chats/${chatId}/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        return response.json();
+      } else {
+        const response = await fetch(`/api/chats/${chatId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: content }),
+        });
+        return response.json();
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
@@ -85,28 +73,25 @@ export default function ChatPage() {
   });
 
   const handleSendMessage = () => {
-    if (message.trim() && !sendMessageMutation.isPending) {
-      sendMessageMutation.mutate(message.trim());
+    if (message.trim() || selectedFile) {
+      sendMessageMutation.mutate(message);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
   const handleTyping = () => {
-    // Simple local typing indicator
     setIsTyping(true);
     
-    // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-
-    // Set new timeout to stop typing
+    
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
     }, 2000);
@@ -180,7 +165,6 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      // TODO: Handle file upload
     }
   };
 
@@ -196,7 +180,6 @@ export default function ChatPage() {
       title: "Video Call",
       description: "Starting video call...",
     });
-    // Video call implementation would go here
   };
 
   const handleVoiceCall = () => {
@@ -204,7 +187,6 @@ export default function ChatPage() {
       title: "Voice Call", 
       description: "Starting voice call...",
     });
-    // Voice call implementation would go here
   };
 
   useEffect(() => {
@@ -235,7 +217,7 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4 flex items-center space-x-3 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center space-x-3 sticky top-0 z-10">
         <Button
           variant="ghost"
           size="icon"
@@ -246,14 +228,14 @@ export default function ChatPage() {
         </Button>
         
         <Avatar className="w-10 h-10">
-          <AvatarImage src={chat.user.avatar} alt={chat.user.username} />
+          <AvatarImage src={chat?.user?.avatar} alt={chat?.user?.username} />
           <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-            {chat.user.username[0]?.toUpperCase()}
+            {chat?.user?.username?.[0]?.toUpperCase()}
           </AvatarFallback>
         </Avatar>
         
         <div className="flex-1">
-          <h1 className="font-semibold text-lg">{chat.user.username}</h1>
+          <h1 className="font-semibold text-lg">{chat?.user?.username}</h1>
           <p className="text-sm text-gray-500">
             {otherUserTyping ? 'Typing...' : 'Active now'}
           </p>
@@ -273,12 +255,7 @@ export default function ChatPage() {
             variant="ghost"
             size="icon"
             className="rounded-full text-gray-600 hover:bg-gray-100"
-            onClick={() => {
-              toast({
-                title: "Video Call",
-                description: "Video calling feature will be available soon",
-              });
-            }}
+            onClick={handleVideoCall}
           >
             <Video className="w-5 h-5" />
           </Button>
@@ -308,14 +285,14 @@ export default function ChatPage() {
                 className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
                   msg.senderId === user?.id
                     ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-900'
+                    : 'bg-gray-100 text-gray-800'
                 }`}
               >
-                <p className="break-words">{msg.content}</p>
+                <p className="text-sm">{msg.content}</p>
                 <p className={`text-xs mt-1 ${
-                  msg.senderId === user?.id ? 'text-pink-100' : 'text-gray-500'
+                  msg.senderId === user?.id ? 'text-white/70' : 'text-gray-500'
                 }`}>
-                  {new Date(msg.createdAt).toLocaleTimeString([], { 
+                  {new Date(msg.timestamp).toLocaleTimeString([], { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                   })}
@@ -411,22 +388,6 @@ export default function ChatPage() {
                   <Headphones className="w-6 h-6 text-white" />
                 </Button>
                 <span className="text-xs text-white">Audio</span>
-              </div>
-
-              {/* Event */}
-              <div className="flex flex-col items-center space-y-2">
-                <Button className="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600">
-                  <Calendar className="w-6 h-6 text-white" />
-                </Button>
-                <span className="text-xs text-white">Event</span>
-              </div>
-
-              {/* AI Images */}
-              <div className="flex flex-col items-center space-y-2">
-                <Button className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700">
-                  <ImageIcon className="w-6 h-6 text-white" />
-                </Button>
-                <span className="text-xs text-white">AI Images</span>
               </div>
             </div>
           </div>
