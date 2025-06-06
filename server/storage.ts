@@ -751,12 +751,31 @@ export class MemStorage implements IStorage {
 
   async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
     try {
+      console.log('Sending friend request from', fromUserId, 'to', toUserId);
+      
+      // Check if users exist
+      const fromUser = this.users.get(fromUserId);
+      const toUser = this.users.get(toUserId);
+      
+      if (!fromUser || !toUser) {
+        console.error('User not found:', { fromUserId, toUserId });
+        return false;
+      }
+      
+      // Check if already following
+      const isAlreadyFollowing = await this.isFollowing(fromUserId, toUserId);
+      if (isAlreadyFollowing) {
+        console.log('Users are already following each other');
+        return false;
+      }
+      
       // Check if request already exists
       const existingRequest = Array.from(this.friendRequests.values()).find(
         req => req.fromUserId === fromUserId && req.toUserId === toUserId && req.status === 'pending'
       );
       
       if (existingRequest) {
+        console.log('Friend request already exists');
         return false; // Request already exists
       }
       
@@ -770,6 +789,9 @@ export class MemStorage implements IStorage {
       };
       
       this.friendRequests.set(friendRequest.id, friendRequest);
+      console.log('Friend request created successfully:', friendRequest);
+      console.log('Total friend requests:', this.friendRequests.size);
+      
       return true;
     } catch (error) {
       console.error('Error sending friend request:', error);
@@ -805,9 +827,32 @@ export class MemStorage implements IStorage {
 
   async acceptFriendRequest(requestId: number, userId: number): Promise<boolean> {
     try {
+      console.log('Accepting friend request:', requestId, 'by user:', userId);
+      
       const request = this.friendRequests.get(requestId);
       if (!request || request.toUserId !== userId || request.status !== 'pending') {
+        console.error('Invalid friend request:', { request, userId });
         return false;
+      }
+      
+      // Check if chat already exists between these users
+      const existingChat = Array.from(this.chats.values()).find(chat => 
+        (chat.user1Id === request.fromUserId && chat.user2Id === request.toUserId) ||
+        (chat.user1Id === request.toUserId && chat.user2Id === request.fromUserId)
+      );
+      
+      if (!existingChat) {
+        // Create chat between users
+        const chat = {
+          id: this.currentChatId++,
+          user1Id: Math.min(request.fromUserId, request.toUserId),
+          user2Id: Math.max(request.fromUserId, request.toUserId),
+          createdAt: new Date(),
+          messages: []
+        };
+        
+        this.chats.set(chat.id, chat);
+        console.log('Chat created with ID:', chat.id);
       }
       
       // Create mutual follow relationship
@@ -828,20 +873,13 @@ export class MemStorage implements IStorage {
       this.follows.set(follow1.id, follow1);
       this.follows.set(follow2.id, follow2);
       
-      // Create chat between users
-      const chat = {
-        id: this.currentChatId++,
-        user1Id: Math.min(request.fromUserId, request.toUserId),
-        user2Id: Math.max(request.fromUserId, request.toUserId),
-        createdAt: new Date(),
-        messages: []
-      };
-      
-      this.chats.set(chat.id, chat);
-      
       // Update request status
       request.status = 'accepted';
       this.friendRequests.set(requestId, request);
+      
+      console.log('Friend request accepted successfully');
+      console.log('Total chats:', this.chats.size);
+      console.log('Total follows:', this.follows.size);
       
       return true;
     } catch (error) {
@@ -899,19 +937,30 @@ export class MemStorage implements IStorage {
     try {
       const chat = this.chats.get(chatId);
       if (!chat) {
+        console.error('Chat not found with ID:', chatId);
+        console.log('Available chats:', Array.from(this.chats.keys()));
         throw new Error('Chat not found');
       }
       
       const newMessage = {
-        id: Date.now(), // Simple ID generation
+        id: Date.now() + Math.random(), // Better unique ID generation
         senderId,
         message,
         createdAt: new Date()
       };
       
-      chat.messages = chat.messages || [];
+      // Ensure messages array exists
+      if (!chat.messages) {
+        chat.messages = [];
+      }
+      
       chat.messages.push(newMessage);
-      this.chats.set(chatId, chat);
+      
+      // Force update the chat in the map
+      this.chats.set(chatId, { ...chat });
+      
+      console.log('Message sent successfully:', newMessage);
+      console.log('Chat now has', chat.messages.length, 'messages');
       
       return newMessage;
     } catch (error) {
