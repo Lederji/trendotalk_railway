@@ -122,6 +122,16 @@ export class MemStorage implements IStorage {
     // Create some sample users
     const sampleUsers = [
       {
+        username: "tp-firstuser",
+        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+        bio: "First user account"
+      },
+      {
+        username: "tp-leader",
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
+        bio: "Team leader account"
+      },
+      {
         username: "tp-creativemind",
         avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
         bio: "Digital artist and creative enthusiast"
