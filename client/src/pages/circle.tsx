@@ -142,9 +142,22 @@ export default function Circle() {
       if (!response.ok) throw new Error('Failed to send friend request');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/friend-requests"] });
-      toast({ title: "Friend request sent!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
+      
+      if (data.message === 'Connected successfully') {
+        toast({ title: "Connected! Chat is now available." });
+      } else {
+        toast({ title: "Friend request sent!" });
+      }
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Connection failed", 
+        description: error.message || "Please try again",
+        variant: "destructive" 
+      });
     },
   });
 

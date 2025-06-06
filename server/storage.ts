@@ -762,14 +762,35 @@ export class MemStorage implements IStorage {
         return false;
       }
       
-      // Check if already following
+      // Check if already following - if they are, create a chat directly instead of friend request
       const isAlreadyFollowing = await this.isFollowing(fromUserId, toUserId);
       if (isAlreadyFollowing) {
-        console.log('Users are already following each other');
-        return false;
+        console.log('Users are already following each other, checking for existing chat');
+        
+        // Check if chat already exists
+        const existingChat = Array.from(this.chats.values()).find(chat => 
+          (chat.user1Id === fromUserId && chat.user2Id === toUserId) ||
+          (chat.user1Id === toUserId && chat.user2Id === fromUserId)
+        );
+        
+        if (!existingChat) {
+          // Create chat directly since they're already friends
+          const chat = {
+            id: this.currentChatId++,
+            user1Id: Math.min(fromUserId, toUserId),
+            user2Id: Math.max(fromUserId, toUserId),
+            createdAt: new Date(),
+            messages: []
+          };
+          
+          this.chats.set(chat.id, chat);
+          console.log('Chat created directly for existing friends with ID:', chat.id);
+        }
+        
+        return true; // Return success since they're already connected
       }
       
-      // Check if request already exists
+      // Check if request already exists (only create new request if users aren't connected)
       const existingRequest = Array.from(this.friendRequests.values()).find(
         req => req.fromUserId === fromUserId && req.toUserId === toUserId && req.status === 'pending'
       );
@@ -779,7 +800,7 @@ export class MemStorage implements IStorage {
         return false; // Request already exists
       }
       
-      // Create new friend request
+      // Create new friend request for non-connected users
       const friendRequest = {
         id: this.currentFriendRequestId++,
         fromUserId,

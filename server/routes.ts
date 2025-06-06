@@ -741,7 +741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(400).json({ message: 'Cannot send friend request' });
       }
-      res.json({ message: 'Friend request sent' });
+      res.json({ message: 'Connected successfully', success: true });
     } catch (error) {
       console.error('Error sending friend request:', error);
       res.status(500).json({ message: 'Internal server error' });
