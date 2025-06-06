@@ -642,30 +642,30 @@ export default function Circle() {
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ backgroundImage: 'linear-gradient(to bottom, #1e3a8a, #059669)', minHeight: 'calc(100vh - 140px)' }}>
-                    {console.log('Selected chat messages:', selectedChat.messages?.length || 0)}
-                    {selectedChat.messages?.length === 0 && (
+                    {(!selectedChat.messages || selectedChat.messages.length === 0) ? (
                       <div className="text-center text-white/70 mt-8">
                         <p>No messages yet. Start the conversation!</p>
                       </div>
-                    )}
-                    {selectedChat.messages?.map((message: any) => (
-                      <div key={message.id} className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
-                        {message.senderId !== user?.id && (
-                          <Avatar className="w-8 h-8 mr-2 mt-1">
-                            <AvatarImage src={selectedChat.user.avatar} alt={selectedChat.user.username} />
-                            <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
-                              {selectedChat.user.username[3]?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div className={`max-w-xs px-4 py-2 rounded-2xl shadow-sm ${message.senderId === user?.id ? 'bg-blue-500 text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'}`}>
-                          <p className="text-sm leading-relaxed">{message.content || message.message}</p>
-                          <p className={`text-xs mt-1 ${message.senderId === user?.id ? 'text-blue-100' : 'text-gray-400'}`}>
-                            {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                    ) : (
+                      selectedChat.messages.map((message: any) => (
+                        <div key={message.id} className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
+                          {message.senderId !== user?.id && (
+                            <Avatar className="w-8 h-8 mr-2 mt-1">
+                              <AvatarImage src={selectedChat.user.avatar} alt={selectedChat.user.username} />
+                              <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
+                                {selectedChat.user.username[3]?.toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          <div className={`max-w-xs px-4 py-2 rounded-2xl shadow-sm ${message.senderId === user?.id ? 'bg-blue-500 text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'}`}>
+                            <p className="text-sm leading-relaxed">{message.content || message.message}</p>
+                            <p className={`text-xs mt-1 ${message.senderId === user?.id ? 'text-blue-100' : 'text-gray-400'}`}>
+                              {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                   <div className="bg-white border-t p-3 safe-area-bottom">
                     <div className="flex items-center space-x-2">

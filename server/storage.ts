@@ -2057,52 +2057,40 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
+  async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean | string> {
     try {
-      // Check if request already exists
+      // Prevent self-friend requests
+      if (fromUserId === toUserId) {
+        return false;
+      }
+
+      // Check if request already exists (both directions)
       const existing = await db
         .select()
         .from(friendRequests)
-        .where(and(
-          eq(friendRequests.fromUserId, fromUserId),
-          eq(friendRequests.toUserId, toUserId)
+        .where(or(
+          and(eq(friendRequests.fromUserId, fromUserId), eq(friendRequests.toUserId, toUserId)),
+          and(eq(friendRequests.fromUserId, toUserId), eq(friendRequests.toUserId, fromUserId))
         ));
       
       if (existing.length > 0) {
         return false; // Request already exists
       }
       
-      // Check if they're already friends - if so, create chat directly
+      // Check if they're already friends
       const alreadyFriends = await db
         .select()
         .from(follows)
-        .where(and(
-          eq(follows.followerId, fromUserId),
-          eq(follows.followingId, toUserId)
+        .where(or(
+          and(eq(follows.followerId, fromUserId), eq(follows.followingId, toUserId)),
+          and(eq(follows.followerId, toUserId), eq(follows.followingId, fromUserId))
         ));
       
       if (alreadyFriends.length > 0) {
-        // Check if chat already exists
-        const existingChat = await db
-          .select()
-          .from(chats)
-          .where(or(
-            and(eq(chats.user1Id, Math.min(fromUserId, toUserId)), eq(chats.user2Id, Math.max(fromUserId, toUserId))),
-            and(eq(chats.user1Id, Math.max(fromUserId, toUserId)), eq(chats.user2Id, Math.min(fromUserId, toUserId)))
-          ));
-          
-        if (existingChat.length === 0) {
-          // Create chat for existing friends
-          await db.insert(chats).values({
-            user1Id: Math.min(fromUserId, toUserId),
-            user2Id: Math.max(fromUserId, toUserId),
-            createdAt: new Date()
-          });
-        }
-        
-        return 'already_friends'; // Return specific status for already connected users
+        return 'already_friends';
       }
       
+      // Create friend request
       await db.insert(friendRequests).values({
         fromUserId,
         toUserId,
@@ -2249,9 +2237,6 @@ export class DatabaseStorage implements IStorage {
           .orderBy(messages.createdAt);
         
         if (otherUser) {
-          console.log(`Chat ${chat.id} messages:`, chatMessages.length, 'messages found');
-          console.log('Sample message:', chatMessages[0]);
-          
           formattedChats.push({
             id: chat.id,
             user: {
