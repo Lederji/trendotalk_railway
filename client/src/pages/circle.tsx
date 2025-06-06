@@ -441,7 +441,7 @@ export default function Circle() {
                       </div>
                     )}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                      <p className="text-white text-sm font-medium">{story.user.username}</p>
+                      <p className="text-white text-sm font-medium">{story.user?.username || 'Unknown User'}</p>
                     </div>
                     {isExpired(story.expiresAt) && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
