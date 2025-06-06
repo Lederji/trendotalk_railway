@@ -37,21 +37,49 @@ const sessions = new Map<string, { userId: number; username: string }>();
 // Make sessions globally available for admin routes
 (global as any).sessions = sessions;
 
-function generateSessionId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+function generateSessionId(userId: number): string {
+  return `${userId}_${Math.random().toString(36).substring(2)}_${Date.now().toString(36)}`;
 }
 
 function authenticateUser(req: any, res: any, next: any) {
   const sessionId = req.headers.authorization?.replace('Bearer ', '');
-  if (!sessionId || !sessions.has(sessionId)) {
+  if (!sessionId) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
   
-  req.user = sessions.get(sessionId);
-  next();
+  // Check if session exists in memory
+  if (sessions.has(sessionId)) {
+    req.user = sessions.get(sessionId);
+    return next();
+  }
+  
+  // If session not found, try to recreate from sessionId format
+  // SessionId format: userId_randomString_timestamp
+  try {
+    const parts = sessionId.split('_');
+    if (parts.length >= 3) {
+      const userId = parseInt(parts[0]);
+      if (!isNaN(userId)) {
+        const user = Array.from((global as any).storage.users.values()).find((u: any) => u.id === userId);
+        if (user) {
+          // Recreate session
+          sessions.set(sessionId, { userId: user.id, username: user.username });
+          req.user = { userId: user.id, username: user.username };
+          return next();
+        }
+      }
+    }
+  } catch (error) {
+    // Ignore parsing errors
+  }
+  
+  return res.status(401).json({ message: 'Unauthorized' });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Make storage globally accessible for session validation
+  (global as any).storage = storage;
   
   // Serve uploaded files
   app.use('/uploads', express.static(uploadDir));
@@ -71,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = await storage.createUser(userData);
-      const sessionId = generateSessionId();
+      const sessionId = generateSessionId(user.id);
       sessions.set(sessionId, { userId: user.id, username: user.username });
       
       res.json({ 
@@ -109,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
-      const sessionId = generateSessionId();
+      const sessionId = generateSessionId(user.id);
       sessions.set(sessionId, { userId: user.id, username: user.username });
       
       res.json({ 
