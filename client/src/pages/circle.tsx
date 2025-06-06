@@ -111,11 +111,11 @@ export default function Circle() {
 
           {/* Circle's Vibe Section */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
-              Circle's Vibe
-            </h2>
-            
             <div className="bg-white dark:bg-gray-700 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-600">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
+                Circle's Vibe
+              </h2>
+              
               <div className="flex gap-6 justify-center">
                 <div className="flex flex-col items-center">
                   <div className="relative">
