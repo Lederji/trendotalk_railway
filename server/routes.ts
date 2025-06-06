@@ -874,5 +874,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // WebSocket server for real-time chat
+  const WebSocket = require('ws');
+  const wss = new WebSocket.WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Store active connections
+  const activeConnections = new Map();
+  
+  wss.on('connection', (ws: any, req: any) => {
+    console.log('New WebSocket connection established');
+    
+    ws.on('message', (message: any) => {
+      try {
+        const data = JSON.parse(message);
+        
+        switch (data.type) {
+          case 'join':
+            activeConnections.set(data.userId, ws);
+            ws.userId = data.userId;
+            console.log(`User ${data.userId} joined chat`);
+            break;
+            
+          case 'typing':
+            // Broadcast typing indicator to other user in chat
+            const otherUserId = data.chatId === 1 ? 
+              (data.userId === 2 ? 3 : 2) : 
+              (data.userId === 2 ? 3 : 2);
+            const otherWs = activeConnections.get(otherUserId);
+            if (otherWs && otherWs.readyState === WebSocket.OPEN) {
+              otherWs.send(JSON.stringify({
+                type: 'typing',
+                chatId: data.chatId,
+                userId: data.userId,
+                isTyping: data.isTyping
+              }));
+            }
+            break;
+            
+          case 'message':
+            // Broadcast new message to other user in chat
+            const recipientId = data.chatId === 1 ? 
+              (data.userId === 2 ? 3 : 2) : 
+              (data.userId === 2 ? 3 : 2);
+            const recipientWs = activeConnections.get(recipientId);
+            if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
+              recipientWs.send(JSON.stringify({
+                type: 'newMessage',
+                chatId: data.chatId,
+                message: data.message
+              }));
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+    
+    ws.on('close', () => {
+      if (ws.userId) {
+        activeConnections.delete(ws.userId);
+        console.log(`User ${ws.userId} disconnected`);
+      }
+    });
+  });
+  
   return httpServer;
 }

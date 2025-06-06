@@ -6,18 +6,27 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Plus } from "lucide-react";
+import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Plus, Phone, Video, MoreVertical } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ChatPage() {
   const { chatId } = useParams();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [message, setMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [ws, setWs] = useState<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const queryClient = useQueryClient();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: chat, isLoading } = useQuery({
     queryKey: ["/api/chats", chatId],
@@ -45,8 +54,50 @@ export default function ChatPage() {
       return response.json();
     },
     enabled: !!chatId,
-    refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
   });
+
+  // WebSocket connection for real-time messaging
+  useEffect(() => {
+    if (!user?.id || !chatId) return;
+    
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const websocket = new WebSocket(wsUrl);
+    
+    websocket.onopen = () => {
+      console.log('WebSocket connected');
+      websocket.send(JSON.stringify({
+        type: 'join',
+        userId: user.id,
+        chatId: parseInt(chatId)
+      }));
+      setWs(websocket);
+    };
+    
+    websocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      switch (data.type) {
+        case 'typing':
+          setOtherUserTyping(data.isTyping);
+          break;
+        case 'newMessage':
+          queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
+          break;
+      }
+    };
+    
+    websocket.onclose = () => {
+      console.log('WebSocket disconnected');
+      setWs(null);
+    };
+    
+    return () => {
+      if (websocket.readyState === WebSocket.OPEN) {
+        websocket.close();
+      }
+    };
+  }, [user?.id, chatId, queryClient]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -61,7 +112,16 @@ export default function ChatPage() {
       if (!response.ok) throw new Error('Failed to send message');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newMessage) => {
+      // Send WebSocket notification
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'message',
+          chatId: parseInt(chatId),
+          userId: user?.id,
+          message: newMessage
+        }));
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
       setMessage("");
       setSelectedFile(null);
@@ -78,6 +138,100 @@ export default function ChatPage() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleTyping = () => {
+    if (!isTyping && ws && ws.readyState === WebSocket.OPEN) {
+      setIsTyping(true);
+      ws.send(JSON.stringify({
+        type: 'typing',
+        chatId: parseInt(chatId),
+        userId: user?.id,
+        isTyping: true
+      }));
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to stop typing
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isTyping && ws && ws.readyState === WebSocket.OPEN) {
+        setIsTyping(false);
+        ws.send(JSON.stringify({
+          type: 'typing',
+          chatId: parseInt(chatId),
+          userId: user?.id,
+          isTyping: false
+        }));
+      }
+    }, 1000);
+  };
+
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
+        await uploadVoiceMessage(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      toast({
+        title: "Microphone Access",
+        description: "Please allow microphone access to record voice messages",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const uploadVoiceMessage = async (audioBlob: Blob) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'voice-message.mp3');
+    
+    try {
+      const response = await fetch(`/api/chats/${chatId}/voice`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        },
+        body: formData
+      });
+      
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
+        toast({
+          title: "Voice message sent",
+          description: "Your voice message has been sent successfully",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to send voice message",
+        variant: "destructive",
+      });
     }
   };
 
