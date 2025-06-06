@@ -109,29 +109,33 @@ export default function Circle() {
   ).slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md mx-auto bg-white dark:bg-gray-800 min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
+      <div className="max-w-md mx-auto bg-white/90 backdrop-blur-sm dark:bg-gray-800/90 min-h-screen shadow-xl">
         {/* Header */}
         <div className="px-6 py-6">
-          <h1 className="text-2xl font-bold text-pink-500 mb-2">Your Circle</h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
-            Connect with friends and share your moments
-          </p>
-
-          {/* Search Bar */}
-          <div className="relative mb-8">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search users by username..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-100 dark:bg-gray-700 border-none rounded-full h-12"
-            />
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Your Circle</h1>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                Connect with friends
+              </p>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="relative w-48">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-gradient-to-r from-purple-50 to-pink-50 dark:bg-gray-700 border border-purple-200 dark:border-purple-600 rounded-full h-10 text-sm focus:border-purple-400 focus:ring-purple-400"
+              />
+            </div>
           </div>
 
           {/* Circle's Vibe Section */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
+            <h2 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">
               Circle's Vibe
             </h2>
             
@@ -139,9 +143,9 @@ export default function Circle() {
               {allUsers.map((vibeUser, index) => (
                 <div key={vibeUser.id || index} className="flex flex-col items-center">
                   <div className="relative">
-                    <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                    <Avatar className="w-16 h-16 border-4 border-gradient-to-r from-purple-300 to-pink-300 shadow-lg">
                       <AvatarImage src={vibeUser.avatar} />
-                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white text-lg font-semibold">
+                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-lg font-semibold">
                         {vibeUser.isCurrentUser ? "F" : 
                          vibeUser.username === "tp-leader" ? "L" : 
                          vibeUser.username === "tp-firstuser" ? "F" : 
@@ -149,12 +153,12 @@ export default function Circle() {
                       </AvatarFallback>
                     </Avatar>
                     {vibeUser.isCurrentUser && (
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
                         <Plus className="w-3 h-3 text-white" />
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center font-medium">
                     {vibeUser.isCurrentUser ? "Your vibe" : 
                      vibeUser.username === "tp-leader" ? "tp-leader" : 
                      vibeUser.username === "tp-firstuser" ? "tp-firstuser" : 
@@ -167,37 +171,37 @@ export default function Circle() {
         </div>
 
         {/* Bottom Section */}
-        <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-br from-white to-purple-50/30 dark:bg-gray-800 border-t border-purple-200 dark:border-purple-700">
           {/* Tab Navigation */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <div className="flex border-b border-purple-200 dark:border-purple-700">
             <button
               onClick={() => setActiveTab("chats")}
-              className={`flex-1 px-6 py-4 text-center font-medium ${
+              className={`flex-1 px-6 py-4 text-center font-medium transition-all ${
                 activeTab === "chats"
-                  ? "text-pink-500 border-b-2 border-pink-500"
-                  : "text-gray-500 dark:text-gray-400"
+                  ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 border-b-2 border-gradient-to-r from-purple-500 to-pink-500"
+                  : "text-gray-500 dark:text-gray-400 hover:text-purple-500"
               }`}
             >
               <MessageCircle className="w-5 h-5 inline mr-2" />
               Chats
               {chats.length > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-pink-100 text-pink-600">
+                <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
                   {chats.length}
                 </Badge>
               )}
             </button>
             <button
               onClick={() => setActiveTab("requests")}
-              className={`flex-1 px-6 py-4 text-center font-medium ${
+              className={`flex-1 px-6 py-4 text-center font-medium transition-all ${
                 activeTab === "requests"
-                  ? "text-pink-500 border-b-2 border-pink-500"
-                  : "text-gray-500 dark:text-gray-400"
+                  ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 border-b-2 border-gradient-to-r from-purple-500 to-pink-500"
+                  : "text-gray-500 dark:text-gray-400 hover:text-purple-500"
               }`}
             >
               <UserPlus className="w-5 h-5 inline mr-2" />
               Requests
               {friendRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-pink-100 text-pink-600">
+                <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
                   {friendRequests.length}
                 </Badge>
               )}
@@ -264,14 +268,14 @@ export default function Circle() {
                         size="sm"
                         onClick={() => acceptFriendRequestMutation.mutate(request.id)}
                         disabled={acceptFriendRequestMutation.isPending}
-                        className="bg-pink-500 hover:bg-pink-600 text-white"
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md"
                       >
                         Accept
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-gray-600"
+                        className="border-purple-300 text-purple-600 hover:bg-purple-50"
                       >
                         Decline
                       </Button>
@@ -306,7 +310,7 @@ export default function Circle() {
                             size="sm"
                             onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
                             disabled={sendFriendRequestMutation.isPending}
-                            className="bg-pink-500 hover:bg-pink-600 text-white"
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md"
                           >
                             <UserPlus className="w-4 h-4 mr-1" />
                             Add
