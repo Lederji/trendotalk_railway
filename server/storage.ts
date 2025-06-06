@@ -1152,6 +1152,58 @@ export class MemStorage implements IStorage {
     // In memory implementation - would return reported posts/users in real app
     return [];
   }
+
+  // Vibe methods for MemStorage
+  async createVibe(vibe: InsertVibe & { userId: number; expiresAt?: Date }): Promise<Vibe> {
+    const newVibe: Vibe = {
+      id: this.currentStoryId++, // Reuse story ID counter for simplicity
+      userId: vibe.userId,
+      title: vibe.title,
+      content: vibe.content || null,
+      imageUrl: vibe.imageUrl || null,
+      videoUrl: vibe.videoUrl || null,
+      createdAt: new Date(),
+      expiresAt: vibe.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+    };
+    
+    this.stories.set(newVibe.id, newVibe as any); // Store as story for simplicity
+    return newVibe;
+  }
+
+  async getActiveVibes(): Promise<VibeWithUser[]> {
+    const now = new Date();
+    const activeVibes: VibeWithUser[] = [];
+    
+    for (const [id, vibe] of this.stories.entries()) {
+      if (vibe.expiresAt > now) {
+        const user = this.users.get(vibe.userId);
+        if (user) {
+          activeVibes.push({
+            ...vibe,
+            user: {
+              id: user.id,
+              username: user.username,
+              avatar: user.avatar,
+            },
+          } as VibeWithUser);
+        }
+      }
+    }
+    
+    return activeVibes;
+  }
+
+  async getUserVibes(userId: number): Promise<Vibe[]> {
+    const userVibes: Vibe[] = [];
+    
+    for (const [id, vibe] of this.stories.entries()) {
+      if (vibe.userId === userId) {
+        userVibes.push(vibe as Vibe);
+      }
+    }
+    
+    return userVibes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
 }
 
 
@@ -1909,6 +1961,89 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('Error getting user stories:', error);
+      return [];
+    }
+  }
+
+  // Vibe methods
+  async createVibe(vibe: InsertVibe & { userId: number; expiresAt?: Date }): Promise<Vibe> {
+    try {
+      // Clean up existing vibes for this user if they're posting within 24 hours
+      const existingVibes = await db
+        .select()
+        .from(vibes)
+        .where(eq(vibes.userId, vibe.userId))
+        .orderBy(desc(vibes.createdAt));
+      
+      // Delete old vibes from the same user (keep only the latest one per 24 hours)
+      for (const existingVibe of existingVibes) {
+        const vibeAge = Date.now() - new Date(existingVibe.createdAt).getTime();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        
+        if (vibeAge < twentyFourHours) {
+          // Delete the old vibe if posting within 24 hours
+          await db
+            .delete(vibes)
+            .where(eq(vibes.id, existingVibe.id));
+        }
+      }
+      
+      const expiresAt = vibe.expiresAt || new Date();
+      if (!vibe.expiresAt) {
+        expiresAt.setHours(expiresAt.getHours() + 24);
+      }
+      
+      const [newVibe] = await db
+        .insert(vibes)
+        .values({
+          ...vibe,
+          expiresAt,
+        })
+        .returning();
+      return newVibe;
+    } catch (error) {
+      console.error('Error creating vibe:', error);
+      throw error;
+    }
+  }
+
+  async getActiveVibes(): Promise<VibeWithUser[]> {
+    try {
+      const now = new Date();
+      const result = await db
+        .select({
+          vibe: vibes,
+          user: {
+            id: users.id,
+            username: users.username,
+            avatar: users.avatar,
+          },
+        })
+        .from(vibes)
+        .innerJoin(users, eq(vibes.userId, users.id))
+        .where(sql`${vibes.expiresAt} > ${now}`)
+        .orderBy(desc(vibes.createdAt));
+
+      return result.map(row => ({
+        ...row.vibe,
+        user: row.user,
+      }));
+    } catch (error) {
+      console.error('Error getting active vibes:', error);
+      return [];
+    }
+  }
+
+  async getUserVibes(userId: number): Promise<Vibe[]> {
+    try {
+      const result = await db
+        .select()
+        .from(vibes)
+        .where(eq(vibes.userId, userId))
+        .orderBy(desc(vibes.createdAt));
+      return result;
+    } catch (error) {
+      console.error('Error getting user vibes:', error);
       return [];
     }
   }

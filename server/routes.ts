@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema } from "@shared/schema";
+import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema, insertVibeSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import path from "path";
@@ -535,6 +535,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stories = await storage.getActiveStories();
       res.json(stories);
     } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Vibe routes
+  app.post('/api/vibes', authenticateUser, upload.single('file'), async (req: any, res: any) => {
+    try {
+      const { title, content } = req.body;
+      
+      if (!title?.trim()) {
+        return res.status(400).json({ message: 'Title is required' });
+      }
+      
+      let imageUrl = null;
+      let videoUrl = null;
+      
+      if (req.file) {
+        try {
+          const cloudinaryUrl = await uploadToCloudinary(req.file);
+          if (req.file.mimetype.startsWith('image')) {
+            imageUrl = cloudinaryUrl;
+          } else if (req.file.mimetype.startsWith('video')) {
+            videoUrl = cloudinaryUrl;
+          }
+        } catch (uploadError) {
+          console.error('Vibe media upload error:', uploadError);
+          return res.status(500).json({ message: 'Media upload failed' });
+        }
+      }
+      
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
+      
+      const vibe = await storage.createVibe({
+        title: title.trim(),
+        content: content?.trim() || null,
+        imageUrl,
+        videoUrl,
+        userId: req.user.userId,
+        expiresAt
+      });
+      
+      res.json(vibe);
+    } catch (error) {
+      console.error('Vibe creation error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/vibes', authenticateUser, async (req: any, res: any) => {
+    try {
+      const vibes = await storage.getActiveVibes();
+      res.json(vibes);
+    } catch (error) {
+      console.error('Error getting vibes:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
