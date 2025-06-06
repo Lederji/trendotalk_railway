@@ -737,14 +737,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/friend-requests/:userId', authenticateUser, async (req: any, res: any) => {
     try {
       const targetUserId = Number(req.params.userId);
-      const result = await storage.sendFriendRequest(req.user.userId, targetUserId);
       
-      if (result === false) {
-        return res.status(400).json({ message: 'Cannot send friend request' });
+      if (req.user.userId === targetUserId) {
+        return res.status(400).json({ message: 'Cannot send request to yourself' });
       }
       
-      if (result === 'already_friends') {
-        return res.json({ message: 'Connected successfully', success: true });
+      // Check if request already exists
+      const existingRequest = await storage.getFriendRequests(req.user.userId);
+      const hasExisting = existingRequest.some((req: any) => 
+        (req.fromUserId === req.user.userId && req.toUserId === targetUserId) ||
+        (req.fromUserId === targetUserId && req.toUserId === req.user.userId)
+      );
+      
+      if (hasExisting) {
+        return res.status(400).json({ message: 'Request already exists' });
+      }
+      
+      // Check if already friends
+      const friends = await storage.getUserFollowing(req.user.userId);
+      const alreadyFriends = friends.some((friend: any) => friend.id === targetUserId);
+      
+      if (alreadyFriends) {
+        return res.json({ message: 'Already connected', success: true });
+      }
+      
+      // Create friend request
+      const success = await storage.sendFriendRequest(req.user.userId, targetUserId);
+      
+      if (!success) {
+        return res.status(400).json({ message: 'Failed to send request' });
       }
       
       res.json({ message: 'Friend request sent', success: true });
@@ -812,7 +833,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Message cannot be empty' });
       }
       
+      // Verify user has access to this chat
+      const userChats = await storage.getUserChats(req.user.userId);
+      const hasAccess = userChats.some(chat => chat.id === chatId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: 'Access denied to this chat' });
+      }
+      
       const newMessage = await storage.sendMessage(chatId, req.user.userId, message.trim());
+      console.log('Message sent successfully:', newMessage);
       res.json(newMessage);
     } catch (error) {
       console.error('Error sending message:', error);

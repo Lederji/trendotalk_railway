@@ -2057,7 +2057,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean | string> {
+  async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
     try {
       // Prevent self-friend requests
       if (fromUserId === toUserId) {
@@ -2087,7 +2087,7 @@ export class DatabaseStorage implements IStorage {
         ));
       
       if (alreadyFriends.length > 0) {
-        return 'already_friends';
+        return false; // Already friends
       }
       
       // Create friend request
