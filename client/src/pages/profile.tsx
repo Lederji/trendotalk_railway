@@ -1,309 +1,315 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useLocation } from "wouter";
-import { Header } from "@/components/layout/header";
-import { Navigation } from "@/components/layout/navigation";
-import { PostCard } from "@/components/post/post-card";
-import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Settings, Grid, Heart, MessageCircle, Users, Search, Menu, Edit, Phone, Mail, Link as LinkIcon, User } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, UserPlus, MessageCircle, Users, Heart, Play, Grid3X3 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import Auth from "./auth";
-
-const editProfileSchema = z.object({
-  name: z.string().optional(),
-  bio: z.string().optional(),
-  website: z.string().url().optional().or(z.literal("")),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
-});
+import { Navigation } from "@/components/layout/navigation";
 
 export default function Profile() {
-  const { username } = useParams();
-  const { user: currentUser, isAuthenticated, logout, updateUser } = useAuth();
+  const params = useParams();
+  const username = params.username;
+  const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  
-  const form = useForm({
-    resolver: zodResolver(editProfileSchema),
-    defaultValues: {
-      name: "",
-      bio: "",
-      website: "",
-      phone: "",
-      email: "",
-    },
-  });
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch(`/api/users/profile`, {
-        method: "PATCH",
+  const { data: profileUser, isLoading } = useQuery({
+    queryKey: ["/api/users/profile", username],
+    queryFn: async () => {
+      const response = await fetch(`/api/users/profile/${username}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to update profile');
+      if (!response.ok) throw new Error("Failed to fetch profile");
       return response.json();
     },
-    onSuccess: (data) => {
-      updateUser(data);
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: "Profile updated successfully!" });
-      setIsEditDialogOpen(false);
-    },
+    enabled: !!username,
   });
 
-  const uploadAvatarMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('/api/upload/avatar', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        },
-        body: formData,
-      });
-      
-      if (!response.ok) throw new Error('Failed to upload avatar');
-      return response.json();
-    },
-    onSuccess: (data) => {
-      updateUser({ avatar: data.url });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: "Profile picture updated!" });
-    },
-  });
-
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadAvatarMutation.mutate(file);
-    }
-  };
-
-  const onSubmit = (data: any) => {
-    updateProfileMutation.mutate(data);
-  };
-  
-  // If no username provided, show current user's profile
-  const targetUsername = username || currentUser?.username;
-  const isOwnProfile = !username || username === currentUser?.username;
-
-  const { data: profileData, isLoading } = useQuery({
-    queryKey: ["/api/users", targetUsername],
+  const { data: userVibes = [] } = useQuery({
+    queryKey: ["/api/vibes/user", profileUser?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/users/${targetUsername}`, {
-        headers: isAuthenticated ? {
-          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        } : {}
+      const response = await fetch(`/api/vibes/user/${profileUser.id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
       });
-      if (!response.ok) throw new Error('Failed to fetch profile');
+      if (!response.ok) return [];
       return response.json();
     },
-    enabled: !!targetUsername,
+    enabled: !!profileUser?.id,
   });
 
-  if (!isAuthenticated) {
-    return <Auth />;
-  }
+  const sendFriendRequestMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await fetch("/api/friend-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+        body: JSON.stringify({ friendId: userId }),
+      });
+      if (!response.ok) throw new Error("Failed to send friend request");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Friend request sent!",
+        description: `Your friend request has been sent to ${profileUser?.username}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/friend-requests"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send friend request",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <Card className="animate-pulse">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="w-24 h-24 bg-gray-200 rounded-full"></div>
-                <div className="space-y-2 text-center">
-                  <div className="w-32 h-6 bg-gray-200 rounded mx-auto"></div>
-                  <div className="w-48 h-4 bg-gray-200 rounded mx-auto"></div>
-                </div>
-                <div className="flex space-x-8">
-                  <div className="w-16 h-8 bg-gray-200 rounded"></div>
-                  <div className="w-16 h-8 bg-gray-200 rounded"></div>
-                  <div className="w-16 h-8 bg-gray-200 rounded"></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="animate-spin w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!profileData) {
+  if (!profileUser) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">User not found</h3>
-              <p className="text-gray-500">The user you're looking for doesn't exist.</p>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">User not found</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">The user you're looking for doesn't exist.</p>
+            <Link href="/circle">
+              <Button className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Circle
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
+
+  const isOwnProfile = currentUser?.id === profileUser.id;
+  const activeVibes = userVibes.filter((vibe: any) => {
+    const vibeTime = new Date(vibe.createdAt).getTime();
+    const now = Date.now();
+    return now - vibeTime < 24 * 60 * 60 * 1000; // 24 hours
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <Navigation />
       
-      <div className="px-4 py-4 pb-20">
-        {/* Profile Header */}
-        <div className="bg-white rounded-lg p-4 mb-4">
-          <div className="flex items-start space-x-4 mb-4">
-            {/* Avatar */}
-            <Avatar className="w-20 h-20">
-              <AvatarImage src={profileData.avatar} alt={profileData.username} />
-              <AvatarFallback className="text-xl">
-                {profileData.username[3]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-6">
+          <Link href="/circle">
+            <Button variant="ghost" className="mb-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Circle
+            </Button>
+          </Link>
+        </div>
 
-            {/* Profile Info */}
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-3">
-                <h1 className="text-lg font-semibold flex items-center gap-2">
-                  {profileData.username}
-                  {profileData.isAdmin && (
-                    <Badge variant="secondary" className="gradient-bg text-white text-xs">
-                      Admin
-                    </Badge>
-                  )}
+        {/* Profile Header */}
+        <Card className="mb-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200 dark:border-gray-700">
+          <CardContent className="p-8">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <Avatar className="w-32 h-32 border-4 border-pink-200 dark:border-pink-700">
+                <AvatarImage src={profileUser.avatar} />
+                <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white font-bold text-3xl">
+                  {profileUser.username?.charAt(0)?.toUpperCase() || "?"}
+                </AvatarFallback>
+              </Avatar>
+
+              <div className="flex-1 text-center md:text-left">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  {profileUser.username}
                 </h1>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  {profileUser.bio || "No bio available"}
+                </p>
                 
-                {isOwnProfile ? (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="text-xs px-3">
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={logout} className="text-xs px-3">
-                      <Settings className="h-3 w-3" />
-                    </Button>
+                <div className="flex justify-center md:justify-start gap-6 mb-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                      {activeVibes.length}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Active Vibes</p>
                   </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button size="sm" className="gradient-bg text-white hover:opacity-90 text-xs px-4">
-                      {profileData.isFollowing ? "Unfollow" : "Follow"}
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {profileUser.followersCount || 0}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Followers</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {profileUser.followingCount || 0}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Following</p>
+                  </div>
+                </div>
+
+                {!isOwnProfile && (
+                  <div className="flex justify-center md:justify-start gap-3">
+                    <Button
+                      onClick={() => sendFriendRequestMutation.mutate(profileUser.id)}
+                      disabled={sendFriendRequestMutation.isPending}
+                      className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white font-semibold"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add to Circle
                     </Button>
-                    <Button variant="outline" size="sm" className="text-xs px-3">
-                      <MessageCircle className="h-3 w-3" />
+                    <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Message
                     </Button>
                   </div>
                 )}
               </div>
-
-              {/* Stats */}
-              <div className="flex space-x-6 mb-3">
-                <div className="text-center">
-                  <div className="font-semibold text-sm">{profileData.posts?.length || 0}</div>
-                  <div className="text-xs text-gray-500">posts</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold text-sm">{profileData.followersCount}</div>
-                  <div className="text-xs text-gray-500">followers</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold text-sm">{profileData.followingCount}</div>
-                  <div className="text-xs text-gray-500">following</div>
-                </div>
-              </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Bio */}
-          {profileData.bio && (
-            <p className="text-sm text-gray-700">{profileData.bio}</p>
-          )}
-        </div>
+        {/* Content Tabs */}
+        <Tabs defaultValue="vibes" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3">
+            <TabsTrigger value="vibes" className="flex items-center gap-2">
+              <Play className="w-4 h-4" />
+              Vibes ({activeVibes.length})
+            </TabsTrigger>
+            <TabsTrigger value="posts" className="flex items-center gap-2">
+              <Grid3X3 className="w-4 h-4" />
+              Posts
+            </TabsTrigger>
+            <TabsTrigger value="about" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              About
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Posts Grid */}
-        <div className="border-t border-gray-200 bg-white">
-          <div className="flex items-center justify-center py-3 border-b border-gray-200">
-            <Button variant="ghost" className="flex items-center gap-2 border-b-2 border-gray-800 rounded-none pb-1">
-              <Grid className="h-4 w-4" />
-              <span className="text-sm font-medium">Posts</span>
-            </Button>
-          </div>
-
-          {profileData.posts && profileData.posts.length > 0 ? (
-            <div className="grid grid-cols-3 gap-1">
-              {profileData.posts.map((post: any) => (
-                <div key={post.id} className="aspect-square relative group cursor-pointer overflow-hidden">
-                  {post.imageUrl ? (
-                    <img
-                      src={post.imageUrl}
-                      alt={post.caption}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : post.videoUrl ? (
-                    <video
-                      src={post.videoUrl}
-                      className="w-full h-full object-cover"
-                      muted
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <span className="text-gray-400 text-xs">No media</span>
-                    </div>
-                  )}
-                  
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
-                    <div className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center space-x-3">
-                      <div className="flex items-center">
-                        <Heart className="w-4 h-4 mr-1" />
-                        <span className="font-semibold text-sm">{post.likesCount}</span>
+          <TabsContent value="vibes" className="mt-6">
+            {activeVibes.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {activeVibes.map((vibe: any) => (
+                  <Card key={vibe.id} className="aspect-square bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200 dark:border-gray-700 overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow">
+                    <CardContent className="p-0 relative h-full">
+                      {vibe.videoUrl ? (
+                        <video
+                          src={vibe.videoUrl}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                        />
+                      ) : vibe.imageUrl ? (
+                        <img
+                          src={vibe.imageUrl}
+                          alt="Vibe"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 dark:from-pink-800 dark:to-purple-800 flex items-center justify-center">
+                          <Heart className="w-8 h-8 text-pink-500" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white" />
                       </div>
-                      <div className="flex items-center">
-                        <MessageCircle className="w-4 h-4 mr-1" />
-                        <span className="font-semibold text-sm">{post.commentsCount}</span>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Heart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  No active vibes
+                </h3>
+                <p className="text-gray-500 dark:text-gray-500">
+                  {isOwnProfile ? "Share your first vibe!" : `${profileUser.username} hasn't shared any vibes recently`}
+                </p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="posts" className="mt-6">
+            <div className="text-center py-12">
+              <Grid3X3 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                No posts yet
+              </h3>
+              <p className="text-gray-500 dark:text-gray-500">
+                Posts feature coming soon!
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="about" className="mt-6">
+            <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200 dark:border-gray-700">
+              <CardHeader>
+                <h3 className="text-xl font-semibold">About {profileUser.username}</h3>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Bio</h4>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {profileUser.bio || "No bio available"}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Joined</h4>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {new Date(profileUser.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Statistics</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
+                        <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                          {activeVibes.length}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Active Vibes</p>
+                      </div>
+                      <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                          {userVibes.length}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Total Vibes</p>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center">
-              <Grid className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">No posts yet</h3>
-              <p className="text-gray-500 text-sm">
-                {isOwnProfile 
-                  ? "Share your first trend to get started!" 
-                  : `${profileData.username} hasn't posted anything yet.`
-                }
-              </p>
-            </div>
-          )}
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <Navigation />
     </div>
   );
 }

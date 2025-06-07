@@ -594,6 +594,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user profile by username
+  app.get('/api/users/profile/:username', authenticateUser, async (req: any, res: any) => {
+    try {
+      const user = await storage.getUserByUsername(req.params.username);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Remove password from response
+      const { password, ...userProfile } = user;
+      res.json(userProfile);
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get vibes for a specific user
+  app.get('/api/vibes/user/:userId', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const userVibes = await storage.getUserVibes(userId);
+      res.json(userVibes);
+    } catch (error) {
+      console.error('Error getting user vibes:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get user's own vibes
   app.get('/api/stories/user', authenticateUser, async (req: any, res: any) => {
     try {
