@@ -1747,6 +1747,7 @@ export class DatabaseStorage implements IStorage {
           await db.delete(notifications).where(eq(notifications.postId, video.id));
           await db.delete(comments).where(eq(comments.postId, video.id));
           await db.delete(likes).where(eq(likes.postId, video.id));
+          await db.delete(dislikes).where(eq(dislikes.postId, video.id));
           await db.execute(`DELETE FROM votes WHERE post_id = ${video.id}`);
           // Now delete the post
           await db.delete(posts).where(eq(posts.id, video.id));
