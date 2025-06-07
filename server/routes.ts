@@ -1427,7 +1427,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user's email
       await storage.updateUser(req.user.userId, { email });
       
-      console.log(`Email OTP for ${email}: ${otp}`); // In production, send via email service
+      // Send email with professional template
+      const { sendEmail, createOTPEmailTemplate } = require('./email');
+      const { html, text } = createOTPEmailTemplate(otp, email);
+      
+      const emailSent = await sendEmail({
+        to: email,
+        subject: 'TrendoTalk - Verify Your Email Address',
+        html,
+        text
+      });
+      
+      if (!emailSent) {
+        console.log(`Email OTP for ${email}: ${otp}`); // Fallback logging
+      }
       
       res.json({ message: 'OTP sent successfully' });
     } catch (error) {

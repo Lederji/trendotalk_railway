@@ -108,7 +108,7 @@ export default function AccountCenter() {
       setShowEmailOtp(true);
       toast({
         title: "OTP Sent",
-        description: "Verification code sent to your email. Check the console for the OTP code.",
+        description: "Verification code sent to your email inbox. Check your email for the 6-digit code.",
       });
     },
     onError: (error: any) => {
