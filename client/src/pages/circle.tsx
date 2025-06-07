@@ -29,6 +29,7 @@ export default function Circle() {
     queryFn: async () => {
       if (!searchQuery || searchQuery.length < 2) return [];
       
+      console.log("Searching for:", searchQuery);
       const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
@@ -37,11 +38,21 @@ export default function Circle() {
       
       if (!response.ok) throw new Error("Search failed");
       const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      console.log("Raw search response:", data);
+      console.log("Is array?", Array.isArray(data));
+      console.log("Array length:", data?.length);
+      const results = Array.isArray(data) ? data : [];
+      console.log("Final search results:", results);
+      return results;
     },
     enabled: searchQuery.length >= 2,
     staleTime: 30000,
   });
+
+  // Debug logging for search results
+  console.log("Current searchQuery:", searchQuery);
+  console.log("Current searchResults:", searchResults);
+  console.log("Is searching:", isSearching);
 
   const { data: chats = [] } = useQuery({
     queryKey: ["/api/chats"],
@@ -412,6 +423,18 @@ export default function Circle() {
                   </div>
                 )}
 
+                {/* Search Results Debug Info */}
+                {searchQuery.length >= 2 && (
+                  <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200">
+                    <h4 className="font-bold text-yellow-800 dark:text-yellow-200 mb-2">Debug Info:</h4>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Search Query: "{searchQuery}"</p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Results Count: {searchResults?.length || 0}</p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Is Loading: {isSearching ? 'Yes' : 'No'}</p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Results Type: {typeof searchResults}</p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Raw Results: {JSON.stringify(searchResults)}</p>
+                  </div>
+                )}
+
                 {/* Search Results */}
                 {searchQuery.length >= 2 && (
                   <div className="mt-6 p-6 bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 dark:from-purple-800/30 dark:via-pink-800/30 dark:to-blue-800/30 rounded-2xl border-2 border-purple-200 dark:border-purple-600 shadow-xl">
@@ -422,7 +445,7 @@ export default function Circle() {
                       </h3>
                       <div className="flex items-center gap-3">
                         <span className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold rounded-full shadow-md">
-                          {searchResults.length} users found
+                          {searchResults?.length || 0} users found
                         </span>
                         {isSearching && (
                           <div className="animate-spin w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full"></div>
