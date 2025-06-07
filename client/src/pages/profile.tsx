@@ -265,29 +265,31 @@ export default function ProfilePage() {
         {/* Bio */}
         <div className="mb-4">
           <div className="mb-2">
-            <h2 className="font-semibold text-base mb-3">{profile?.displayName || profile?.username}</h2>
-            
-            {/* Platform Links */}
-            <div className="flex gap-2">
-              {(() => {
-                try {
-                  const links = profile?.links ? JSON.parse(profile.links) : [];
-                  return links.slice(0, 2).map((link: any, index: number) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                      }}
-                      className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
-                    >
-                      {link.name}
-                    </button>
-                  ));
-                } catch (e) {
-                  return null;
-                }
-              })()}
+            <div className="flex items-center gap-4 mb-2">
+              <h2 className="font-semibold text-base">{profile?.displayName || profile?.username}</h2>
+              
+              {/* Platform Links */}
+              <div className="flex gap-2">
+                {(() => {
+                  try {
+                    const links = profile?.links ? JSON.parse(profile.links) : [];
+                    return links.slice(0, 2).map((link: any, index: number) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        }}
+                        className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
+                      >
+                        {link.name}
+                      </button>
+                    ));
+                  } catch (e) {
+                    return null;
+                  }
+                })()}
+              </div>
             </div>
           </div>
           
@@ -428,23 +430,37 @@ export default function ProfilePage() {
           <div className="space-y-4 flex-1 overflow-y-auto pr-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Add Profile Picture
+                Profile Picture
               </label>
-              <div className="space-y-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  disabled={uploading}
-                />
-                {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
+              <div className="space-y-3">
+                {/* Current Profile Picture Display */}
                 {editForm.avatar && (
-                  <div className="flex items-center space-x-2">
-                    <img src={editForm.avatar} alt="Profile preview" className="w-12 h-12 rounded-full object-cover" />
-                    <span className="text-sm text-green-600">Profile picture ready</span>
+                  <div className="flex items-center space-x-3">
+                    <img src={editForm.avatar} alt="Current profile" className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-600">Current profile picture</p>
+                      <button
+                        type="button"
+                        onClick={() => setEditForm({ ...editForm, avatar: '' })}
+                        className="text-xs text-red-600 hover:text-red-700"
+                      >
+                        Remove picture
+                      </button>
+                    </div>
                   </div>
                 )}
+                
+                {/* Upload New Picture */}
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    disabled={uploading}
+                  />
+                  {uploading && <p className="text-sm text-blue-600">Uploading new picture...</p>}
+                </div>
               </div>
             </div>
             <div>
@@ -465,9 +481,21 @@ export default function ProfilePage() {
                 value={editForm.bio}
                 onChange={(e) => {
                   const text = e.target.value;
-                  // Count all characters including spaces
+                  // Count all characters including spaces, but handle special keys
                   if (text.length <= 150) {
                     setEditForm({ ...editForm, bio: text });
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Allow navigation keys without counting them as characters
+                  const allowedKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Tab', 'Shift', 'Control', 'Alt', 'Meta'];
+                  if (allowedKeys.includes(e.key)) {
+                    return;
+                  }
+                  
+                  // Prevent input if at character limit and not deleting
+                  if (editForm.bio.length >= 150 && e.key !== 'Backspace' && e.key !== 'Delete') {
+                    e.preventDefault();
                   }
                 }}
                 placeholder="Tell us about yourself..."
