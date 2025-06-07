@@ -889,6 +889,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       console.log('User found:', user ? 'Yes' : 'No', user?.username);
       if (!user) {
+        // If user not found in database but requesting own profile, use session data as fallback
+        if (req.user.userId === userId) {
+          const fallbackUser = {
+            id: req.user.userId,
+            username: req.user.username,
+            displayName: null,
+            bio: null,
+            avatar: null,
+            website: null,
+            links: null,
+            isAdmin: req.user.isAdmin || false,
+            followersCount: 0,
+            followingCount: 0,
+            createdAt: new Date(),
+          };
+          console.log('Using session fallback for user:', fallbackUser.username);
+          return res.json({
+            ...fallbackUser,
+            isFollowing: false,
+            posts: []
+          });
+        }
         return res.status(404).json({ message: 'User not found' });
       }
       
