@@ -1323,18 +1323,14 @@ export class DatabaseStorage implements IStorage {
 
   private async createTablesIfNotExists() {
     try {
-      // Create users table
+      // Create users table with correct column names
       await db.execute(`
         CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY,
-          username VARCHAR(255) UNIQUE NOT NULL,
-          password VARCHAR(255) NOT NULL,
-          name VARCHAR(255),
+          username TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
           bio TEXT,
-          website VARCHAR(255),
-          phone VARCHAR(255),
-          email VARCHAR(255),
-          avatar VARCHAR(255),
+          avatar TEXT,
           is_admin BOOLEAN DEFAULT false,
           followers_count INTEGER DEFAULT 0,
           following_count INTEGER DEFAULT 0,
@@ -1349,16 +1345,29 @@ export class DatabaseStorage implements IStorage {
         ADD COLUMN IF NOT EXISTS following_count INTEGER DEFAULT 0;
       `);
 
-      // Create other tables
+      // Create posts table with all required fields
       await db.execute(`
         CREATE TABLE IF NOT EXISTS posts (
           id SERIAL PRIMARY KEY,
           user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          title TEXT,
+          video1_url TEXT,
+          video2_url TEXT,
+          video3_url TEXT,
+          rank INTEGER,
+          other_rank TEXT,
+          category TEXT,
+          type TEXT,
+          details_link TEXT,
           caption TEXT,
-          image_url VARCHAR(255),
-          video_url VARCHAR(255),
+          image_url TEXT,
+          video_url TEXT,
+          link TEXT,
           likes_count INTEGER DEFAULT 0,
+          dislikes_count INTEGER DEFAULT 0,
+          votes_count INTEGER DEFAULT 0,
           comments_count INTEGER DEFAULT 0,
+          is_admin_post BOOLEAN DEFAULT false,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
@@ -2816,6 +2825,94 @@ export class DatabaseStorage implements IStorage {
       return userVibes;
     } catch (error) {
       console.error('Error getting user vibes:', error);
+      return [];
+    }
+  }
+
+  // Follow methods implementation
+  async followUser(followerId: number, followingId: number): Promise<boolean> {
+    try {
+      await db
+        .insert(follows)
+        .values({ followerId, followingId, createdAt: new Date() })
+        .onConflictDoNothing();
+      return true;
+    } catch (error) {
+      console.error('Error following user:', error);
+      return false;
+    }
+  }
+
+  async unfollowUser(followerId: number, followingId: number): Promise<boolean> {
+    try {
+      await db
+        .delete(follows)
+        .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
+      return true;
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      return false;
+    }
+  }
+
+  async isFollowing(followerId: number, followingId: number): Promise<boolean> {
+    try {
+      const [result] = await db
+        .select()
+        .from(follows)
+        .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
+      return !!result;
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      return false;
+    }
+  }
+
+  async getUserFollowers(userId: number): Promise<User[]> {
+    try {
+      const result = await db
+        .select({
+          user: users
+        })
+        .from(follows)
+        .innerJoin(users, eq(follows.followerId, users.id))
+        .where(eq(follows.followingId, userId));
+
+      return result.map(row => row.user);
+    } catch (error) {
+      console.error('Error getting user followers:', error);
+      return [];
+    }
+  }
+
+  async getUserFollowing(userId: number): Promise<User[]> {
+    try {
+      const result = await db
+        .select({
+          user: users
+        })
+        .from(follows)
+        .innerJoin(users, eq(follows.followingId, users.id))
+        .where(eq(follows.followerId, userId));
+
+      return result.map(row => row.user);
+    } catch (error) {
+      console.error('Error getting user following:', error);
+      return [];
+    }
+  }
+
+  async getSuggestedUsers(userId: number): Promise<User[]> {
+    try {
+      // Simple implementation - return users not followed by current user
+      const following = await this.getUserFollowing(userId);
+      const followingIds = following.map(user => user.id);
+      followingIds.push(userId); // Don't suggest self
+
+      const allUsers = await db.select().from(users);
+      return allUsers.filter(user => !followingIds.includes(user.id)).slice(0, 10);
+    } catch (error) {
+      console.error('Error getting suggested users:', error);
       return [];
     }
   }
