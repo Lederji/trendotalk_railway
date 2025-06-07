@@ -106,13 +106,11 @@ export function Header() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={(e) => {
-                    e.preventDefault();
-                    console.log('Account Center clicked');
-                    setShowAccountCenter(true);
-                  }}>
-                    <User className="mr-2 h-4 w-4" />
-                    Account Center
+                  <DropdownMenuItem asChild>
+                    <Link href="/account-center" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      Account Center
+                    </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={() => {

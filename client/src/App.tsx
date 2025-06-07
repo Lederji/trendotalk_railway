@@ -16,6 +16,7 @@ import ChatNew from "@/pages/chat-new";
 import AdminDashboard from "@/pages/admin-dashboard";
 import PostDetail from "@/pages/PostDetail";
 import NotFound from "@/pages/not-found";
+import AccountCenter from "@/pages/account-center";
 
 function Router() {
   return (
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/users/:userId" component={Profile} />
       <Route path="/post/:postId" component={PostDetail} />
       <Route path="/search" component={SearchPage} />
+      <Route path="/account-center" component={AccountCenter} />
       <Route path="/auth" component={Auth} />
       <Route path="/login" component={Auth} />
       <Route path="/admin" component={AdminDashboard} />
