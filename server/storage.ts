@@ -83,6 +83,7 @@ export interface IStorage {
   getFriendRequests(userId: number): Promise<any[]>;
   acceptFriendRequest(requestId: number, userId: number): Promise<boolean>;
   rejectFriendRequest(requestId: number, userId: number): Promise<boolean>;
+  removeFriend(userId: number, friendId: number): Promise<boolean>;
   
   // Chat methods
   getUserChats(userId: number): Promise<any[]>;
@@ -2322,6 +2323,31 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async removeFriend(userId: number, friendId: number): Promise<boolean> {
+    try {
+      // Remove mutual follow relationships
+      await db.delete(follows).where(
+        or(
+          and(eq(follows.followerId, userId), eq(follows.followingId, friendId)),
+          and(eq(follows.followerId, friendId), eq(follows.followingId, userId))
+        )
+      );
+      
+      // Remove chat between users
+      await db.delete(chats).where(
+        or(
+          and(eq(chats.user1Id, Math.min(userId, friendId)), eq(chats.user2Id, Math.max(userId, friendId))),
+          and(eq(chats.user1Id, Math.max(userId, friendId)), eq(chats.user2Id, Math.min(userId, friendId)))
+        )
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      return false;
+    }
+  }
+
   async getUserChats(userId: number): Promise<any[]> {
     try {
       // Get chats where both users are following each other (mutual friendship)
@@ -2924,6 +2950,25 @@ class HybridStorage extends DatabaseStorage {
     
     this.memFriendRequests.delete(requestId);
     return true;
+  }
+
+  async removeFriend(userId: number, friendId: number): Promise<boolean> {
+    try {
+      // Remove from memory chats
+      const chatsToRemove: number[] = [];
+      for (const [id, chat] of this.memChats) {
+        if (chat.participants.includes(userId) && chat.participants.includes(friendId)) {
+          chatsToRemove.push(id);
+        }
+      }
+      chatsToRemove.forEach(id => this.memChats.delete(id));
+      
+      // Use parent class to remove from database
+      return await super.removeFriend(userId, friendId);
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      return false;
+    }
   }
 
   // Override chat methods to use memory

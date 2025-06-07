@@ -862,6 +862,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove friend (kick out)
+  app.post('/api/friends/remove', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { friendId } = req.body;
+      const success = await storage.removeFriend(req.user.userId, friendId);
+      if (!success) {
+        return res.status(400).json({ message: 'Cannot remove friend' });
+      }
+      res.json({ message: 'Friend removed successfully' });
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Chat routes
   app.get('/api/chats', authenticateUser, async (req: any, res: any) => {
     try {
