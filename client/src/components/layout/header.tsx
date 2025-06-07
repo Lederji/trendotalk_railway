@@ -92,127 +92,142 @@ export function Header() {
           )}
           
           {isProfilePage && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-2 hover:bg-gray-100 rounded-full"
-                >
-                  <Menu className="h-5 w-5 text-gray-600" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <Dialog open={showAccountCenter} onOpenChange={setShowAccountCenter}>
-                  <DialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <User className="mr-2 h-4 w-4" />
-                      Account Center
-                    </DropdownMenuItem>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Account Center</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <ShieldCheck className="h-5 w-5 text-green-500" />
-                          <span>Account Status</span>
-                        </div>
-                        <Badge variant="outline" className="text-green-600 border-green-200">
-                          Active
-                        </Badge>
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="p-2 hover:bg-gray-100 rounded-full"
+                  >
+                    <Menu className="h-5 w-5 text-gray-600" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => setShowAccountCenter(true)}>
+                    <User className="mr-2 h-4 w-4" />
+                    Account Center
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => {
+                    toast({ title: "Time Management", description: "Feature coming soon" });
+                  }}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Time Management
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => setShowServiceRequest(true)}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    Service Request
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => {
+                    toast({ title: "Help and Support", description: "Contact us at support@trendotalk.com" });
+                  }}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    Help and Support
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => {
+                    toast({ title: "About TrendoTalk", description: "Version 1.0 - Social Media Platform" });
+                  }}>
+                    <Info className="mr-2 h-4 w-4" />
+                    About
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={async () => {
+                    try {
+                      await logout();
+                      setLocation("/login");
+                      toast({ title: "Logged out successfully" });
+                    } catch (error) {
+                      toast({ title: "Logout failed", description: "Please try again" });
+                    }
+                  }}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Account Center Dialog */}
+              <Dialog open={showAccountCenter} onOpenChange={setShowAccountCenter}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Account Center</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <ShieldCheck className="h-5 w-5 text-green-500" />
+                        <span>Account Status</span>
                       </div>
-                      
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <Mail className="h-5 w-5 text-blue-500" />
-                          <span>Email Verification</span>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => {
-                          toast({ title: "Verification email sent!", description: "Check your inbox for the OTP" });
-                        }}>
-                          Verify
-                        </Button>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <Phone className="h-5 w-5 text-purple-500" />
-                          <span>Mobile Verification</span>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => {
-                          toast({ title: "SMS sent!", description: "Enter the OTP to verify your mobile" });
-                        }}>
-                          Verify
-                        </Button>
-                      </div>
+                      <Badge variant="outline" className="text-green-600 border-green-200">
+                        Active
+                      </Badge>
                     </div>
-                  </DialogContent>
-                </Dialog>
-
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Time Management
-                </DropdownMenuItem>
-
-                <Dialog open={showServiceRequest} onOpenChange={setShowServiceRequest}>
-                  <DialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <HelpCircle className="mr-2 h-4 w-4" />
-                      Service Request
-                    </DropdownMenuItem>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Service Request</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3 py-4">
-                      <Button variant="outline" className="w-full justify-start" onClick={() => {
-                        toast({ title: "Application submitted!", description: "Your verification request is under review" });
+                    
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <Mail className="h-5 w-5 text-blue-500" />
+                        <span>Email Verification</span>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        toast({ title: "Verification email sent!", description: "Check your inbox for the OTP" });
                       }}>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Apply for Verified Tick
-                      </Button>
-                      
-                      <Button variant="outline" className="w-full justify-start" onClick={() => {
-                        toast({ title: "Request sent!", description: "Username customization request submitted" });
-                      }}>
-                        <AtSign className="mr-2 h-4 w-4" />
-                        Apply to Customize Username
-                      </Button>
-                      
-                      <Button variant="outline" className="w-full justify-start" onClick={() => {
-                        toast({ title: "Ad request sent!", description: "Our team will contact you soon" });
-                      }}>
-                        <Megaphone className="mr-2 h-4 w-4" />
-                        Run TrendoTalk Ads
+                        Verify
                       </Button>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                    
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <Phone className="h-5 w-5 text-purple-500" />
+                        <span>Mobile Verification</span>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        toast({ title: "SMS sent!", description: "Enter the OTP to verify your mobile" });
+                      }}>
+                        Verify
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
-                <DropdownMenuItem>
-                  <HelpCircle className="mr-2 h-4 w-4" />
-                  Help and Support
-                </DropdownMenuItem>
-
-                <DropdownMenuItem>
-                  <Info className="mr-2 h-4 w-4" />
-                  About
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => {
-                  logout();
-                  setLocation("/login");
-                  toast({ title: "Logged out successfully" });
-                }}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              {/* Service Request Dialog */}
+              <Dialog open={showServiceRequest} onOpenChange={setShowServiceRequest}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Service Request</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 py-4">
+                    <Button variant="outline" className="w-full justify-start" onClick={() => {
+                      toast({ title: "Application submitted!", description: "Your verification request is under review" });
+                      setShowServiceRequest(false);
+                    }}>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Apply for Verified Tick
+                    </Button>
+                    
+                    <Button variant="outline" className="w-full justify-start" onClick={() => {
+                      toast({ title: "Request sent!", description: "Username customization request submitted" });
+                      setShowServiceRequest(false);
+                    }}>
+                      <AtSign className="mr-2 h-4 w-4" />
+                      Apply to Customize Username
+                    </Button>
+                    
+                    <Button variant="outline" className="w-full justify-start" onClick={() => {
+                      toast({ title: "Ad request sent!", description: "Our team will contact you soon" });
+                      setShowServiceRequest(false);
+                    }}>
+                      <Megaphone className="mr-2 h-4 w-4" />
+                      Run TrendoTalk Ads
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </>
           )}
         </div>
       </div>
