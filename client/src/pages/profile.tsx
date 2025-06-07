@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Navigation } from "@/components/layout/navigation";
-import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu } from "lucide-react";
+import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
@@ -118,8 +118,14 @@ export default function ProfilePage() {
       if (!response.ok) throw new Error('Failed to update profile');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedUser) => {
+      // Update both profile queries
       queryClient.invalidateQueries({ queryKey: [`/api/users/${currentUser?.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      
+      // Force immediate update of the profile data
+      queryClient.setQueryData([`/api/users/${currentUser?.id}`], updatedUser);
+      
       setShowEditDialog(false);
       toast({
         title: "Profile updated",
