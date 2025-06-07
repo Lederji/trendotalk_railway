@@ -23,7 +23,8 @@ export default function ProfilePage() {
     bio: '',
     displayName: '',
     avatar: '',
-    website: ''
+    website: '',
+    links: [] as { name: string; url: string }[]
   });
   const [uploading, setUploading] = useState(false);
 
@@ -189,11 +190,19 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
+      let links = [];
+      try {
+        links = profile.links ? JSON.parse(profile.links) : [];
+      } catch (e) {
+        links = [];
+      }
+      
       setEditForm({
         bio: profile.bio || '',
         displayName: profile.displayName || '',
         avatar: profile.avatar || '',
-        website: profile.website || ''
+        website: profile.website || '',
+        links: links
       });
     }
   }, [profile]);
@@ -257,10 +266,35 @@ export default function ProfilePage() {
 
         {/* Bio */}
         <div className="mb-4">
-          <h2 className="font-semibold text-base">{profile?.displayName || profile?.username}</h2>
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="font-semibold text-base">{profile?.displayName || profile?.username}</h2>
+            
+            {/* Platform Links */}
+            {(() => {
+              try {
+                const links = profile?.links ? JSON.parse(profile.links) : [];
+                return links.slice(0, 3).map((link: any, index: number) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+                      window.open(url, '_blank', 'noopener,noreferrer');
+                    }}
+                    className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
+                  >
+                    {link.name}
+                  </button>
+                ));
+              } catch (e) {
+                return null;
+              }
+            })()}
+          </div>
+          
           {profile?.bio && (
             <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{profile.bio}</p>
           )}
+          
           {profile?.website && (
             <a 
               href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
@@ -434,23 +468,98 @@ export default function ProfilePage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bio ({editForm.bio.length}/150)
+                Bio ({editForm.bio.length}/150) - spaces count
               </label>
               <Textarea
                 value={editForm.bio}
                 onChange={(e) => {
-                  if (e.target.value.length <= 150) {
-                    setEditForm({ ...editForm, bio: e.target.value });
+                  const text = e.target.value;
+                  // Count all characters including spaces
+                  if (text.length <= 150) {
+                    setEditForm({ ...editForm, bio: text });
                   }
                 }}
                 placeholder="Tell us about yourself..."
                 rows={3}
                 maxLength={150}
+                className={editForm.bio.length > 140 ? "border-orange-400" : ""}
               />
+              {editForm.bio.length > 140 && (
+                <p className="text-sm text-orange-600 mt-1">
+                  {150 - editForm.bio.length} characters remaining
+                </p>
+              )}
             </div>
+            {/* Platform Links */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Platform Links
+              </label>
+              
+              {/* Existing Links */}
+              {editForm.links.map((link, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <Input
+                    placeholder="Platform name (e.g., YouTube)"
+                    value={link.name}
+                    onChange={(e) => {
+                      const newLinks = [...editForm.links];
+                      newLinks[index] = { ...link, name: e.target.value };
+                      setEditForm({ ...editForm, links: newLinks });
+                    }}
+                    className="flex-1"
+                  />
+                  <Input
+                    placeholder="https://example.com"
+                    value={link.url}
+                    onChange={(e) => {
+                      const newLinks = [...editForm.links];
+                      newLinks[index] = { ...link, url: e.target.value };
+                      setEditForm({ ...editForm, links: newLinks });
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newLinks = editForm.links.filter((_, i) => i !== index);
+                      setEditForm({ ...editForm, links: newLinks });
+                    }}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    ×
+                  </Button>
+                </div>
+              ))}
+              
+              {/* Add New Link Button */}
+              {editForm.links.length < 5 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditForm({
+                      ...editForm,
+                      links: [...editForm.links, { name: '', url: '' }]
+                    });
+                  }}
+                  className="w-full"
+                >
+                  + Add Platform Link
+                </Button>
+              )}
+              
+              {editForm.links.length >= 5 && (
+                <p className="text-sm text-gray-500">Maximum 5 links allowed</p>
+              )}
+            </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Add Link
+                Website
               </label>
               <Input
                 value={editForm.website}
@@ -468,7 +577,13 @@ export default function ProfilePage() {
               </Button>
               <Button
                 className="flex-1"
-                onClick={() => updateProfileMutation.mutate(editForm)}
+                onClick={() => {
+                  const formData = {
+                    ...editForm,
+                    links: JSON.stringify(editForm.links.filter(link => link.name && link.url))
+                  };
+                  updateProfileMutation.mutate(formData);
+                }}
                 disabled={updateProfileMutation.isPending}
               >
                 {updateProfileMutation.isPending ? "Saving..." : "Save"}
