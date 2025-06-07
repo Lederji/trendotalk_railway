@@ -1353,6 +1353,24 @@ export class MemStorage implements IStorage {
       postsLast24Hours: recentPosts24Hours.length
     };
   }
+
+  async getUnreadNotificationCount(userId: number): Promise<number> {
+    const userNotifications = Array.from(this.notifications.values())
+      .filter(notif => notif.userId === userId && !notif.isRead);
+    return userNotifications.length;
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<boolean> {
+    const userNotifications = Array.from(this.notifications.values())
+      .filter(notif => notif.userId === userId);
+    
+    userNotifications.forEach(notif => {
+      notif.isRead = true;
+      this.notifications.set(notif.id, notif);
+    });
+    
+    return true;
+  }
 }
 
 
