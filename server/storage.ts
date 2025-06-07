@@ -3038,7 +3038,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(follows)
         .innerJoin(users, eq(follows.followerId, users.id))
-        .where(eq(follows.followingId, userId));
+        .where(and(eq(follows.followingId, userId), eq(users.isAdmin, false)));
 
       return result.map(row => row.user);
     } catch (error) {
@@ -3055,7 +3055,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(follows)
         .innerJoin(users, eq(follows.followingId, users.id))
-        .where(eq(follows.followerId, userId));
+        .where(and(eq(follows.followerId, userId), eq(users.isAdmin, false)));
 
       return result.map(row => row.user);
     } catch (error) {
