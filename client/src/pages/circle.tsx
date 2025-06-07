@@ -29,7 +29,6 @@ export default function Circle() {
     queryFn: async () => {
       if (!searchQuery || searchQuery.length < 2) return [];
       
-      console.log("Searching for:", searchQuery);
       const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
@@ -38,21 +37,11 @@ export default function Circle() {
       
       if (!response.ok) throw new Error("Search failed");
       const data = await response.json();
-      console.log("Raw search response:", data);
-      console.log("Is array?", Array.isArray(data));
-      console.log("Array length:", data?.length);
-      const results = Array.isArray(data) ? data : [];
-      console.log("Final search results:", results);
-      return results;
+      return Array.isArray(data) ? data : [];
     },
     enabled: searchQuery.length >= 2,
     staleTime: 30000,
   });
-
-  // Debug logging for search results
-  console.log("Current searchQuery:", searchQuery);
-  console.log("Current searchResults:", searchResults);
-  console.log("Is searching:", isSearching);
 
   const { data: chats = [] } = useQuery({
     queryKey: ["/api/chats"],
@@ -132,14 +121,99 @@ export default function Circle() {
 
           {/* Search Bar */}
           <div className="relative mb-8">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400 w-6 h-6" />
             <Input
-              placeholder="Search users by username..."
+              type="text"
+              placeholder="Search users to add to your Circle..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-100 dark:bg-gray-700 border-none rounded-full h-12"
+              className="w-full pl-12 pr-12 py-4 border-2 border-purple-200 dark:border-purple-600 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 text-gray-900 dark:text-gray-100 placeholder-purple-500 dark:placeholder-purple-400 text-lg font-medium shadow-lg"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-purple-600 w-6 h-6 font-bold text-xl"
+              >
+                ×
+              </button>
+            )}
           </div>
+
+          {/* Search Results */}
+          {searchQuery.length >= 2 && (
+            <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 dark:from-purple-800/30 dark:via-pink-800/30 dark:to-blue-800/30 rounded-2xl border-2 border-purple-200 dark:border-purple-600 shadow-xl">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center">
+                  <Search className="w-6 h-6 mr-3 text-purple-500" />
+                  Search Results for "{searchQuery}"
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold rounded-full shadow-md">
+                    {searchResults?.length || 0} users found
+                  </span>
+                  {isSearching && (
+                    <div className="animate-spin w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full"></div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-5 min-h-[120px]">
+                {/* Search Results List */}
+                {searchResults && searchResults.map((user: any, index: number) => (
+                  <div key={user.id || index} className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-600 shadow-md">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-12 h-12 border-2 border-purple-300">
+                        <AvatarImage src={user.avatar} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white font-bold">
+                          {user.username?.charAt(0)?.toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100">{user.username}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.bio || "No bio available"}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                          <span>{user.followersCount || 0} followers</span>
+                          <span>{user.followingCount || 0} following</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Link 
+                          href={`/users/${user.username}`}
+                          className="px-3 py-2 text-sm font-semibold text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-all duration-200 border border-purple-200"
+                        >
+                          View Profile
+                        </Link>
+                        <Button
+                          size="sm"
+                          onClick={() => sendFriendRequestMutation.mutate(user.id)}
+                          disabled={sendFriendRequestMutation.isPending}
+                          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold shadow-lg"
+                        >
+                          <UserPlus className="w-4 h-4 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {(!searchResults || searchResults.length === 0) && !isSearching && (
+                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <UserPlus className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <h4 className="font-bold text-xl mb-2">No users found for "{searchQuery}"</h4>
+                    <p className="text-sm">Try searching with different keywords</p>
+                  </div>
+                )}
+
+                {isSearching && (
+                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <h4 className="font-bold text-xl">Searching users...</h4>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Circle's Vibe Section */}
           <div className="mb-8">
@@ -283,25 +357,6 @@ export default function Circle() {
 
             {activeTab === "requests" && (
               <div className="p-6 space-y-6">
-                {/* Search Box */}
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400 w-6 h-6" />
-                  <Input
-                    type="text"
-                    placeholder="Search users to add to your Circle..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-12 py-4 border-2 border-purple-200 dark:border-purple-600 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 text-gray-900 dark:text-gray-100 placeholder-purple-500 dark:placeholder-purple-400 text-lg font-medium shadow-lg"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-purple-600 w-6 h-6 font-bold text-xl"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
 
                 {/* Friend Requests */}
                 <div className="space-y-3">
@@ -423,87 +478,7 @@ export default function Circle() {
                   </div>
                 )}
 
-                {/* Search Results Debug Info */}
-                {searchQuery.length >= 2 && (
-                  <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200">
-                    <h4 className="font-bold text-yellow-800 dark:text-yellow-200 mb-2">Debug Info:</h4>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Search Query: "{searchQuery}"</p>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Results Count: {searchResults?.length || 0}</p>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Is Loading: {isSearching ? 'Yes' : 'No'}</p>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Results Type: {typeof searchResults}</p>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Raw Results: {JSON.stringify(searchResults)}</p>
-                  </div>
-                )}
 
-                {/* Search Results */}
-                {searchQuery.length >= 2 && (
-                  <div className="mt-6 p-6 bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 dark:from-purple-800/30 dark:via-pink-800/30 dark:to-blue-800/30 rounded-2xl border-2 border-purple-200 dark:border-purple-600 shadow-xl">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center">
-                        <Search className="w-6 h-6 mr-3 text-purple-500" />
-                        Search Results for "{searchQuery}"
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <span className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold rounded-full shadow-md">
-                          {searchResults?.length || 0} users found
-                        </span>
-                        {isSearching && (
-                          <div className="animate-spin w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full"></div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-5 min-h-[120px]">
-                      {/* Force render test */}
-                      {searchResults && searchResults.length > 0 && (
-                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                          <h4 className="font-bold text-green-800">✅ Search Results Found!</h4>
-                          <p className="text-green-600">Found {searchResults.length} users</p>
-                        </div>
-                      )}
-                      
-                      {/* Simple list test */}
-                      {searchResults && searchResults.map((user: any, index: number) => (
-                        <div key={user.id || index} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h3 className="font-bold text-blue-800">{user.username}</h3>
-                          <p className="text-blue-600">ID: {user.id}</p>
-                          <p className="text-blue-600">Bio: {user.bio || "No bio"}</p>
-                          <div className="mt-2 flex gap-2">
-                            <Link 
-                              href={`/users/${user.username}`}
-                              className="px-3 py-1 bg-blue-500 text-white rounded"
-                            >
-                              View Profile
-                            </Link>
-                            <Button
-                              size="sm"
-                              onClick={() => sendFriendRequestMutation.mutate(user.id)}
-                              disabled={sendFriendRequestMutation.isPending}
-                              className="bg-green-500 hover:bg-green-600 text-white"
-                            >
-                              Add to Circle
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {(!searchResults || searchResults.length === 0) && !isSearching && (
-                        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-                          <UserPlus className="w-20 h-20 mx-auto mb-6 text-gray-300" />
-                          <h4 className="font-bold text-2xl mb-3">No users found for "{searchQuery}"</h4>
-                          <p className="text-lg">Try searching with different keywords</p>
-                        </div>
-                      )}
-
-                      {isSearching && (
-                        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-                          <div className="animate-spin w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-6"></div>
-                          <h4 className="font-bold text-2xl">Searching users...</h4>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {(!Array.isArray(friendRequests) || friendRequests.length === 0) && !searchQuery && (
                   <div className="text-center py-8 text-gray-500">
