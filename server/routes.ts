@@ -1289,6 +1289,173 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Account Center API endpoints
+  
+  // Get account status
+  app.get('/api/account/status', authenticateUser, async (req: any, res: any) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      res.json({
+        status: user.accountStatus || 'live',
+        reason: user.accountStatusReason,
+        expiresAt: user.accountStatusExpires
+      });
+    } catch (error) {
+      console.error('Error getting account status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get verification data
+  app.get('/api/account/verification', authenticateUser, async (req: any, res: any) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      res.json({
+        mobile: user.mobile,
+        email: user.email,
+        mobileVerified: user.mobileVerified || false,
+        emailVerified: user.emailVerified || false
+      });
+    } catch (error) {
+      console.error('Error getting verification data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Send mobile OTP
+  app.post('/api/account/send-mobile-otp', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { mobile } = req.body;
+      if (!mobile || !/^\+?[\d\s-()]+$/.test(mobile)) {
+        return res.status(400).json({ message: 'Valid mobile number required' });
+      }
+
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store OTP in memory (in production, use Redis or database)
+      const otpKey = `mobile_otp_${req.user.userId}`;
+      (global as any)[otpKey] = { otp, mobile, expires: Date.now() + 5 * 60 * 1000 }; // 5 minutes
+      
+      // Update user's mobile number
+      await storage.updateUser(req.user.userId, { mobile });
+      
+      console.log(`Mobile OTP for ${mobile}: ${otp}`); // In production, send via SMS service
+      
+      res.json({ message: 'OTP sent successfully' });
+    } catch (error) {
+      console.error('Error sending mobile OTP:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Verify mobile OTP
+  app.post('/api/account/verify-mobile-otp', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { mobile, otp } = req.body;
+      if (!mobile || !otp) {
+        return res.status(400).json({ message: 'Mobile number and OTP required' });
+      }
+
+      // Check stored OTP
+      const otpKey = `mobile_otp_${req.user.userId}`;
+      const storedData = (global as any)[otpKey];
+      
+      if (!storedData || storedData.expires < Date.now()) {
+        return res.status(400).json({ message: 'OTP expired' });
+      }
+      
+      if (storedData.otp !== otp || storedData.mobile !== mobile) {
+        return res.status(400).json({ message: 'Invalid OTP' });
+      }
+      
+      // Mark mobile as verified
+      await storage.updateUser(req.user.userId, { 
+        mobile, 
+        mobileVerified: true 
+      });
+      
+      // Clear OTP
+      delete global[otpKey];
+      
+      res.json({ message: 'Mobile verified successfully' });
+    } catch (error) {
+      console.error('Error verifying mobile OTP:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Send email OTP
+  app.post('/api/account/send-email-otp', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { email } = req.body;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Valid email address required' });
+      }
+
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store OTP in memory (in production, use Redis or database)
+      const otpKey = `email_otp_${req.user.userId}`;
+      (global as any)[otpKey] = { otp, email, expires: Date.now() + 10 * 60 * 1000 }; // 10 minutes
+      
+      // Update user's email
+      await storage.updateUser(req.user.userId, { email });
+      
+      console.log(`Email OTP for ${email}: ${otp}`); // In production, send via email service
+      
+      res.json({ message: 'OTP sent successfully' });
+    } catch (error) {
+      console.error('Error sending email OTP:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Verify email OTP
+  app.post('/api/account/verify-email-otp', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) {
+        return res.status(400).json({ message: 'Email and OTP required' });
+      }
+
+      // Check stored OTP
+      const otpKey = `email_otp_${req.user.userId}`;
+      const storedData = global[otpKey];
+      
+      if (!storedData || storedData.expires < Date.now()) {
+        return res.status(400).json({ message: 'OTP expired' });
+      }
+      
+      if (storedData.otp !== otp || storedData.email !== email) {
+        return res.status(400).json({ message: 'Invalid OTP' });
+      }
+      
+      // Mark email as verified
+      await storage.updateUser(req.user.userId, { 
+        email, 
+        emailVerified: true 
+      });
+      
+      // Clear OTP
+      delete global[otpKey];
+      
+      res.json({ message: 'Email verified successfully' });
+    } catch (error) {
+      console.error('Error verifying email OTP:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -47,10 +47,7 @@ export default function AccountCenter() {
   // Send mobile OTP
   const sendMobileOtpMutation = useMutation({
     mutationFn: async (mobile: string) => {
-      return apiRequest('/api/account/send-mobile-otp', {
-        method: 'POST',
-        body: { mobile }
-      });
+      return apiRequest('/api/account/send-mobile-otp', 'POST', { mobile });
     },
     onSuccess: () => {
       setShowMobileOtp(true);
@@ -71,10 +68,7 @@ export default function AccountCenter() {
   // Verify mobile OTP
   const verifyMobileOtpMutation = useMutation({
     mutationFn: async ({ mobile, otp }: { mobile: string; otp: string }) => {
-      return apiRequest('/api/account/verify-mobile-otp', {
-        method: 'POST',
-        body: { mobile, otp }
-      });
+      return apiRequest('/api/account/verify-mobile-otp', 'POST', { mobile, otp });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/account/verification'] });
@@ -98,10 +92,7 @@ export default function AccountCenter() {
   // Send email OTP
   const sendEmailOtpMutation = useMutation({
     mutationFn: async (email: string) => {
-      return apiRequest('/api/account/send-email-otp', {
-        method: 'POST',
-        body: { email }
-      });
+      return apiRequest('/api/account/send-email-otp', 'POST', { email });
     },
     onSuccess: () => {
       setShowEmailOtp(true);
@@ -122,10 +113,7 @@ export default function AccountCenter() {
   // Verify email OTP
   const verifyEmailOtpMutation = useMutation({
     mutationFn: async ({ email, otp }: { email: string; otp: string }) => {
-      return apiRequest('/api/account/verify-email-otp', {
-        method: 'POST',
-        body: { email, otp }
-      });
+      return apiRequest('/api/account/verify-email-otp', 'POST', { email, otp });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/account/verification'] });
