@@ -297,41 +297,47 @@ export default function Circle() {
                   </div>
                 ))}
 
-                {/* Search Results */}
-                {searchQuery && Array.isArray(searchResults) && searchResults.length > 0 && (
+                {/* Search Results - Show when user is typing */}
+                {searchQuery && searchQuery.length >= 2 && Array.isArray(searchResults) && (
                   <div className="mt-6">
                     <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
-                      Search Results
+                      Search Results for "{searchQuery}"
                     </h3>
-                    {searchResults.map((searchUser: any) => (
-                      <div key={searchUser.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-3">
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={searchUser.avatar} />
-                          <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
-                            {searchUser.username?.charAt(3)?.toUpperCase() || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {searchUser.username}
-                          </p>
-                          {searchUser.bio && (
-                            <p className="text-sm text-gray-500">{searchUser.bio}</p>
-                          )}
-                        </div>
-                        {searchUser.id !== user?.id && (
-                          <Button
-                            size="sm"
-                            onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
-                            disabled={sendFriendRequestMutation.isPending}
-                            className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white transition-all duration-200 shadow-lg"
-                          >
-                            <UserPlus className="w-4 h-4 mr-1" />
-                            Add to Circle
-                          </Button>
-                        )}
+                    {searchResults.length > 0 ? (
+                      searchResults
+                        .filter((searchUser: any) => searchUser.id !== user?.id)
+                        .map((searchUser: any) => (
+                          <div key={searchUser.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-3">
+                            <Avatar className="w-12 h-12">
+                              <AvatarImage src={searchUser.avatar} />
+                              <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
+                                {searchUser.username?.charAt(0)?.toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900 dark:text-gray-100">
+                                {searchUser.username}
+                              </p>
+                              {searchUser.bio && (
+                                <p className="text-sm text-gray-500">{searchUser.bio}</p>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
+                              disabled={sendFriendRequestMutation.isPending}
+                              className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white transition-all duration-200 shadow-lg"
+                            >
+                              <UserPlus className="w-4 h-4 mr-1" />
+                              Add to Circle
+                            </Button>
+                          </div>
+                        ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        <p>No users found for "{searchQuery}"</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
 
