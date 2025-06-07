@@ -2184,7 +2184,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(follows)
         .innerJoin(users, eq(follows.followerId, users.id))
-        .where(eq(follows.followingId, userId));
+        .where(and(eq(follows.followingId, userId), eq(users.isAdmin, false)));
       
       return result;
     } catch (error) {
@@ -2205,7 +2205,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(follows)
         .innerJoin(users, eq(follows.followingId, users.id))
-        .where(eq(follows.followerId, userId));
+        .where(and(eq(follows.followerId, userId), eq(users.isAdmin, false)));
       
       return result;
     } catch (error) {
@@ -2231,16 +2231,18 @@ export class DatabaseStorage implements IStorage {
         .insert(follows)
         .values({ followerId, followingId });
       
-      // Update follower counts accurately by counting actual follows
+      // Update follower counts accurately by counting actual follows (excluding admin users)
       const followerCount = await db
         .select({ count: sql<number>`count(*)` })
         .from(follows)
-        .where(eq(follows.followingId, followingId));
+        .innerJoin(users, eq(follows.followerId, users.id))
+        .where(and(eq(follows.followingId, followingId), eq(users.isAdmin, false)));
       
       const followingCount = await db
         .select({ count: sql<number>`count(*)` })
         .from(follows)
-        .where(eq(follows.followerId, followerId));
+        .innerJoin(users, eq(follows.followingId, users.id))
+        .where(and(eq(follows.followerId, followerId), eq(users.isAdmin, false)));
       
       await db
         .update(users)
@@ -2374,7 +2376,10 @@ export class DatabaseStorage implements IStorage {
       const searchResults = await db
         .select()
         .from(users)
-        .where(ilike(users.username, `%${query}%`))
+        .where(and(
+          ilike(users.username, `%${query}%`),
+          eq(users.isAdmin, false)
+        ))
         .limit(10);
       
       return searchResults;
