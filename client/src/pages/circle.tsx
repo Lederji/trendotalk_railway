@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,27 +24,43 @@ export default function Circle() {
     refetchInterval: 5000,
   });
 
-  const { data: searchResults = [], refetch: refetchSearch } = useQuery({
-    queryKey: ["/api/users/search", searchQuery],
-    queryFn: async () => {
-      if (!searchQuery || searchQuery.length < 2) return [];
-      const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
-        },
-      });
-      if (!response.ok) {
-        console.error("Search request failed:", response.status, response.statusText);
-        throw new Error("Search failed");
+  const [searchData, setSearchData] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (!searchQuery || searchQuery.length < 2) {
+        setSearchData([]);
+        return;
       }
-      const data = await response.json();
-      console.log("Search results:", data);
-      return data;
-    },
-    enabled: searchQuery.length >= 2,
-    staleTime: 0,
-    gcTime: 0,
-  });
+
+      setIsSearching(true);
+      try {
+        const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Search results:", data);
+          setSearchData(data || []);
+        } else {
+          console.error("Search failed:", response.status);
+          setSearchData([]);
+        }
+      } catch (error) {
+        console.error("Search error:", error);
+        setSearchData([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchUsers, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   const { data: chats = [] } = useQuery({
     queryKey: ["/api/chats"],
@@ -316,13 +332,16 @@ export default function Circle() {
                       <Search className="w-4 h-4 mr-2 text-pink-500" />
                       Search Results for "{searchQuery}"
                       <span className="ml-2 px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-300 text-xs rounded-full">
-                        {searchResults ? searchResults.length : 0}
+                        {searchData ? searchData.length : 0}
                       </span>
+                      {isSearching && (
+                        <span className="ml-2 text-xs text-gray-500">Searching...</span>
+                      )}
                     </h3>
                     
-                    {searchResults && searchResults.length > 0 ? (
+                    {searchData && searchData.length > 0 ? (
                       <div className="space-y-3">
-                        {searchResults
+                        {searchData
                           .filter((searchUser: any) => searchUser.id !== user?.id)
                           .map((searchUser: any) => (
                             <div key={searchUser.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-600 hover:shadow-md transition-shadow">
@@ -340,19 +359,29 @@ export default function Circle() {
                                   <p className="text-sm text-gray-600 dark:text-gray-400">{searchUser.bio}</p>
                                 )}
                               </div>
-                              <Button
-                                size="sm"
-                                onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
-                                disabled={sendFriendRequestMutation.isPending}
-                                className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                              >
-                                <UserPlus className="w-4 h-4 mr-2" />
-                                Add to Circle
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => window.location.href = `/users/${searchUser.username}`}
+                                  className="text-blue-500 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-900"
+                                >
+                                  View Profile
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
+                                  disabled={sendFriendRequestMutation.isPending}
+                                  className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                                >
+                                  <UserPlus className="w-4 h-4 mr-2" />
+                                  Add to Circle
+                                </Button>
+                              </div>
                             </div>
                           ))}
                       </div>
-                    ) : searchQuery.length >= 2 ? (
+                    ) : searchQuery.length >= 2 && !isSearching ? (
                       <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                         <UserPlus className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                         <p className="font-medium">No users found</p>
