@@ -38,7 +38,7 @@ export default function ChatPage() {
   const { data: messages = [] } = useQuery({
     queryKey: [`/api/chats/${chatId}/messages`],
     enabled: !!chatId,
-    refetchInterval: 500, // Fast polling for real-time feel
+    refetchInterval: 100, // Ultra-fast polling for real-time feel
   }) as { data: any[] };
 
   // Send message mutation
@@ -338,87 +338,21 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* WhatsApp Attachment Menu */}
-        {showAttachmentMenu && (
-          <div className="absolute bottom-20 left-4 right-4 bg-gray-900 rounded-2xl p-6 z-50">
-            <div className="grid grid-cols-4 gap-6">
-              {/* Gallery */}
-              <div className="flex flex-col items-center space-y-2">
-                <Button
-                  className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600"
-                  onClick={() => {
-                    imageInputRef.current?.click();
-                    setShowAttachmentMenu(false);
-                  }}
-                >
-                  <ImageIcon className="w-6 h-6 text-white" />
-                </Button>
-                <span className="text-xs text-white">Gallery</span>
-              </div>
-
-              {/* Camera */}
-              <div className="flex flex-col items-center space-y-2">
-                <Button className="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600">
-                  <Camera className="w-6 h-6 text-white" />
-                </Button>
-                <span className="text-xs text-white">Camera</span>
-              </div>
-
-              {/* Location */}
-              <div className="flex flex-col items-center space-y-2">
-                <Button className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-600">
-                  <MapPin className="w-6 h-6 text-white" />
-                </Button>
-                <span className="text-xs text-white">Location</span>
-              </div>
-
-              {/* Contact */}
-              <div className="flex flex-col items-center space-y-2">
-                <Button className="w-12 h-12 rounded-full bg-blue-400 hover:bg-blue-500">
-                  <User className="w-6 h-6 text-white" />
-                </Button>
-                <span className="text-xs text-white">Contact</span>
-              </div>
-
-              {/* Document */}
-              <div className="flex flex-col items-center space-y-2">
-                <Button
-                  className="w-12 h-12 rounded-full bg-purple-500 hover:bg-purple-600"
-                  onClick={() => {
-                    fileInputRef.current?.click();
-                    setShowAttachmentMenu(false);
-                  }}
-                >
-                  <FileText className="w-6 h-6 text-white" />
-                </Button>
-                <span className="text-xs text-white">Document</span>
-              </div>
-
-              {/* Audio */}
-              <div className="flex flex-col items-center space-y-2">
-                <Button className="w-12 h-12 rounded-full bg-orange-500 hover:bg-orange-600">
-                  <Headphones className="w-6 h-6 text-white" />
-                </Button>
-                <span className="text-xs text-white">Audio</span>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <div className="flex items-center space-x-3">
-          {/* Attachment Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full w-10 h-10 text-gray-500"
-            onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-          >
-            <Paperclip className="w-5 h-5" />
-          </Button>
           
           {/* Message Input */}
           <div className="flex-1 relative">
             <div className="flex items-center bg-gray-100 rounded-2xl">
+              {/* Attachment Button Inside Input */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full w-8 h-8 ml-2 text-gray-500"
+                onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              
               <Input
                 value={message}
                 onChange={(e) => {
@@ -431,16 +365,6 @@ export default function ChatPage() {
                 disabled={sendMessageMutation.isPending}
               />
               
-              {/* File icon inside input */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full w-8 h-8 mr-1 text-gray-500"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-              
               {/* Camera inside input */}
               <Button
                 variant="ghost"
@@ -448,9 +372,84 @@ export default function ChatPage() {
                 className="rounded-full w-8 h-8 mr-2 text-gray-500"
                 onClick={() => imageInputRef.current?.click()}
               >
-                <Camera className="w-5 h-5" />
+                <Camera className="w-4 h-4" />
               </Button>
             </div>
+            
+            {/* Attachment Menu Inside Input Area */}
+            {showAttachmentMenu && (
+              <div className="absolute bottom-14 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50">
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Gallery */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex flex-col items-center p-2 hover:bg-blue-50"
+                    onClick={() => {
+                      imageInputRef.current?.click();
+                      setShowAttachmentMenu(false);
+                    }}
+                  >
+                    <ImageIcon className="w-5 h-5 text-blue-500 mb-1" />
+                    <span className="text-xs">Gallery</span>
+                  </Button>
+
+                  {/* Document */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex flex-col items-center p-2 hover:bg-purple-50"
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                      setShowAttachmentMenu(false);
+                    }}
+                  >
+                    <FileText className="w-5 h-5 text-purple-500 mb-1" />
+                    <span className="text-xs">Document</span>
+                  </Button>
+
+                  {/* Location */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex flex-col items-center p-2 hover:bg-green-50"
+                  >
+                    <MapPin className="w-5 h-5 text-green-500 mb-1" />
+                    <span className="text-xs">Location</span>
+                  </Button>
+
+                  {/* Contact */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex flex-col items-center p-2 hover:bg-cyan-50"
+                  >
+                    <User className="w-5 h-5 text-cyan-500 mb-1" />
+                    <span className="text-xs">Contact</span>
+                  </Button>
+
+                  {/* Audio */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex flex-col items-center p-2 hover:bg-orange-50"
+                  >
+                    <Headphones className="w-5 h-5 text-orange-500 mb-1" />
+                    <span className="text-xs">Audio</span>
+                  </Button>
+                  
+                  {/* Camera */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex flex-col items-center p-2 hover:bg-pink-50"
+                  >
+                    <Camera className="w-5 h-5 text-pink-500 mb-1" />
+                    <span className="text-xs">Camera</span>
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Send/Mic Button */}
