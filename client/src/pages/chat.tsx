@@ -36,7 +36,7 @@ export default function ChatPage() {
 
   // Fetch messages with fast polling
   const { data: messages = [] } = useQuery({
-    queryKey: ["/api/chats", chatId, "messages"],
+    queryKey: [`/api/chats/${chatId}/messages`],
     enabled: !!chatId,
     refetchInterval: 500, // Fast polling for real-time feel
   }) as { data: any[] };
@@ -78,7 +78,7 @@ export default function ChatPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
       setMessage("");
       setSelectedFile(null);
     },
@@ -158,7 +158,7 @@ export default function ChatPage() {
       });
       
       if (response.ok) {
-        queryClient.invalidateQueries({ queryKey: ["/api/chats", chatId, "messages"] });
+        queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
         toast({
           title: "Voice message sent",
           description: "Your voice message has been sent successfully",
