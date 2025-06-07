@@ -104,7 +104,11 @@ export function Header() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => setShowAccountCenter(true)}>
+                  <DropdownMenuItem onClick={(e) => {
+                    e.preventDefault();
+                    console.log('Account Center clicked');
+                    setShowAccountCenter(true);
+                  }}>
                     <User className="mr-2 h-4 w-4" />
                     Account Center
                   </DropdownMenuItem>
@@ -116,7 +120,11 @@ export function Header() {
                     Time Management
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={() => setShowServiceRequest(true)}>
+                  <DropdownMenuItem onClick={(e) => {
+                    e.preventDefault();
+                    console.log('Service Request clicked');
+                    setShowServiceRequest(true);
+                  }}>
                     <HelpCircle className="mr-2 h-4 w-4" />
                     Service Request
                   </DropdownMenuItem>
@@ -135,12 +143,16 @@ export function Header() {
                     About
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={async () => {
+                  <DropdownMenuItem onClick={async (e) => {
+                    e.preventDefault();
+                    console.log('Logout clicked');
                     try {
                       await logout();
+                      console.log('Logout successful, redirecting...');
                       window.location.href = "/login";
                       toast({ title: "Logged out successfully" });
                     } catch (error) {
+                      console.error('Logout error:', error);
                       toast({ title: "Logout failed", description: "Please try again" });
                     }
                   }}>
