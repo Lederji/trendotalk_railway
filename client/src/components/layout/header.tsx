@@ -66,6 +66,16 @@ export function Header() {
                   7
                 </Badge>
               </Button>
+              
+              {/* Profile Avatar */}
+              <Link href={`/profile/${user?.id}`}>
+                <Avatar className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-pink-500 transition-all">
+                  <AvatarImage src={user?.avatar} alt={user?.username} />
+                  <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm">
+                    {user?.username?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
             </>
           )}
           
