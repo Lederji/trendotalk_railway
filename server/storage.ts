@@ -933,6 +933,37 @@ export class MemStorage implements IStorage {
     }
   }
 
+  async removeFriend(userId: number, friendId: number): Promise<boolean> {
+    try {
+      // Remove mutual follow relationships
+      const followsToRemove: number[] = [];
+      for (const [id, follow] of this.follows) {
+        if ((follow.followerId === userId && follow.followingId === friendId) ||
+            (follow.followerId === friendId && follow.followingId === userId)) {
+          followsToRemove.push(id);
+        }
+      }
+      
+      followsToRemove.forEach(id => this.follows.delete(id));
+      
+      // Remove chat between users
+      const chatsToRemove: number[] = [];
+      for (const [id, chat] of this.chats) {
+        if ((chat.user1Id === userId && chat.user2Id === friendId) ||
+            (chat.user1Id === friendId && chat.user2Id === userId)) {
+          chatsToRemove.push(id);
+        }
+      }
+      
+      chatsToRemove.forEach(id => this.chats.delete(id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      return false;
+    }
+  }
+
   async getUserChats(userId: number): Promise<any[]> {
     try {
       const userChats = Array.from(this.chats.values())
