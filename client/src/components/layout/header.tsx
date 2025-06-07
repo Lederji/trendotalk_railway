@@ -15,8 +15,7 @@ export function Header() {
   const [showAccountCenter, setShowAccountCenter] = useState(false);
   const [showServiceRequest, setShowServiceRequest] = useState(false);
 
-  // Debug logging for dialog states
-  console.log('Header render - showAccountCenter:', showAccountCenter, 'showServiceRequest:', showServiceRequest);
+
 
   const handleSearchClick = () => {
     setLocation("/search");

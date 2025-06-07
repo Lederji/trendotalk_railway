@@ -32,6 +32,7 @@ function Router() {
       <Route path="/post/:postId" component={PostDetail} />
       <Route path="/search" component={SearchPage} />
       <Route path="/auth" component={Auth} />
+      <Route path="/login" component={Auth} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
