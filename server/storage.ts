@@ -1,8 +1,8 @@
 import { 
-  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications, vibes,
+  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications, vibes, cvs,
   type User, type InsertUser, type Post, type InsertPost, 
   type Comment, type InsertComment, type Like, type Dislike, type Vote, type Story, 
-  type InsertStory, type Vibe, type InsertVibe, type Follow, type PostWithUser, type StoryWithUser, type VibeWithUser, type UserProfile 
+  type InsertStory, type Vibe, type InsertVibe, type CV, type Follow, type PostWithUser, type StoryWithUser, type VibeWithUser, type UserProfile 
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
@@ -89,6 +89,10 @@ export interface IStorage {
   // Chat methods
   getUserChats(userId: number): Promise<any[]>;
   sendMessage(chatId: number, senderId: number, message: string): Promise<any>;
+  
+  // CV methods
+  getUserCV(userId: number): Promise<any>;
+  saveUserCV(userId: number, cvData: any): Promise<any>;
 }
 
 export class MemStorage implements IStorage {

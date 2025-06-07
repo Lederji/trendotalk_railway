@@ -145,6 +145,14 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const cvs = pgTable("cvs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id).unique(),
+  data: text("data").notNull(), // JSON string of CV data
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -188,6 +196,13 @@ export const insertVibeSchema = createInsertSchema(vibes).omit({
   userId: true,
 });
 
+export const insertCVSchema = createInsertSchema(cvs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  userId: true,
+});
+
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -207,6 +222,8 @@ export type Story = typeof stories.$inferSelect;
 export type InsertStory = z.infer<typeof insertStorySchema>;
 export type Vibe = typeof vibes.$inferSelect;
 export type InsertVibe = z.infer<typeof insertVibeSchema>;
+export type CV = typeof cvs.$inferSelect;
+export type InsertCV = z.infer<typeof insertCVSchema>;
 export type Follow = typeof follows.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 
