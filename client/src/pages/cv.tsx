@@ -14,7 +14,7 @@ import { Link } from "wouter";
 
 interface CVData {
   fullName: string;
-  accountType: 'business' | 'creator' | 'government' | 'personal';
+  accountType: 'business' | 'creator' | 'government';
   email: string;
   phone: string;
   location: string;
@@ -57,7 +57,7 @@ export default function CVPage() {
   
   const [cvData, setCvData] = useState<CVData>({
     fullName: '',
-    accountType: 'personal',
+    accountType: 'creator',
     email: '',
     phone: '',
     location: '',
@@ -324,9 +324,8 @@ export default function CVPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="business">Business</SelectItem>
                       <SelectItem value="creator">Content Creator</SelectItem>
+                      <SelectItem value="business">Business</SelectItem>
                       <SelectItem value="government">Government</SelectItem>
                     </SelectContent>
                   </Select>
