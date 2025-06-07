@@ -968,6 +968,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's followers list
+  app.get('/api/users/:userId/followers', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const followers = await storage.getUserFollowers(userId);
+      res.json(followers);
+    } catch (error) {
+      console.error('Error getting followers:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get user's following list
+  app.get('/api/users/:userId/following-list', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const following = await storage.getUserFollowing(userId);
+      res.json(following);
+    } catch (error) {
+      console.error('Error getting following list:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Update user profile
   app.patch('/api/users/:userId', authenticateUser, async (req: any, res: any) => {
     try {

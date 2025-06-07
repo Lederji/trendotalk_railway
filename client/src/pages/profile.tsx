@@ -26,6 +26,8 @@ export default function ProfilePage() {
     links: [] as { name: string; url: string }[]
   });
   const [uploading, setUploading] = useState(false);
+  const [showFollowersList, setShowFollowersList] = useState(false);
+  const [showFollowingList, setShowFollowingList] = useState(false);
 
   const profileUserId = userId ? parseInt(userId) : currentUser?.id;
   const isOwnProfile = profileUserId === currentUser?.id;
@@ -47,6 +49,18 @@ export default function ProfilePage() {
     queryKey: [`/api/users/${profileUserId}/following`],
     enabled: !!profileUserId && !isOwnProfile,
   }) as { data: boolean };
+
+  // Fetch followers list
+  const { data: followers = [] } = useQuery({
+    queryKey: [`/api/users/${profileUserId}/followers`],
+    enabled: !!profileUserId && showFollowersList,
+  }) as { data: any[] };
+
+  // Fetch following list
+  const { data: following = [] } = useQuery({
+    queryKey: [`/api/users/${profileUserId}/following-list`],
+    enabled: !!profileUserId && showFollowingList,
+  }) as { data: any[] };
 
   // Follow/Unfollow mutation
   const followMutation = useMutation({
@@ -250,14 +264,20 @@ export default function ProfilePage() {
                 <div className="font-semibold text-lg">{posts?.length || 0}</div>
                 <div className="text-gray-500 text-sm">Posts</div>
               </div>
-              <div>
+              <button
+                onClick={() => setShowFollowersList(true)}
+                className="hover:bg-gray-50 rounded-lg p-2 transition-colors"
+              >
                 <div className="font-semibold text-lg">{profile?.followersCount || 0}</div>
                 <div className="text-gray-500 text-sm">Followers</div>
-              </div>
-              <div>
+              </button>
+              <button
+                onClick={() => setShowFollowingList(true)}
+                className="hover:bg-gray-50 rounded-lg p-2 transition-colors"
+              >
                 <div className="font-semibold text-lg">{profile?.followingCount || 0}</div>
                 <div className="text-gray-500 text-sm">Following</div>
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -615,6 +635,80 @@ export default function ProfilePage() {
             >
               {updateProfileMutation.isPending ? "Saving..." : "Save"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Followers List Dialog */}
+      <Dialog open={showFollowersList} onOpenChange={setShowFollowersList}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Followers</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {followers.map((follower: any) => (
+              <div key={follower.id} className="flex items-center space-x-3">
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={follower.avatar} alt={follower.username} />
+                  <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                    {follower.username?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{follower.username}</p>
+                  {follower.displayName && (
+                    <p className="text-gray-500 text-xs">{follower.displayName}</p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation(`/profile/${follower.id}`)}
+                >
+                  View
+                </Button>
+              </div>
+            ))}
+            {followers.length === 0 && (
+              <p className="text-center text-gray-500 py-8">No followers yet</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Following List Dialog */}
+      <Dialog open={showFollowingList} onOpenChange={setShowFollowingList}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Following</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {following.map((followingUser: any) => (
+              <div key={followingUser.id} className="flex items-center space-x-3">
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={followingUser.avatar} alt={followingUser.username} />
+                  <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                    {followingUser.username?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{followingUser.username}</p>
+                  {followingUser.displayName && (
+                    <p className="text-gray-500 text-xs">{followingUser.displayName}</p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation(`/profile/${followingUser.id}`)}
+                >
+                  View
+                </Button>
+              </div>
+            ))}
+            {following.length === 0 && (
+              <p className="text-center text-gray-500 py-8">Not following anyone yet</p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
