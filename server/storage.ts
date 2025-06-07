@@ -1249,6 +1249,17 @@ export class MemStorage implements IStorage {
     
     return userVibes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
+
+  // CV methods for interface compliance
+  async getUserCV(userId: number): Promise<any> {
+    // For MemStorage, we'll just return null as CVs are not implemented in memory
+    return null;
+  }
+
+  async saveUserCV(userId: number, cvData: any): Promise<any> {
+    // For MemStorage, we'll just return the data as-is
+    return cvData;
+  }
 }
 
 
@@ -3324,6 +3335,51 @@ class HybridStorage extends DatabaseStorage {
       return newMessage;
     } catch (error) {
       console.error('Error sending message:', error);
+      throw error;
+    }
+  }
+
+  // CV methods
+  async getUserCV(userId: number): Promise<any> {
+    try {
+      const [cv] = await db.select().from(cvs).where(eq(cvs.userId, userId));
+      if (!cv) return null;
+      return JSON.parse(cv.data);
+    } catch (error) {
+      console.error('Error getting CV:', error);
+      throw error;
+    }
+  }
+
+  async saveUserCV(userId: number, cvData: any): Promise<any> {
+    try {
+      const dataString = JSON.stringify(cvData);
+      const [existingCV] = await db.select().from(cvs).where(eq(cvs.userId, userId));
+      
+      if (existingCV) {
+        // Update existing CV
+        const [updatedCV] = await db
+          .update(cvs)
+          .set({ 
+            data: dataString, 
+            updatedAt: new Date()
+          })
+          .where(eq(cvs.userId, userId))
+          .returning();
+        return JSON.parse(updatedCV.data);
+      } else {
+        // Create new CV
+        const [newCV] = await db
+          .insert(cvs)
+          .values({
+            userId,
+            data: dataString
+          })
+          .returning();
+        return JSON.parse(newCV.data);
+      }
+    } catch (error) {
+      console.error('Error saving CV:', error);
       throw error;
     }
   }
