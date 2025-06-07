@@ -18,6 +18,7 @@ export interface IStorage {
   
   // Post editing
   updatePost(id: number, userId: number, updates: Partial<Post>): Promise<Post | undefined>;
+  incrementPostViews(postId: number): Promise<void>;
   
   // Admin methods
   getAllUsers(): Promise<User[]>;
@@ -1615,6 +1616,9 @@ export class DatabaseStorage implements IStorage {
 
   async getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]> {
     try {
+      // Clean up old videos first
+      await this.cleanupOldVideos();
+
       let query = db
         .select({
           post: posts,
@@ -1634,7 +1638,7 @@ export class DatabaseStorage implements IStorage {
 
       const result = await query.orderBy(desc(posts.createdAt));
 
-      return result
+      const filteredPosts = result
         .filter(row => row.user)
         .filter(row => {
           // Only show posts that have videos (admin posts) or images/videos (regular posts)
@@ -1645,6 +1649,32 @@ export class DatabaseStorage implements IStorage {
           ...row.post,
           user: row.user,
         } as PostWithUser));
+
+      // Sort: Top 3 most viewed videos first, then chronological
+      const videos = filteredPosts.filter(post => 
+        post.video1Url || post.video2Url || post.video3Url || post.videoUrl
+      );
+      const images = filteredPosts.filter(post => 
+        post.imageUrl && !post.video1Url && !post.video2Url && !post.video3Url && !post.videoUrl
+      );
+
+      // Sort videos by views (descending), then by date
+      videos.sort((a, b) => {
+        const viewsDiff = (b.viewsCount || 0) - (a.viewsCount || 0);
+        if (viewsDiff !== 0) return viewsDiff;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      // Take top 3 most viewed videos
+      const topVideos = videos.slice(0, 3);
+      const remainingVideos = videos.slice(3);
+
+      // Combine: top 3 videos, then remaining content by date
+      const remainingContent = [...remainingVideos, ...images].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      return [...topVideos, ...remainingContent];
     } catch (error) {
       console.error('Error getting posts:', error);
       return [];
@@ -1689,40 +1719,31 @@ export class DatabaseStorage implements IStorage {
       const seventyTwoHoursAgo = new Date();
       seventyTwoHoursAgo.setHours(seventyTwoHoursAgo.getHours() - 72);
 
-      // Get top 3 most viewed videos
-      const topVideos = await db
-        .select({ id: posts.id })
+      // Get all videos older than 72 hours
+      const oldVideos = await db
+        .select({ id: posts.id, viewsCount: posts.viewsCount })
         .from(posts)
-        .where(sql`(${posts.video1Url} IS NOT NULL OR ${posts.video2Url} IS NOT NULL OR ${posts.video3Url} IS NOT NULL OR ${posts.videoUrl} IS NOT NULL)`)
-        .orderBy(desc(posts.viewsCount))
-        .limit(3);
+        .where(
+          and(
+            sql`${posts.createdAt} < ${seventyTwoHoursAgo}`,
+            sql`(${posts.video1Url} IS NOT NULL OR ${posts.video2Url} IS NOT NULL OR ${posts.video3Url} IS NOT NULL OR ${posts.videoUrl} IS NOT NULL)`
+          )
+        )
+        .orderBy(desc(posts.viewsCount));
 
-      const topVideoIds = topVideos.map(v => v.id);
-
-      // Delete old videos that are not in top 3
-      if (topVideoIds.length > 0) {
-        await db
-          .delete(posts)
-          .where(
-            and(
-              sql`${posts.createdAt} < ${seventyTwoHoursAgo}`,
-              sql`(${posts.video1Url} IS NOT NULL OR ${posts.video2Url} IS NOT NULL OR ${posts.video3Url} IS NOT NULL OR ${posts.videoUrl} IS NOT NULL)`,
-              notInArray(posts.id, topVideoIds)
-            )
-          );
-      } else {
-        // If no top videos yet, delete all old videos
-        await db
-          .delete(posts)
-          .where(
-            and(
-              sql`${posts.createdAt} < ${seventyTwoHoursAgo}`,
-              sql`(${posts.video1Url} IS NOT NULL OR ${posts.video2Url} IS NOT NULL OR ${posts.video3Url} IS NOT NULL OR ${posts.videoUrl} IS NOT NULL)`
-            )
-          );
+      // Keep top 3 most viewed, delete the rest
+      if (oldVideos.length > 3) {
+        const videosToDelete = oldVideos.slice(3);
+        for (const video of videosToDelete) {
+          // Delete related comments first to avoid foreign key constraint
+          await db.delete(comments).where(eq(comments.postId, video.id));
+          // Delete related likes
+          await db.delete(likes).where(eq(likes.postId, video.id));
+          // Now delete the post
+          await db.delete(posts).where(eq(posts.id, video.id));
+        }
+        console.log(`Cleaned up ${videosToDelete.length} old videos (older than 72 hours)`);
       }
-
-      console.log('Cleaned up old videos (older than 72 hours)');
     } catch (error) {
       console.error('Error cleaning up old videos:', error);
     }
@@ -2185,19 +2206,40 @@ export class DatabaseStorage implements IStorage {
 
   async followUser(followerId: number, followingId: number): Promise<boolean> {
     try {
+      // Check if already following to prevent duplicates
+      const existing = await db
+        .select()
+        .from(follows)
+        .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        return false; // Already following
+      }
+
       await db
         .insert(follows)
         .values({ followerId, followingId });
       
-      // Update follower counts
+      // Update follower counts accurately by counting actual follows
+      const followerCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(follows)
+        .where(eq(follows.followingId, followingId));
+      
+      const followingCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(follows)
+        .where(eq(follows.followerId, followerId));
+      
       await db
         .update(users)
-        .set({ followersCount: sql`${users.followersCount} + 1` })
+        .set({ followersCount: followerCount[0].count })
         .where(eq(users.id, followingId));
         
       await db
         .update(users)
-        .set({ followingCount: sql`${users.followingCount} + 1` })
+        .set({ followingCount: followingCount[0].count })
         .where(eq(users.id, followerId));
       
       // Create notification for followed user

@@ -970,6 +970,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!post) {
         return res.status(404).json({ message: 'Post not found' });
       }
+      
+      // Increment view count for videos
+      if (post.video1Url || post.video2Url || post.video3Url || post.videoUrl) {
+        await storage.incrementPostViews(postId);
+        post.viewsCount = (post.viewsCount || 0) + 1;
+      }
+      
       res.json(post);
     } catch (error) {
       console.error('Error getting post detail:', error);
