@@ -179,14 +179,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
       
+      // Calculate follower counts excluding admin users
+      const followers = await storage.getUserFollowers(user.id);
+      const following = await storage.getUserFollowing(user.id);
+      
       res.json({
         id: user.id,
         username: user.username,
         isAdmin: user.isAdmin,
         avatar: user.avatar,
         bio: user.bio,
-        followersCount: user.followersCount,
-        followingCount: user.followingCount
+        followersCount: followers.length,
+        followingCount: following.length
       });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
@@ -748,9 +752,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const posts = await storage.getUserPosts(user.id);
       
+      // Calculate follower counts excluding admin users
+      const followers = await storage.getUserFollowers(user.id);
+      const following = await storage.getUserFollowing(user.id);
+      
       const { password, ...userProfile } = user;
       res.json({
         ...userProfile,
+        followersCount: followers.length,
+        followingCount: following.length,
         isFollowing,
         posts
       });
