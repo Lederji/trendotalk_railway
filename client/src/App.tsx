@@ -26,8 +26,8 @@ function Router() {
       <Route path="/circle/add-vibe" component={Circle} />
       <Route path="/chats" component={ChatNew} />
       <Route path="/chat/:chatId" component={ChatPage} />
-      <Route path="/profile/:username?" component={Profile} />
-      <Route path="/users/:username" component={Profile} />
+      <Route path="/profile/:userId?" component={Profile} />
+      <Route path="/users/:userId" component={Profile} />
       <Route path="/search" component={SearchPage} />
       <Route path="/auth" component={Auth} />
       <Route path="/admin" component={AdminDashboard} />

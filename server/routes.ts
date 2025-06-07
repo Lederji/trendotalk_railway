@@ -877,6 +877,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user profile
+  app.get('/api/users/:userId', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Remove sensitive information
+      const { password, ...userProfile } = user;
+      res.json(userProfile);
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get user posts
+  app.get('/api/users/:userId/posts', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const posts = await storage.getUserPosts(userId);
+      res.json(posts);
+    } catch (error) {
+      console.error('Error getting user posts:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Check if following user
+  app.get('/api/users/:userId/following', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const isFollowing = await storage.isFollowing(req.user.userId, userId);
+      res.json(isFollowing);
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Follow user
+  app.post('/api/users/:userId/follow', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const success = await storage.followUser(req.user.userId, userId);
+      if (!success) {
+        return res.status(400).json({ message: 'Cannot follow user' });
+      }
+      res.json({ message: 'User followed successfully' });
+    } catch (error) {
+      console.error('Error following user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Unfollow user
+  app.post('/api/users/:userId/unfollow', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const success = await storage.unfollowUser(req.user.userId, userId);
+      if (!success) {
+        return res.status(400).json({ message: 'Cannot unfollow user' });
+      }
+      res.json({ message: 'User unfollowed successfully' });
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Update user profile
+  app.patch('/api/users/:userId', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      
+      // Users can only update their own profile
+      if (userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Not authorized to update this profile' });
+      }
+      
+      const updates = req.body;
+      const updatedUser = await storage.updateUser(userId, updates);
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Remove sensitive information
+      const { password, ...userProfile } = updatedUser;
+      res.json(userProfile);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Chat routes
   app.get('/api/chats', authenticateUser, async (req: any, res: any) => {
     try {
