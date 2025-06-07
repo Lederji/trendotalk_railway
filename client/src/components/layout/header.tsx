@@ -20,7 +20,7 @@ export function Header() {
   const queryClient = useQueryClient();
 
   // Fetch notifications count
-  const { data: notificationCount = 0 } = useQuery({
+  const { data: notificationCount = { count: 0 } } = useQuery({
     queryKey: ['/api/notifications/count'],
     enabled: !!user,
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -115,9 +115,9 @@ export function Header() {
                     className="p-2 hover:bg-gray-100 rounded-full relative"
                   >
                     <Heart className="h-5 w-5 text-gray-600" />
-                    {notificationCount?.count > 0 && (
+                    {(notificationCount as any)?.count > 0 && (
                       <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
-                        {notificationCount.count}
+                        {(notificationCount as any).count}
                       </Badge>
                     )}
                   </Button>
@@ -125,7 +125,7 @@ export function Header() {
                 <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
                   <div className="flex items-center justify-between p-3 border-b">
                     <h3 className="font-semibold text-gray-800">Notifications</h3>
-                    {notifications.length > 0 && (
+                    {(notifications as any[]).length > 0 && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -137,14 +137,14 @@ export function Header() {
                     )}
                   </div>
                   
-                  {notifications.length === 0 ? (
+                  {(notifications as any[]).length === 0 ? (
                     <div className="p-6 text-center text-gray-500">
                       <Heart className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                       <p className="text-sm">No notifications yet</p>
                     </div>
                   ) : (
                     <div className="max-h-80 overflow-y-auto">
-                      {notifications.map((notification: any) => (
+                      {(notifications as any[]).map((notification: any) => (
                         <DropdownMenuItem
                           key={notification.id}
                           className="p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"

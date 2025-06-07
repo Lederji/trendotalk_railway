@@ -2804,15 +2804,26 @@ export class DatabaseStorage implements IStorage {
 
   async getUserNotifications(userId: number): Promise<any[]> {
     try {
-      const result = await db.execute(`
-        SELECT n.*, u.username as from_username, u.avatar as from_avatar
-        FROM notifications n
-        LEFT JOIN users u ON n.from_user_id = u.id
-        WHERE n.user_id = $1
-        ORDER BY n.created_at DESC
-        LIMIT 20
-      `, [userId]);
-      return result.rows;
+      const userNotifications = await db
+        .select({
+          id: notifications.id,
+          userId: notifications.userId,
+          type: notifications.type,
+          message: notifications.message,
+          fromUserId: notifications.fromUserId,
+          postId: notifications.postId,
+          isRead: notifications.isRead,
+          createdAt: notifications.createdAt,
+          fromUsername: users.username,
+          fromAvatar: users.avatar
+        })
+        .from(notifications)
+        .leftJoin(users, eq(notifications.fromUserId, users.id))
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt))
+        .limit(20);
+      
+      return userNotifications;
     } catch (error) {
       console.error('Error getting notifications:', error);
       return [];
@@ -2821,9 +2832,10 @@ export class DatabaseStorage implements IStorage {
 
   async markNotificationAsRead(notificationId: number): Promise<boolean> {
     try {
-      await db.execute(`
-        UPDATE notifications SET is_read = true WHERE id = $1
-      `, [notificationId]);
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.id, notificationId));
       return true;
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -3628,11 +3640,17 @@ class HybridStorage extends DatabaseStorage {
     }
   }
 
-  // Notification methods for DatabaseStorage
+  // Notification methods for DatabaseStorage  
   async getUnreadNotificationCount(userId: number): Promise<number> {
     try {
-      const userNotifications = await db.select().from(notifications).where(eq(notifications.userId, userId));
-      return userNotifications.filter(n => !n.isRead).length;
+      const result = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        ));
+      return result[0]?.count || 0;
     } catch (error) {
       console.error('Error getting unread notification count:', error);
       return 0;
@@ -3641,7 +3659,8 @@ class HybridStorage extends DatabaseStorage {
 
   async markAllNotificationsAsRead(userId: number): Promise<boolean> {
     try {
-      await db.update(notifications)
+      await db
+        .update(notifications)
         .set({ isRead: true })
         .where(eq(notifications.userId, userId));
       return true;
