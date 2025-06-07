@@ -93,6 +93,9 @@ export interface IStorage {
   // CV methods
   getUserCV(userId: number): Promise<any>;
   saveUserCV(userId: number, cvData: any): Promise<any>;
+  
+  // Performance analytics methods
+  getUserPerformanceStats(userId: number): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -1259,6 +1262,41 @@ export class MemStorage implements IStorage {
   async saveUserCV(userId: number, cvData: any): Promise<any> {
     // For MemStorage, we'll just return the data as-is
     return cvData;
+  }
+
+  // Performance analytics method
+  async getUserPerformanceStats(userId: number): Promise<any> {
+    const userPosts = Array.from(this.posts.values()).filter(post => post.userId === userId);
+    const totalPosts = userPosts.length;
+    const videoCount = userPosts.filter(post => post.videoUrl).length;
+    const imageCount = userPosts.filter(post => post.imageUrl).length;
+    const totalViews = userPosts.reduce((sum, post) => sum + (post.viewsCount || 0), 0);
+    
+    const user = this.users.get(userId);
+    const totalFollowers = user?.followersCount || 0;
+    
+    // Calculate 30-day and 24-hour metrics (simplified for MemStorage)
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    const recentPosts30Days = userPosts.filter(post => new Date(post.createdAt) >= thirtyDaysAgo);
+    const recentPosts24Hours = userPosts.filter(post => new Date(post.createdAt) >= twentyFourHoursAgo);
+    
+    const reach30Days = recentPosts30Days.reduce((sum, post) => sum + (post.viewsCount || 0), 0);
+    const reach24Hours = recentPosts24Hours.reduce((sum, post) => sum + (post.viewsCount || 0), 0);
+    
+    return {
+      totalPosts,
+      videoCount,
+      imageCount,
+      totalViews,
+      totalFollowers,
+      reach30Days,
+      reach24Hours,
+      postsLast30Days: recentPosts30Days.length,
+      postsLast24Hours: recentPosts24Hours.length
+    };
   }
 }
 
@@ -3380,6 +3418,61 @@ class HybridStorage extends DatabaseStorage {
       }
     } catch (error) {
       console.error('Error saving CV:', error);
+      throw error;
+    }
+  }
+
+  // Performance analytics method
+  async getUserPerformanceStats(userId: number): Promise<any> {
+    try {
+      // Get total posts count
+      const userPosts = await db.select().from(posts).where(eq(posts.userId, userId));
+      const totalPosts = userPosts.length;
+      
+      // Count videos and images
+      const videoCount = userPosts.filter(post => post.videoUrl || post.video1Url || post.video2Url || post.video3Url).length;
+      const imageCount = userPosts.filter(post => post.imageUrl).length;
+      
+      // Calculate total views
+      const totalViews = userPosts.reduce((sum, post) => sum + (post.viewsCount || 0), 0);
+      
+      // Get user follower count
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      const totalFollowers = user?.followersCount || 0;
+      
+      // Calculate 30-day and 24-hour metrics
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      
+      const recentPosts30Days = userPosts.filter(post => new Date(post.createdAt) >= thirtyDaysAgo);
+      const recentPosts24Hours = userPosts.filter(post => new Date(post.createdAt) >= twentyFourHoursAgo);
+      
+      const reach30Days = recentPosts30Days.reduce((sum, post) => sum + (post.viewsCount || 0), 0);
+      const reach24Hours = recentPosts24Hours.reduce((sum, post) => sum + (post.viewsCount || 0), 0);
+      
+      // Calculate engagement metrics
+      const totalLikes = userPosts.reduce((sum, post) => sum + (post.likesCount || 0), 0);
+      const totalComments = userPosts.reduce((sum, post) => sum + (post.commentsCount || 0), 0);
+      const totalVotes = userPosts.reduce((sum, post) => sum + (post.votesCount || 0), 0);
+      
+      return {
+        totalPosts,
+        videoCount,
+        imageCount,
+        totalViews,
+        totalFollowers,
+        totalLikes,
+        totalComments,
+        totalVotes,
+        reach30Days,
+        reach24Hours,
+        postsLast30Days: recentPosts30Days.length,
+        postsLast24Hours: recentPosts24Hours.length,
+        engagementRate: totalViews > 0 ? ((totalLikes + totalComments) / totalViews * 100).toFixed(2) : 0
+      };
+    } catch (error) {
+      console.error('Error getting performance stats:', error);
       throw error;
     }
   }

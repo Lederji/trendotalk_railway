@@ -1559,6 +1559,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     }
   });
 
+  // Get user performance statistics
+  app.get('/api/performance-stats', authenticateUser, async (req: any, res: any) => {
+    try {
+      const stats = await storage.getUserPerformanceStats(req.user.userId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting performance stats:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
