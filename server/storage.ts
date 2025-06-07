@@ -73,7 +73,9 @@ export interface IStorage {
   // Notification methods
   createNotification(userId: number, type: string, message: string, fromUserId?: number, postId?: number): Promise<void>;
   getUserNotifications(userId: number): Promise<any[]>;
+  getUnreadNotificationCount(userId: number): Promise<number>;
   markNotificationAsRead(notificationId: number): Promise<boolean>;
+  markAllNotificationsAsRead(userId: number): Promise<boolean>;
   
   // Search methods
   searchUsers(query: string): Promise<User[]>;
@@ -504,6 +506,21 @@ export class MemStorage implements IStorage {
       
       post.likesCount += 1;
       this.posts.set(postId, post);
+      
+      // Create notification for post owner (if not liking own post)
+      if (post.userId !== userId) {
+        const liker = this.users.get(userId);
+        if (liker) {
+          await this.createNotification(
+            post.userId,
+            'like',
+            `${liker.username} liked your post`,
+            userId,
+            postId
+          );
+        }
+      }
+      
       return { liked: true, likesCount: post.likesCount };
     }
   }
@@ -588,6 +605,20 @@ export class MemStorage implements IStorage {
     if (post) {
       post.commentsCount += 1;
       this.posts.set(post.id, post);
+      
+      // Create notification for post owner (if not commenting on own post)
+      if (post.userId !== commentData.userId) {
+        const commenter = this.users.get(commentData.userId);
+        if (commenter) {
+          await this.createNotification(
+            post.userId,
+            'comment',
+            `${commenter.username} commented on your post`,
+            commentData.userId,
+            commentData.postId
+          );
+        }
+      }
     }
     
     return comment;
@@ -686,6 +717,16 @@ export class MemStorage implements IStorage {
     if (following) {
       following.followersCount += 1;
       this.users.set(followingId, following);
+      
+      // Create notification for the followed user
+      if (follower) {
+        await this.createNotification(
+          followingId,
+          'follow',
+          `${follower.username} started following you`,
+          followerId
+        );
+      }
     }
     
     return true;
@@ -759,7 +800,17 @@ export class MemStorage implements IStorage {
     return [];
   }
 
+  async getUnreadNotificationCount(userId: number): Promise<number> {
+    // For in-memory implementation, return a mock count
+    return 3;
+  }
+
   async markNotificationAsRead(notificationId: number): Promise<boolean> {
+    // Return true for in-memory implementation
+    return true;
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<boolean> {
     // Return true for in-memory implementation
     return true;
   }
