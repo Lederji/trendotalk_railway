@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Navigation } from "@/components/layout/navigation";
-import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp, User, Clock, HelpCircle, Info, LogOut, MessageSquare } from "lucide-react";
+import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp, User, Clock, HelpCircle, Info, LogOut, MessageSquare, CheckCircle, AtSign, Megaphone, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
@@ -30,6 +30,15 @@ export default function ProfilePage() {
   const [showFollowersList, setShowFollowersList] = useState(false);
   const [showFollowingList, setShowFollowingList] = useState(false);
   const [showMenuDropdown, setShowMenuDropdown] = useState(false);
+  const [showServiceRequest, setShowServiceRequest] = useState(false);
+  const [selectedService, setSelectedService] = useState('');
+  const [serviceForm, setServiceForm] = useState({
+    verifiedTickReason: '',
+    customUsername: '',
+    adBudget: '',
+    adDescription: '',
+    contactInfo: ''
+  });
 
   const profileUserId = userId ? parseInt(userId) : currentUser?.id;
   const isOwnProfile = profileUserId === currentUser?.id;
@@ -263,7 +272,7 @@ export default function ProfilePage() {
               <Clock className="mr-2 h-4 w-4" />
               <span>Time Management</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {/* Service Request */}}>
+            <DropdownMenuItem onClick={() => setShowServiceRequest(true)}>
               <MessageSquare className="mr-2 h-4 w-4" />
               <span>Service Request</span>
             </DropdownMenuItem>
@@ -757,6 +766,211 @@ export default function ProfilePage() {
               <p className="text-center text-gray-500 py-8">Not following anyone yet</p>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Service Request Dialog */}
+      <Dialog open={showServiceRequest} onOpenChange={setShowServiceRequest}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-blue-500" />
+              Service Request
+            </DialogTitle>
+          </DialogHeader>
+          
+          {!selectedService ? (
+            <div className="space-y-4">
+              <p className="text-gray-600 text-sm">Select a service you'd like to request:</p>
+              
+              <div className="grid gap-3">
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-4 text-left"
+                  onClick={() => setSelectedService('verified')}
+                >
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-6 h-6 text-blue-500" />
+                    <div>
+                      <div className="font-semibold">Apply for Verified Tick</div>
+                      <div className="text-sm text-gray-500">Get the blue verified badge for your account</div>
+                    </div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-4 text-left"
+                  onClick={() => setSelectedService('username')}
+                >
+                  <div className="flex items-center gap-3">
+                    <AtSign className="w-6 h-6 text-purple-500" />
+                    <div>
+                      <div className="font-semibold">Get Custom Username</div>
+                      <div className="text-sm text-gray-500">Request a custom or premium username</div>
+                    </div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-4 text-left"
+                  onClick={() => setSelectedService('ads')}
+                >
+                  <div className="flex items-center gap-3">
+                    <Megaphone className="w-6 h-6 text-green-500" />
+                    <div>
+                      <div className="font-semibold">Run TrendoTalk Ads</div>
+                      <div className="text-sm text-gray-500">Promote your content with sponsored posts</div>
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {selectedService === 'verified' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                    <CheckCircle className="w-5 h-5 text-blue-500" />
+                    <span className="font-semibold text-blue-700">Verified Tick Application</span>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Reason for Verification</label>
+                    <Textarea
+                      placeholder="Please explain why you should be verified (e.g., public figure, brand, content creator, etc.)"
+                      value={serviceForm.verifiedTickReason}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, verifiedTickReason: e.target.value }))}
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Contact Information</label>
+                    <Input
+                      placeholder="Email or phone for follow-up"
+                      value={serviceForm.contactInfo}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, contactInfo: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {selectedService === 'username' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
+                    <AtSign className="w-5 h-5 text-purple-500" />
+                    <span className="font-semibold text-purple-700">Custom Username Request</span>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Desired Username</label>
+                    <Input
+                      placeholder="@your_desired_username"
+                      value={serviceForm.customUsername}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, customUsername: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Reason for Request</label>
+                    <Textarea
+                      placeholder="Why do you need this specific username?"
+                      value={serviceForm.verifiedTickReason}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, verifiedTickReason: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Contact Information</label>
+                    <Input
+                      placeholder="Email or phone for follow-up"
+                      value={serviceForm.contactInfo}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, contactInfo: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {selectedService === 'ads' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                    <Megaphone className="w-5 h-5 text-green-500" />
+                    <span className="font-semibold text-green-700">TrendoTalk Ads Campaign</span>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Campaign Budget</label>
+                    <Input
+                      placeholder="e.g., $50, $100, $500"
+                      value={serviceForm.adBudget}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, adBudget: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Ad Campaign Description</label>
+                    <Textarea
+                      placeholder="Describe what you want to promote and your target audience"
+                      value={serviceForm.adDescription}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, adDescription: e.target.value }))}
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Contact Information</label>
+                    <Input
+                      placeholder="Email or phone for campaign coordination"
+                      value={serviceForm.contactInfo}
+                      onChange={(e) => setServiceForm(prev => ({ ...prev, contactInfo: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedService('');
+                    setServiceForm({
+                      verifiedTickReason: '',
+                      customUsername: '',
+                      adBudget: '',
+                      adDescription: '',
+                      contactInfo: ''
+                    });
+                  }}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={() => {
+                    toast({
+                      title: "Service Request Submitted",
+                      description: "Your request has been submitted. We'll contact you within 24-48 hours.",
+                    });
+                    setShowServiceRequest(false);
+                    setSelectedService('');
+                    setServiceForm({
+                      verifiedTickReason: '',
+                      customUsername: '',
+                      adBudget: '',
+                      adDescription: '',
+                      contactInfo: ''
+                    });
+                  }}
+                  className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Submit Request
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
       
