@@ -594,22 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user profile by username
-  app.get('/api/users/profile/:username', authenticateUser, async (req: any, res: any) => {
-    try {
-      const user = await storage.getUserByUsername(req.params.username);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      // Remove password from response
-      const { password, ...userProfile } = user;
-      res.json(userProfile);
-    } catch (error) {
-      console.error('Error getting user profile:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
+
 
   // Get vibes for a specific user
   app.get('/api/vibes/user/:userId', authenticateUser, async (req: any, res: any) => {
@@ -746,8 +731,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User routes
-  app.get('/api/users/:username', async (req, res) => {
+  // User routes - specific routes MUST come before general patterns
+  
+  // Get user by username (for profile visits via username)
+  app.get('/api/users/profile/:username', authenticateUser, async (req: any, res: any) => {
     try {
       const user = await storage.getUserByUsername(req.params.username);
       if (!user) {
@@ -755,28 +742,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let isFollowing = false;
-      if (req.headers.authorization) {
-        const sessionId = req.headers.authorization.replace('Bearer ', '');
-        const session = sessions.get(sessionId);
-        if (session) {
-          isFollowing = await storage.isFollowing(session.userId, user.id);
-        }
+      if (req.user.userId !== user.id) {
+        isFollowing = await storage.isFollowing(req.user.userId, user.id);
       }
       
       const posts = await storage.getUserPosts(user.id);
       
+      const { password, ...userProfile } = user;
       res.json({
-        id: user.id,
-        username: user.username,
-        avatar: user.avatar,
-        bio: user.bio,
-        followersCount: user.followersCount,
-        followingCount: user.followingCount,
-        isAdmin: user.isAdmin,
+        ...userProfile,
         isFollowing,
         posts
       });
     } catch (error) {
+      console.error('Error getting user by username:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
@@ -877,19 +856,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user profile by ID
-  app.get('/api/users/:userId', authenticateUser, async (req: any, res: any) => {
+  // Get user profile by ID - MUST handle numeric IDs
+  app.get('/api/users/:userId(\\d+)', authenticateUser, async (req: any, res: any) => {
     try {
       const userId = Number(req.params.userId);
-      console.log('Profile route called for userId:', userId, 'Session userId:', req.user.userId);
+      console.log('✓ NUMERIC USER ID ROUTE called for userId:', userId, 'Session userId:', req.user.userId);
       if (isNaN(userId)) {
         return res.status(400).json({ message: 'Invalid user ID' });
       }
       
       const user = await storage.getUser(userId);
-      console.log('User found in profile route:', user ? 'Yes' : 'No', user?.username, 'Followers:', user?.followersCount, 'Following:', user?.followingCount);
+      console.log('✓ User found in NUMERIC route:', user ? 'Yes' : 'No', user?.username, 'Followers:', user?.followersCount, 'Following:', user?.followingCount);
       if (!user) {
-        console.log('User not found, returning 404');
+        console.log('✓ User not found in NUMERIC route, returning 404');
         return res.status(404).json({ message: 'User not found' });
       }
       
