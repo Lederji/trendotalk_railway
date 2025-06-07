@@ -23,6 +23,7 @@ export default function ChatPage() {
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [showChatMenu, setShowChatMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +126,37 @@ export default function ChatPage() {
       queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
       setMessage("");
     },
+  });
+
+  // Kick out mutation to remove user from friend list
+  const kickOutMutation = useMutation({
+    mutationFn: async () => {
+      const sessionId = localStorage.getItem('sessionId');
+      const response = await fetch(`/api/friends/remove`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionId}`
+        },
+        body: JSON.stringify({ friendId: chat?.user?.id }),
+      });
+      if (!response.ok) throw new Error('Failed to remove friend');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User removed",
+        description: "User has been removed from your friend list",
+      });
+      setLocation("/");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove user",
+        variant: "destructive",
+      });
+    }
   });
 
   const handleSendMessage = () => {
@@ -442,13 +474,30 @@ export default function ChatPage() {
           >
             <Video className="w-5 h-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full text-gray-600 hover:bg-gray-100"
-          >
-            <MoreVertical className="w-5 h-5" />
-          </Button>
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full text-gray-600 hover:bg-gray-100"
+              onClick={() => setShowChatMenu(!showChatMenu)}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </Button>
+            {showChatMenu && (
+              <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-20 min-w-[150px]">
+                <button
+                  onClick={() => {
+                    kickOutMutation.mutate();
+                    setShowChatMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 transition-colors"
+                  disabled={kickOutMutation.isPending}
+                >
+                  {kickOutMutation.isPending ? "Removing..." : "Kick Out"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -814,10 +863,15 @@ export default function ChatPage() {
               ) : (
                 <video 
                   src={fullScreenMedia.url} 
-                  controls 
                   autoPlay
+                  loop
+                  playsInline
                   className="max-w-full max-h-full"
                   onClick={(e) => e.stopPropagation()}
+                  style={{
+                    outline: 'none'
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
                 />
               )}
             </div>
