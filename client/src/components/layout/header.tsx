@@ -81,20 +81,6 @@ export function Header() {
                 </Badge>
               </Button>
               
-              {/* Account Center Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  console.log('Account Center button clicked');
-                  setLocation('/account-center');
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full"
-                title="Account Center"
-              >
-                <User className="h-5 w-5 text-gray-600" />
-              </Button>
-
               {/* Profile Avatar */}
               <Link href={`/profile/${user?.id}`}>
                 <Avatar className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-pink-500 transition-all">
