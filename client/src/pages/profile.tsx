@@ -6,10 +6,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Navigation } from "@/components/layout/navigation";
-import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp } from "lucide-react";
+import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp, User, Clock, HelpCircle, Info, LogOut, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
@@ -28,15 +29,20 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [showFollowersList, setShowFollowersList] = useState(false);
   const [showFollowingList, setShowFollowingList] = useState(false);
+  const [showMenuDropdown, setShowMenuDropdown] = useState(false);
 
   const profileUserId = userId ? parseInt(userId) : currentUser?.id;
   const isOwnProfile = profileUserId === currentUser?.id;
 
-  // Fetch user profile data
+  // Fetch user profile data - fallback to current user if profile not found
   const { data: profile, isLoading } = useQuery({
     queryKey: [`/api/users/${profileUserId}`],
     enabled: !!profileUserId,
+    retry: false,
   }) as { data: any, isLoading: boolean };
+
+  // If profile not found but viewing own profile, use current user data
+  const displayProfile = profile || (isOwnProfile ? currentUser : null);
 
   // Fetch user posts
   const { data: posts = [] } = useQuery({
@@ -235,13 +241,51 @@ export default function ProfilePage() {
           <h1 className="font-semibold text-lg text-left">{profile?.username}</h1>
         </div>
         
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onClick={() => {/* Account Center */}}>
+              <User className="mr-2 h-4 w-4" />
+              <span>Account Center</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {/* Time Management */}}>
+              <Clock className="mr-2 h-4 w-4" />
+              <span>Time Management</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {/* Service Request */}}>
+              <MessageSquare className="mr-2 h-4 w-4" />
+              <span>Service Request</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => {/* Help and Support */}}>
+              <HelpCircle className="mr-2 h-4 w-4" />
+              <span>Help and Support</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {/* About */}}>
+              <Info className="mr-2 h-4 w-4" />
+              <span>About</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => {
+                localStorage.removeItem('sessionId');
+                setLocation('/login');
+              }}
+              className="text-red-600"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log Out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Profile Header */}
