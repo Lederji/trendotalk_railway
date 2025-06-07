@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").notNull().default(false),
   avatar: text("avatar"),
   bio: text("bio"),
+  website: text("website"),
   followersCount: integer("followers_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

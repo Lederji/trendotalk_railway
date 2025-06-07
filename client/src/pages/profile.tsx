@@ -22,7 +22,8 @@ export default function ProfilePage() {
   const [editForm, setEditForm] = useState({
     bio: '',
     username: '',
-    avatar: ''
+    avatar: '',
+    website: ''
   });
 
   const profileUserId = userId ? parseInt(userId) : currentUser?.id;
@@ -138,7 +139,8 @@ export default function ProfilePage() {
       setEditForm({
         bio: profile.bio || '',
         username: profile.username || '',
-        avatar: profile.avatar || ''
+        avatar: profile.avatar || '',
+        website: profile.website || ''
       });
     }
   }, [profile]);
@@ -179,14 +181,6 @@ export default function ProfilePage() {
                 {profile?.username?.[0]?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
-            {isOwnProfile && (
-              <Button
-                size="icon"
-                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600"
-              >
-                <Camera className="w-3 h-3 text-white" />
-              </Button>
-            )}
           </div>
 
           {/* Stats */}
@@ -213,6 +207,16 @@ export default function ProfilePage() {
           <h2 className="font-semibold text-base">{profile?.username}</h2>
           {profile?.bio && (
             <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{profile.bio}</p>
+          )}
+          {profile?.website && (
+            <a 
+              href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 text-sm mt-1 block hover:underline"
+            >
+              {profile.website}
+            </a>
           )}
         </div>
 
@@ -339,33 +343,48 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username
-              </label>
-              <Input
-                value={editForm.username}
-                onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                placeholder="Enter username"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bio
-              </label>
-              <Textarea
-                value={editForm.bio}
-                onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                placeholder="Tell us about yourself..."
-                rows={3}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Avatar URL
+                Add Profile Picture
               </label>
               <Input
                 value={editForm.avatar}
                 onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
-                placeholder="Enter avatar URL"
+                placeholder="Enter profile picture URL"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <Input
+                value={editForm.username}
+                onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                placeholder="Enter your name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Bio ({editForm.bio.length}/150)
+              </label>
+              <Textarea
+                value={editForm.bio}
+                onChange={(e) => {
+                  if (e.target.value.length <= 150) {
+                    setEditForm({ ...editForm, bio: e.target.value });
+                  }
+                }}
+                placeholder="Tell us about yourself..."
+                rows={3}
+                maxLength={150}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Add Link
+              </label>
+              <Input
+                value={editForm.website}
+                onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                placeholder="Add a link (website, social media, etc.)"
               />
             </div>
             <div className="flex space-x-2">
