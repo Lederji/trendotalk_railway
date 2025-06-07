@@ -1653,6 +1653,9 @@ export class DatabaseStorage implements IStorage {
 
   async getUserPosts(userId: number): Promise<PostWithUser[]> {
     try {
+      // Clean up old videos before returning posts
+      await this.cleanupOldVideos();
+
       const result = await db
         .select({
           post: posts,
@@ -1677,6 +1680,51 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting user posts:', error);
       return [];
+    }
+  }
+
+  // Auto-delete videos after 72 hours except top 3 most viewed
+  async cleanupOldVideos(): Promise<void> {
+    try {
+      const seventyTwoHoursAgo = new Date();
+      seventyTwoHoursAgo.setHours(seventyTwoHoursAgo.getHours() - 72);
+
+      // Get top 3 most viewed videos
+      const topVideos = await db
+        .select({ id: posts.id })
+        .from(posts)
+        .where(sql`(${posts.video1Url} IS NOT NULL OR ${posts.video2Url} IS NOT NULL OR ${posts.video3Url} IS NOT NULL OR ${posts.videoUrl} IS NOT NULL)`)
+        .orderBy(desc(posts.viewsCount))
+        .limit(3);
+
+      const topVideoIds = topVideos.map(v => v.id);
+
+      // Delete old videos that are not in top 3
+      if (topVideoIds.length > 0) {
+        await db
+          .delete(posts)
+          .where(
+            and(
+              sql`${posts.createdAt} < ${seventyTwoHoursAgo}`,
+              sql`(${posts.video1Url} IS NOT NULL OR ${posts.video2Url} IS NOT NULL OR ${posts.video3Url} IS NOT NULL OR ${posts.videoUrl} IS NOT NULL)`,
+              sql`${posts.id} NOT IN (${topVideoIds.join(',')})`
+            )
+          );
+      } else {
+        // If no top videos yet, delete all old videos
+        await db
+          .delete(posts)
+          .where(
+            and(
+              sql`${posts.createdAt} < ${seventyTwoHoursAgo}`,
+              sql`(${posts.video1Url} IS NOT NULL OR ${posts.video2Url} IS NOT NULL OR ${posts.video3Url} IS NOT NULL OR ${posts.videoUrl} IS NOT NULL)`
+            )
+          );
+      }
+
+      console.log('Cleaned up old videos (older than 72 hours)');
+    } catch (error) {
+      console.error('Error cleaning up old videos:', error);
     }
   }
 
@@ -2089,6 +2137,48 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('Error getting user vibes:', error);
+      return [];
+    }
+  }
+
+  async getUserFollowers(userId: number): Promise<User[]> {
+    try {
+      const result = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          avatar: users.avatar,
+          bio: users.bio,
+        })
+        .from(follows)
+        .innerJoin(users, eq(follows.followerId, users.id))
+        .where(eq(follows.followingId, userId));
+      
+      return result;
+    } catch (error) {
+      console.error('Error getting user followers:', error);
+      return [];
+    }
+  }
+
+  async getUserFollowing(userId: number): Promise<User[]> {
+    try {
+      const result = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          avatar: users.avatar,
+          bio: users.bio,
+        })
+        .from(follows)
+        .innerJoin(users, eq(follows.followingId, users.id))
+        .where(eq(follows.followerId, userId));
+      
+      return result;
+    } catch (error) {
+      console.error('Error getting user following:', error);
       return [];
     }
   }
