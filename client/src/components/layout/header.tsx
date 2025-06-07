@@ -106,11 +106,11 @@ export function Header() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link href="/account-center" className="flex items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      Account Center
-                    </Link>
+                  <DropdownMenuItem onClick={() => {
+                    window.location.href = '/account-center';
+                  }}>
+                    <User className="mr-2 h-4 w-4" />
+                    Account Center
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={() => {
