@@ -23,7 +23,6 @@ export default function ProfilePage() {
     bio: '',
     displayName: '',
     avatar: '',
-    website: '',
     links: [] as { name: string; url: string }[]
   });
   const [uploading, setUploading] = useState(false);
@@ -201,7 +200,6 @@ export default function ProfilePage() {
         bio: profile.bio || '',
         displayName: profile.displayName || '',
         avatar: profile.avatar || '',
-        website: profile.website || '',
         links: links
       });
     }
@@ -266,45 +264,38 @@ export default function ProfilePage() {
 
         {/* Bio */}
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="font-semibold text-base">{profile?.displayName || profile?.username}</h2>
+          <div className="mb-2">
+            <h2 className="font-semibold text-base mb-3">{profile?.displayName || profile?.username}</h2>
             
             {/* Platform Links */}
-            {(() => {
-              try {
-                const links = profile?.links ? JSON.parse(profile.links) : [];
-                return links.slice(0, 3).map((link: any, index: number) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
-                      window.open(url, '_blank', 'noopener,noreferrer');
-                    }}
-                    className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
-                  >
-                    {link.name}
-                  </button>
-                ));
-              } catch (e) {
-                return null;
-              }
-            })()}
+            <div className="flex gap-2">
+              {(() => {
+                try {
+                  const links = profile?.links ? JSON.parse(profile.links) : [];
+                  return links.slice(0, 2).map((link: any, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }}
+                      className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
+                    >
+                      {link.name}
+                    </button>
+                  ));
+                } catch (e) {
+                  return null;
+                }
+              })()}
+            </div>
           </div>
           
           {profile?.bio && (
             <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{profile.bio}</p>
           )}
           
-          {profile?.website && (
-            <a 
-              href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 text-sm mt-1 block hover:underline"
-            >
-              {profile.website}
-            </a>
-          )}
+
         </div>
 
         {/* Action Buttons */}
@@ -535,7 +526,7 @@ export default function ProfilePage() {
               ))}
               
               {/* Add New Link Button */}
-              {editForm.links.length < 5 && (
+              {editForm.links.length < 2 && (
                 <Button
                   type="button"
                   variant="outline"
@@ -552,20 +543,9 @@ export default function ProfilePage() {
                 </Button>
               )}
               
-              {editForm.links.length >= 5 && (
-                <p className="text-sm text-gray-500">Maximum 5 links allowed</p>
+              {editForm.links.length >= 2 && (
+                <p className="text-sm text-gray-500">Maximum 2 links allowed</p>
               )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Website
-              </label>
-              <Input
-                value={editForm.website}
-                onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
-                placeholder="Add a link (website, social media, etc.)"
-              />
             </div>
             <div className="flex space-x-2">
               <Button
@@ -579,7 +559,9 @@ export default function ProfilePage() {
                 className="flex-1"
                 onClick={() => {
                   const formData = {
-                    ...editForm,
+                    bio: editForm.bio,
+                    displayName: editForm.displayName,
+                    avatar: editForm.avatar,
                     links: JSON.stringify(editForm.links.filter(link => link.name && link.url))
                   };
                   updateProfileMutation.mutate(formData);
