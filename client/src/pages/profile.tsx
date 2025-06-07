@@ -252,7 +252,10 @@ export default function ProfilePage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => {/* Account Center */}}>
+            <DropdownMenuItem onClick={() => {
+              console.log('Account Center clicked from profile');
+              setLocation('/account-center');
+            }}>
               <User className="mr-2 h-4 w-4" />
               <span>Account Center</span>
             </DropdownMenuItem>
