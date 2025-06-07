@@ -1023,6 +1023,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload file to chat (images, videos, documents)
+  app.post('/api/chats/:chatId/upload', authenticateUser, upload.single('file'), async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const { message } = req.body;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: 'File is required' });
+      }
+      
+      // Upload to Cloudinary
+      const cloudinaryUrl = await uploadToCloudinary(req.file);
+      
+      // Determine file type and create appropriate message
+      let messageContent = message || '';
+      const fileType = req.file.mimetype;
+      
+      if (fileType.startsWith('image/')) {
+        messageContent = `📷 ${messageContent || 'Shared a photo'}\n${cloudinaryUrl}`;
+      } else if (fileType.startsWith('video/')) {
+        messageContent = `🎥 ${messageContent || 'Shared a video'}\n${cloudinaryUrl}`;
+      } else {
+        messageContent = `📄 ${messageContent || 'Shared a document'}\n${cloudinaryUrl}`;
+      }
+      
+      // Send file message
+      const fileMessage = await storage.sendMessage(chatId, req.user.userId, messageContent);
+      res.json(fileMessage);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Upload voice message
   app.post('/api/chats/:chatId/voice', authenticateUser, upload.single('audio'), async (req: any, res: any) => {
     try {
@@ -1036,10 +1070,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const audioUrl = await uploadToCloudinary(req.file);
       
       // Send voice message
-      const voiceMessage = await storage.sendMessage(chatId, req.session.userId, `🎵 Voice message: ${audioUrl}`);
+      const voiceMessage = await storage.sendMessage(chatId, req.user.userId, `🎵 Voice message\n${audioUrl}`);
       res.json(voiceMessage);
     } catch (error) {
       console.error('Error uploading voice message:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Share location
+  app.post('/api/chats/:chatId/location', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const { latitude, longitude, address } = req.body;
+      
+      const locationMessage = `📍 ${address || 'Shared location'}\nLat: ${latitude}, Lng: ${longitude}`;
+      const message = await storage.sendMessage(chatId, req.user.userId, locationMessage);
+      res.json(message);
+    } catch (error) {
+      console.error('Error sharing location:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Share contact
+  app.post('/api/chats/:chatId/contact', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const { name, phone, email } = req.body;
+      
+      const contactMessage = `👤 Contact: ${name}\n📞 ${phone}\n📧 ${email || 'No email'}`;
+      const message = await storage.sendMessage(chatId, req.user.userId, contactMessage);
+      res.json(message);
+    } catch (error) {
+      console.error('Error sharing contact:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

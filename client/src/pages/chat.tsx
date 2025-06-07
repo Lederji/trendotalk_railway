@@ -177,6 +177,7 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      setShowAttachmentMenu(false);
     }
   };
 
@@ -184,7 +185,134 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      setShowAttachmentMenu(false);
     }
+  };
+
+  // Location sharing
+  const handleLocationShare = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=demo&limit=1`);
+            const data = await response.json();
+            const address = data.results[0]?.formatted || `${latitude}, ${longitude}`;
+            
+            const locationResponse = await fetch(`/api/chats/${chatId}/location`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+              },
+              body: JSON.stringify({ latitude, longitude, address })
+            });
+            
+            if (locationResponse.ok) {
+              queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
+              toast({
+                title: "Location shared",
+                description: "Your location has been shared successfully",
+              });
+            }
+          } catch (error) {
+            toast({
+              title: "Location share failed",
+              description: "Failed to share location",
+              variant: "destructive",
+            });
+          }
+        },
+        () => {
+          toast({
+            title: "Location access denied",
+            description: "Please allow location access to share your location",
+            variant: "destructive",
+          });
+        }
+      );
+    } else {
+      toast({
+        title: "Location not supported",
+        description: "Your browser doesn't support location sharing",
+        variant: "destructive",
+      });
+    }
+    setShowAttachmentMenu(false);
+  };
+
+  // Contact sharing
+  const handleContactShare = () => {
+    const name = prompt("Enter contact name:");
+    const phone = prompt("Enter contact phone:");
+    const email = prompt("Enter contact email (optional):");
+    
+    if (name && phone) {
+      fetch(`/api/chats/${chatId}/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        },
+        body: JSON.stringify({ name, phone, email })
+      }).then(response => {
+        if (response.ok) {
+          queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
+          toast({
+            title: "Contact shared",
+            description: "Contact has been shared successfully",
+          });
+        }
+      }).catch(() => {
+        toast({
+          title: "Contact share failed",
+          description: "Failed to share contact",
+          variant: "destructive",
+        });
+      });
+    }
+    setShowAttachmentMenu(false);
+  };
+
+  // Audio recording
+  const handleAudioRecord = () => {
+    if (!isRecording) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          const mediaRecorder = new MediaRecorder(stream);
+          mediaRecorderRef.current = mediaRecorder;
+          audioChunksRef.current = [];
+          
+          mediaRecorder.ondataavailable = (event) => {
+            audioChunksRef.current.push(event.data);
+          };
+          
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
+            uploadVoiceMessage(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
+          };
+          
+          mediaRecorder.start();
+          setIsRecording(true);
+          toast({
+            title: "Recording started",
+            description: "Tap again to stop and send",
+          });
+        })
+        .catch(() => {
+          toast({
+            title: "Microphone access denied",
+            description: "Please allow microphone access to record audio",
+            variant: "destructive",
+          });
+        });
+    } else {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+    }
+    setShowAttachmentMenu(false);
   };
 
   const handleVideoCall = () => {
@@ -300,7 +428,62 @@ export default function ChatPage() {
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
-                <p className="text-sm">{msg.message || msg.content}</p>
+                {(() => {
+                  const content = msg.message || msg.content || '';
+                  const lines = content.split('\n');
+                  
+                  // Check if it's a media message
+                  if (lines.length > 1 && lines[1].startsWith('http')) {
+                    const mediaUrl = lines[1];
+                    const description = lines[0];
+                    
+                    return (
+                      <div>
+                        <p className="text-sm mb-2">{description}</p>
+                        {description.includes('📷') && (
+                          <img 
+                            src={mediaUrl} 
+                            alt="Shared image" 
+                            className="max-w-full h-auto rounded-lg mb-2"
+                            loading="lazy"
+                          />
+                        )}
+                        {description.includes('🎥') && (
+                          <video 
+                            src={mediaUrl} 
+                            controls 
+                            className="max-w-full h-auto rounded-lg mb-2"
+                          />
+                        )}
+                        {description.includes('🎵') && (
+                          <audio 
+                            src={mediaUrl} 
+                            controls 
+                            className="w-full mb-2"
+                          />
+                        )}
+                        {description.includes('📄') && (
+                          <a 
+                            href={mediaUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className={`inline-block p-2 rounded border ${
+                              msg.senderId === user?.id 
+                                ? 'border-white/30 text-white hover:bg-white/10' 
+                                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            📄 View Document
+                          </a>
+                        )}
+                      </div>
+                    );
+                  }
+                  
+                  // Regular text message
+                  return <p className="text-sm whitespace-pre-wrap">{content}</p>;
+                })()}
+                
                 <p className={`text-xs mt-1 ${
                   msg.senderId === user?.id ? 'text-white/70' : 'text-gray-500'
                 }`}>
@@ -413,6 +596,7 @@ export default function ChatPage() {
                     variant="ghost"
                     size="sm"
                     className="flex flex-col items-center p-2 hover:bg-green-50"
+                    onClick={handleLocationShare}
                   >
                     <MapPin className="w-5 h-5 text-green-500 mb-1" />
                     <span className="text-xs">Location</span>
@@ -423,6 +607,7 @@ export default function ChatPage() {
                     variant="ghost"
                     size="sm"
                     className="flex flex-col items-center p-2 hover:bg-cyan-50"
+                    onClick={handleContactShare}
                   >
                     <User className="w-5 h-5 text-cyan-500 mb-1" />
                     <span className="text-xs">Contact</span>
@@ -432,10 +617,11 @@ export default function ChatPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex flex-col items-center p-2 hover:bg-orange-50"
+                    className={`flex flex-col items-center p-2 hover:bg-orange-50 ${isRecording ? 'bg-red-100' : ''}`}
+                    onClick={handleAudioRecord}
                   >
-                    <Headphones className="w-5 h-5 text-orange-500 mb-1" />
-                    <span className="text-xs">Audio</span>
+                    <Headphones className={`w-5 h-5 mb-1 ${isRecording ? 'text-red-500' : 'text-orange-500'}`} />
+                    <span className="text-xs">{isRecording ? 'Stop' : 'Audio'}</span>
                   </Button>
                   
                   {/* Camera */}
@@ -443,6 +629,10 @@ export default function ChatPage() {
                     variant="ghost"
                     size="sm"
                     className="flex flex-col items-center p-2 hover:bg-pink-50"
+                    onClick={() => {
+                      imageInputRef.current?.click();
+                      setShowAttachmentMenu(false);
+                    }}
                   >
                     <Camera className="w-5 h-5 text-pink-500 mb-1" />
                     <span className="text-xs">Camera</span>
@@ -492,7 +682,7 @@ export default function ChatPage() {
         <input
           ref={imageInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           className="hidden"
           onChange={handleImageSelect}
         />
