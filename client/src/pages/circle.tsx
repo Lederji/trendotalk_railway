@@ -24,7 +24,7 @@ export default function Circle() {
     refetchInterval: 5000,
   });
 
-  const { data: searchResults = [] } = useQuery({
+  const { data: searchResults = [], refetch: refetchSearch } = useQuery({
     queryKey: ["/api/users/search", searchQuery],
     queryFn: async () => {
       if (!searchQuery || searchQuery.length < 2) return [];
@@ -42,6 +42,8 @@ export default function Circle() {
       return data;
     },
     enabled: searchQuery.length >= 2,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: chats = [] } = useQuery({
@@ -227,29 +229,39 @@ export default function Circle() {
                 {Array.isArray(chats) && chats.filter((chat: any, index: number, self: any[]) => 
                   index === self.findIndex((c: any) => c.user?.id === chat.user?.id)
                 ).map((chat: any) => (
-                  <Link key={chat.id} href={`/chat/${chat.id}`} className="block">
-                    <div className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={chat.user?.avatar} />
-                        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
-                          {chat.user?.username?.charAt(3)?.toUpperCase() || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
+                  <div key={chat.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage src={chat.user?.avatar} />
+                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
+                        {chat.user?.username?.charAt(3)?.toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Link href={`/chat/${chat.id}`} className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
                         <p className="font-medium text-gray-900 dark:text-gray-100">
                           {chat.user?.username}
                         </p>
-                        {chat.lastMessage && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                            {chat.lastMessage.content}
-                          </p>
-                        )}
                       </div>
-                      <div className="text-xs text-gray-400">
-                        {chat.lastMessage && formatDate(chat.lastMessage.createdAt)}
-                      </div>
+                      {chat.lastMessage && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {chat.lastMessage.content}
+                        </p>
+                      )}
+                    </Link>
+                    <div className="flex flex-col items-end gap-1">
+                      <Link 
+                        href={`/users/${chat.user?.username}`}
+                        className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900"
+                      >
+                        View Profile
+                      </Link>
+                      {chat.lastMessage && (
+                        <div className="text-xs text-gray-400">
+                          {formatDate(chat.lastMessage.createdAt)}
+                        </div>
+                      )}
                     </div>
-                  </Link>
+                  </div>
                 ))}
                 {(!Array.isArray(chats) || chats.length === 0) && (
                   <div className="text-center py-8 text-gray-500">
@@ -297,48 +309,56 @@ export default function Circle() {
                   </div>
                 ))}
 
-                {/* Search Results - Show when user is typing */}
+                {/* Search Results */}
                 {searchQuery && searchQuery.length >= 2 && (
-                  <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border">
-                    <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
-                      Search Results for "{searchQuery}" ({Array.isArray(searchResults) ? searchResults.length : 0} found)
+                  <div className="mt-6 p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border border-pink-200 dark:border-gray-600">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+                      <Search className="w-4 h-4 mr-2 text-pink-500" />
+                      Search Results for "{searchQuery}"
+                      <span className="ml-2 px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-300 text-xs rounded-full">
+                        {searchResults ? searchResults.length : 0}
+                      </span>
                     </h3>
-                    {Array.isArray(searchResults) && searchResults.length > 0 ? (
-                      searchResults
-                        .filter((searchUser: any) => searchUser.id !== user?.id)
-                        .map((searchUser: any) => (
-                          <div key={searchUser.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-3">
-                            <Avatar className="w-12 h-12">
-                              <AvatarImage src={searchUser.avatar} />
-                              <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
-                                {searchUser.username?.charAt(0)?.toUpperCase() || "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-900 dark:text-gray-100">
-                                {searchUser.username}
-                              </p>
-                              {searchUser.bio && (
-                                <p className="text-sm text-gray-500">{searchUser.bio}</p>
-                              )}
+                    
+                    {searchResults && searchResults.length > 0 ? (
+                      <div className="space-y-3">
+                        {searchResults
+                          .filter((searchUser: any) => searchUser.id !== user?.id)
+                          .map((searchUser: any) => (
+                            <div key={searchUser.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-600 hover:shadow-md transition-shadow">
+                              <Avatar className="w-12 h-12 border-2 border-pink-200 dark:border-pink-700">
+                                <AvatarImage src={searchUser.avatar} />
+                                <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white font-semibold">
+                                  {searchUser.username?.charAt(0)?.toUpperCase() || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                  {searchUser.username}
+                                </p>
+                                {searchUser.bio && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">{searchUser.bio}</p>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
+                                disabled={sendFriendRequestMutation.isPending}
+                                className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                              >
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Add to Circle
+                              </Button>
                             </div>
-                            <Button
-                              size="sm"
-                              onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
-                              disabled={sendFriendRequestMutation.isPending}
-                              className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white transition-all duration-200 shadow-lg"
-                            >
-                              <UserPlus className="w-4 h-4 mr-1" />
-                              Add to Circle
-                            </Button>
-                          </div>
-                        ))
-                    ) : (
-                      <div className="text-center py-4 text-gray-500">
-                        <p>No users found for "{searchQuery}"</p>
-                        <p className="text-xs mt-1">Search data: {JSON.stringify(searchResults)}</p>
+                          ))}
                       </div>
-                    )}
+                    ) : searchQuery.length >= 2 ? (
+                      <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                        <UserPlus className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p className="font-medium">No users found</p>
+                        <p className="text-sm">Try searching with different keywords</p>
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
