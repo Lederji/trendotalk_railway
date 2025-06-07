@@ -22,9 +22,10 @@ type VibeFormData = z.infer<typeof vibeSchema>;
 
 interface VibeUploadProps {
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function VibeUpload({ onClose }: VibeUploadProps) {
+export function VibeUpload({ onClose, onSuccess }: VibeUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
@@ -69,6 +70,7 @@ export function VibeUpload({ onClose }: VibeUploadProps) {
       reset();
       setSelectedFile(null);
       setPreviewUrl(null);
+      onSuccess?.();
       onClose();
     },
     onError: (error: any) => {
