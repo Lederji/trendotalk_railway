@@ -141,69 +141,49 @@ export default function Circle() {
 
           {/* Search Results */}
           {searchQuery.length >= 2 && (
-            <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 dark:from-purple-800/30 dark:via-pink-800/30 dark:to-blue-800/30 rounded-2xl border-2 border-purple-200 dark:border-purple-600 shadow-xl">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center">
-                  <Search className="w-6 h-6 mr-3 text-purple-500" />
-                  Search Results for "{searchQuery}"
-                </h3>
-                <div className="flex items-center gap-3">
-                  <span className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold rounded-full shadow-md">
-                    {searchResults?.length || 0} users found
-                  </span>
-                  {isSearching && (
-                    <div className="animate-spin w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full"></div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="space-y-5 min-h-[120px]">
-                {/* Search Results List */}
-                {searchResults && searchResults.map((user: any, index: number) => (
-                  <div key={user.id || index} className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-600 shadow-md">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-12 h-12 border-2 border-purple-300">
-                        <AvatarImage src={user.avatar} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white font-bold">
-                          {user.username?.charAt(0)?.toUpperCase() || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <Link href={`/users/${user.username}`}>
-                          <h3 className="font-bold text-gray-900 dark:text-gray-100 hover:text-purple-600 dark:hover:text-purple-400 cursor-pointer transition-colors duration-200">
-                            {user.username}
-                          </h3>
-                        </Link>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.bio || "No bio available"}</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => sendFriendRequestMutation.mutate(user.id)}
-                        disabled={sendFriendRequestMutation.isPending}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold shadow-lg"
-                      >
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add to Circle
-                      </Button>
+            <div className="mb-8 space-y-3">
+              {/* Search Results List */}
+              {searchResults && searchResults.map((user: any, index: number) => (
+                <div key={user.id || index} className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-600 shadow-md">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="w-12 h-12 border-2 border-purple-300">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white font-bold">
+                        {user.username?.charAt(0)?.toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <Link href={`/users/${user.username}`}>
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100 hover:text-purple-600 dark:hover:text-purple-400 cursor-pointer transition-colors duration-200">
+                          {user.username}
+                        </h3>
+                      </Link>
                     </div>
+                    <Button
+                      size="sm"
+                      onClick={() => sendFriendRequestMutation.mutate(user.id)}
+                      disabled={sendFriendRequestMutation.isPending}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold shadow-lg"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add to Circle
+                    </Button>
                   </div>
-                ))}
+                </div>
+              ))}
 
-                {(!searchResults || searchResults.length === 0) && !isSearching && (
-                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                    <UserPlus className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                    <h4 className="font-bold text-xl mb-2">No users found for "{searchQuery}"</h4>
-                    <p className="text-sm">Try searching with different keywords</p>
-                  </div>
-                )}
+              {(!searchResults || searchResults.length === 0) && !isSearching && (
+                <div className="text-center py-8 text-red-500 dark:text-red-400">
+                  <h4 className="font-bold text-lg">Incorrect username</h4>
+                </div>
+              )}
 
-                {isSearching && (
-                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                    <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <h4 className="font-bold text-xl">Searching users...</h4>
-                  </div>
-                )}
-              </div>
+              {isSearching && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p>Searching...</p>
+                </div>
+              )}
             </div>
           )}
 
