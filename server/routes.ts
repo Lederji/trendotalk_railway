@@ -1384,7 +1384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Clear OTP
-      delete global[otpKey];
+      delete (global as any)[otpKey];
       
       res.json({ message: 'Mobile verified successfully' });
     } catch (error) {
@@ -1430,7 +1430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check stored OTP
       const otpKey = `email_otp_${req.user.userId}`;
-      const storedData = global[otpKey];
+      const storedData = (global as any)[otpKey];
       
       if (!storedData || storedData.expires < Date.now()) {
         return res.status(400).json({ message: 'OTP expired' });
@@ -1447,7 +1447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Clear OTP
-      delete global[otpKey];
+      delete (global as any)[otpKey];
       
       res.json({ message: 'Email verified successfully' });
     } catch (error) {
