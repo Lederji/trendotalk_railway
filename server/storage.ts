@@ -1499,11 +1499,13 @@ export class DatabaseStorage implements IStorage {
 
   async getUser(id: number): Promise<User | undefined> {
     try {
+      console.log(`Looking up user with id: ${id}`);
       const [user] = await db.select().from(users).where(eq(users.id, id));
       if (!user) {
-        console.log(`User with id ${id} not found`);
+        console.log(`User with id ${id} not found in database`);
         return undefined;
       }
+      console.log(`Found user: ${user.username}, followers: ${user.followersCount}, following: ${user.followingCount}`);
       return user;
     } catch (error) {
       console.error('Error getting user:', error);
