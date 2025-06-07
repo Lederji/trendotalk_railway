@@ -14,6 +14,7 @@ import SearchPage from "@/pages/search";
 import ChatPage from "@/pages/chat";
 import ChatNew from "@/pages/chat-new";
 import AdminDashboard from "@/pages/admin-dashboard";
+import PostDetail from "@/pages/PostDetail";
 import NotFound from "@/pages/not-found";
 
 function Router() {

@@ -926,6 +926,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user followers list
+  app.get('/api/users/:userId/followers', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const followers = await storage.getUserFollowers(userId);
+      res.json(followers);
+    } catch (error) {
+      console.error('Error getting user followers:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get user following list
+  app.get('/api/users/:userId/following-list', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const following = await storage.getUserFollowing(userId);
+      res.json(following);
+    } catch (error) {
+      console.error('Error getting user following:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Check if following user
   app.get('/api/users/:userId/following', authenticateUser, async (req: any, res: any) => {
     try {
@@ -934,6 +958,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(isFollowing);
     } catch (error) {
       console.error('Error checking follow status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get post detail
+  app.get('/api/posts/:postId', authenticateUser, async (req: any, res: any) => {
+    try {
+      const postId = Number(req.params.postId);
+      const post = await storage.getPostById(postId);
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+      res.json(post);
+    } catch (error) {
+      console.error('Error getting post detail:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

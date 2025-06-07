@@ -6,7 +6,7 @@ import {
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { eq, and, desc, sql, notInArray, or, ilike, gt } from "drizzle-orm";
+import { eq, and, desc, sql, notInArray, or, ilike, gt, inArray, not } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -1707,7 +1707,7 @@ export class DatabaseStorage implements IStorage {
             and(
               sql`${posts.createdAt} < ${seventyTwoHoursAgo}`,
               sql`(${posts.video1Url} IS NOT NULL OR ${posts.video2Url} IS NOT NULL OR ${posts.video3Url} IS NOT NULL OR ${posts.videoUrl} IS NOT NULL)`,
-              sql`${posts.id} NOT IN (${topVideoIds.join(',')})`
+              notInArray(posts.id, topVideoIds)
             )
           );
       } else {
