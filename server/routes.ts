@@ -1477,7 +1477,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
           await sgMail.send({
             to: email,
-            from: 'noreply@trendotalk.com',
+            from: 'pakiilena@gmail.com', // Using your verified email address
             subject: 'TrendoTalk - Verify Your Email Address',
             html: emailTemplate,
             text: `TrendoTalk Email Verification\n\nYour verification code: ${otp}\n\nValid for 10 minutes.\n\nTrendoTalk - Connect, Share, Trend`
