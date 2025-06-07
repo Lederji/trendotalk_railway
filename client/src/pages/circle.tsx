@@ -169,30 +169,22 @@ export default function Circle() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 dark:text-gray-100">{user.username}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.bio || "No bio available"}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
-                          <span>{user.followersCount || 0} followers</span>
-                          <span>{user.followingCount || 0} following</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Link 
-                          href={`/users/${user.username}`}
-                          className="px-3 py-2 text-sm font-semibold text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-all duration-200 border border-purple-200"
-                        >
-                          View Profile
+                        <Link href={`/users/${user.username}`}>
+                          <h3 className="font-bold text-gray-900 dark:text-gray-100 hover:text-purple-600 dark:hover:text-purple-400 cursor-pointer transition-colors duration-200">
+                            {user.username}
+                          </h3>
                         </Link>
-                        <Button
-                          size="sm"
-                          onClick={() => sendFriendRequestMutation.mutate(user.id)}
-                          disabled={sendFriendRequestMutation.isPending}
-                          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold shadow-lg"
-                        >
-                          <UserPlus className="w-4 h-4 mr-1" />
-                          Add
-                        </Button>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.bio || "No bio available"}</p>
                       </div>
+                      <Button
+                        size="sm"
+                        onClick={() => sendFriendRequestMutation.mutate(user.id)}
+                        disabled={sendFriendRequestMutation.isPending}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold shadow-lg"
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Add to Circle
+                      </Button>
                     </div>
                   </div>
                 ))}
