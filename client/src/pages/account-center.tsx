@@ -97,16 +97,21 @@ export default function AccountCenter() {
   // Send email OTP
   const sendEmailOtpMutation = useMutation({
     mutationFn: async (email: string) => {
-      return apiRequest('/api/account/send-email-otp', 'POST', { email });
+      console.log('Sending email OTP for:', email);
+      const result = await apiRequest('/api/account/send-email-otp', 'POST', { email });
+      console.log('Email OTP result:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Email OTP sent successfully:', data);
       setShowEmailOtp(true);
       toast({
         title: "OTP Sent",
-        description: "Verification code sent to your email",
+        description: "Verification code sent to your email. Check the console for the OTP code.",
       });
     },
     onError: (error: any) => {
+      console.error('Email OTP error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to send OTP",
@@ -118,9 +123,13 @@ export default function AccountCenter() {
   // Verify email OTP
   const verifyEmailOtpMutation = useMutation({
     mutationFn: async ({ email, otp }: { email: string; otp: string }) => {
-      return apiRequest('/api/account/verify-email-otp', 'POST', { email, otp });
+      console.log('Verifying email OTP for:', email, 'with OTP:', otp);
+      const result = await apiRequest('/api/account/verify-email-otp', 'POST', { email, otp });
+      console.log('Email verification result:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Email verified successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/account/verification'] });
       setShowEmailOtp(false);
       setEmailOtp('');
@@ -131,6 +140,7 @@ export default function AccountCenter() {
       });
     },
     onError: (error: any) => {
+      console.error('Email verification error:', error);
       toast({
         title: "Verification Failed",
         description: error.message || "Invalid OTP",
