@@ -881,11 +881,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users/:userId', authenticateUser, async (req: any, res: any) => {
     try {
       const userId = Number(req.params.userId);
+      console.log('Profile route called for userId:', userId);
       if (isNaN(userId)) {
         return res.status(400).json({ message: 'Invalid user ID' });
       }
       
       const user = await storage.getUser(userId);
+      console.log('User found:', user ? 'Yes' : 'No', user?.username);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
