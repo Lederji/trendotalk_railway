@@ -238,7 +238,7 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center">
-          <h1 className="font-semibold text-lg text-left">{profile?.username}</h1>
+          <h1 className="font-semibold text-lg text-left">{displayProfile?.username}</h1>
         </div>
         
         <DropdownMenu>
@@ -294,9 +294,9 @@ export default function ProfilePage() {
           {/* Profile Picture */}
           <div className="relative">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={profile?.avatar} alt={profile?.username} />
+              <AvatarImage src={displayProfile?.avatar} alt={displayProfile?.username} />
               <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xl">
-                {profile?.username?.[0]?.toUpperCase() || 'U'}
+                {displayProfile?.username?.[0]?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
           </div>
@@ -312,14 +312,14 @@ export default function ProfilePage() {
                 onClick={() => setShowFollowersList(true)}
                 className="hover:bg-gray-50 rounded-lg p-2 transition-colors"
               >
-                <div className="font-semibold text-lg">{profile?.followersCount || 0}</div>
+                <div className="font-semibold text-lg">{displayProfile?.followersCount || 0}</div>
                 <div className="text-gray-500 text-sm">Followers</div>
               </button>
               <button
                 onClick={() => setShowFollowingList(true)}
                 className="hover:bg-gray-50 rounded-lg p-2 transition-colors"
               >
-                <div className="font-semibold text-lg">{profile?.followingCount || 0}</div>
+                <div className="font-semibold text-lg">{displayProfile?.followingCount || 0}</div>
                 <div className="text-gray-500 text-sm">Following</div>
               </button>
             </div>
@@ -330,13 +330,13 @@ export default function ProfilePage() {
         <div className="mb-4">
           <div className="mb-2">
             <div className="flex items-center gap-4 mb-2">
-              <h2 className="font-semibold text-base">{profile?.displayName || profile?.username}</h2>
+              <h2 className="font-semibold text-base">{displayProfile?.displayName || displayProfile?.username}</h2>
               
               {/* Platform Links */}
               <div className="flex gap-2">
                 {(() => {
                   try {
-                    const links = profile?.links ? JSON.parse(profile.links) : [];
+                    const links = displayProfile?.links ? JSON.parse(displayProfile.links) : [];
                     return links.slice(0, 2).map((link: any, index: number) => (
                       <button
                         key={index}
@@ -357,8 +357,8 @@ export default function ProfilePage() {
             </div>
           </div>
           
-          {profile?.bio && (
-            <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{profile.bio}</p>
+          {displayProfile?.bio && (
+            <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{displayProfile.bio}</p>
           )}
           
 

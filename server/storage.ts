@@ -1743,12 +1743,11 @@ export class DatabaseStorage implements IStorage {
       if (oldVideos.length > 3) {
         const videosToDelete = oldVideos.slice(3);
         for (const video of videosToDelete) {
-          // Delete related notifications first to avoid foreign key constraint
+          // Delete all related data first to avoid foreign key constraints
           await db.delete(notifications).where(eq(notifications.postId, video.id));
-          // Delete related comments
           await db.delete(comments).where(eq(comments.postId, video.id));
-          // Delete related likes
           await db.delete(likes).where(eq(likes.postId, video.id));
+          await db.execute(`DELETE FROM votes WHERE post_id = ${video.id}`);
           // Now delete the post
           await db.delete(posts).where(eq(posts.id, video.id));
         }
