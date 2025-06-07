@@ -8,7 +8,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus } from "lucide-react";
+import { Navigation } from "@/components/layout/navigation";
+import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
@@ -154,28 +155,15 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLocation("/")}
-            className="rounded-full"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="font-semibold text-lg">{profile?.username}</h1>
-        </div>
+        <h1 className="font-semibold text-lg">{profile?.username}</h1>
         
-        {isOwnProfile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowEditDialog(true)}
-            className="rounded-full"
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
       </div>
 
       {/* Profile Header */}
@@ -229,14 +217,23 @@ export default function ProfilePage() {
         {/* Action Buttons */}
         <div className="flex space-x-2">
           {isOwnProfile ? (
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setShowEditDialog(true)}
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Profile
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowEditDialog(true)}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Profile
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                My CV
+              </Button>
+            </>
           ) : (
             <>
               <Button
@@ -388,6 +385,9 @@ export default function ProfilePage() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Bottom Navigation */}
+      <Navigation />
     </div>
   );
 }
