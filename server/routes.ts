@@ -1536,6 +1536,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     }
   });
 
+  // Get CV data
+  app.get('/api/cv', authenticateUser, async (req: any, res: any) => {
+    try {
+      const cvData = await storage.getUserCV(req.user.userId);
+      res.json(cvData);
+    } catch (error) {
+      console.error('Error getting CV:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Save CV data
+  app.post('/api/cv', authenticateUser, async (req: any, res: any) => {
+    try {
+      const cvData = req.body;
+      const savedCV = await storage.saveUserCV(req.user.userId, cvData);
+      res.json(savedCV);
+    } catch (error) {
+      console.error('Error saving CV:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -391,6 +391,7 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 className="flex-1 text-xs px-1 py-2 min-w-0"
+                onClick={() => setLocation('/cv')}
               >
                 <FileText className="w-3 h-3 mr-1" />
                 <span className="truncate">CV</span>

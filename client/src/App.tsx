@@ -17,6 +17,7 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import PostDetail from "@/pages/PostDetail";
 import NotFound from "@/pages/not-found";
 import AccountCenter from "@/pages/account-center";
+import CVPage from "@/pages/cv";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/post/:postId" component={PostDetail} />
       <Route path="/search" component={SearchPage} />
       <Route path="/account-center" component={AccountCenter} />
+      <Route path="/cv" component={CVPage} />
       <Route path="/auth" component={Auth} />
       <Route path="/login" component={Auth} />
       <Route path="/admin" component={AdminDashboard} />
