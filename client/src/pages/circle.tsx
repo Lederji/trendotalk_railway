@@ -13,6 +13,7 @@ import { VibeUpload } from "@/components/vibe/vibe-upload";
 
 export default function Circle() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery2, setSearchQuery2] = useState("");
   const [activeTab, setActiveTab] = useState("chats");
   const [showVibeUpload, setShowVibeUpload] = useState(false);
   const { user } = useAuth();
@@ -42,6 +43,27 @@ export default function Circle() {
       return Array.isArray(data) ? data : [];
     },
     enabled: searchQuery.length >= 2,
+    staleTime: 30000,
+  });
+
+  const { data: searchResults2 = [], isLoading: isSearching2 } = useQuery({
+    queryKey: ["/api/users/search2", searchQuery2],
+    queryFn: async () => {
+      if (!searchQuery2 || searchQuery2.length < 2) return [];
+      console.log("Second search bar searching for:", searchQuery2);
+      
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery2)}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error("Search failed");
+      const data = await response.json();
+      console.log("Second search bar results:", data);
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: searchQuery2.length >= 2,
     staleTime: 30000,
   });
 
@@ -273,9 +295,30 @@ export default function Circle() {
             )}
 
             {activeTab === "requests" && (
-              <div className="p-4 space-y-3">
-                {Array.isArray(friendRequests) && friendRequests.map((request: any) => (
-                  <div key={request.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="p-4 space-y-4">
+                {/* Search Input Fields */}
+                <div className="space-y-3">
+                  <Input
+                    type="text"
+                    placeholder="Search users..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                  />
+                  
+                  <Input
+                    type="text"
+                    placeholder="Alternative search..."
+                    value={searchQuery2}
+                    onChange={(e) => setSearchQuery2(e.target.value)}
+                    className="w-full px-4 py-3 border border-purple-300 dark:border-purple-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 text-gray-900 dark:text-gray-100 placeholder-purple-500 dark:placeholder-purple-400"
+                  />
+                </div>
+
+                {/* Friend Requests */}
+                <div className="space-y-3">
+                  {Array.isArray(friendRequests) && friendRequests.map((request: any) => (
+                    <div key={request.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <Avatar className="w-12 h-12">
                       <AvatarImage src={request.user?.avatar} />
                       <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
@@ -305,8 +348,9 @@ export default function Circle() {
                         Decline
                       </Button>
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
 
                 {/* Search Results */}
                 {searchQuery.length >= 2 && (
@@ -391,7 +435,90 @@ export default function Circle() {
                   </div>
                 )}
 
-                {(!Array.isArray(friendRequests) || friendRequests.length === 0) && !searchQuery && (
+                {/* Second Search Results */}
+                {searchQuery2.length >= 2 && (
+                  <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-800 dark:to-indigo-700 rounded-xl border border-blue-200 dark:border-blue-600 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center">
+                        <Search className="w-5 h-5 mr-3 text-blue-500" />
+                        Alternative Search for "{searchQuery2}"
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-blue-500 text-white text-sm font-medium rounded-full">
+                          {searchResults2.length} users found
+                        </span>
+                        {isSearching2 && (
+                          <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 min-h-[100px]">
+                      {searchResults2.length > 0 ? (
+                        searchResults2
+                          .filter((searchUser: any) => searchUser.id !== user?.id)
+                          .map((searchUser: any) => (
+                            <div key={searchUser.id} className="flex items-center gap-4 p-5 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-600 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+                              <Avatar className="w-16 h-16 border-3 border-blue-300 dark:border-blue-600">
+                                <AvatarImage src={searchUser.avatar} />
+                                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-xl">
+                                  {searchUser.username?.charAt(0)?.toUpperCase() || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-1">
+                                  {searchUser.username}
+                                </h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                  {searchUser.bio || "No bio available"}
+                                </p>
+                                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+                                  <span className="flex items-center gap-1">
+                                    <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                    {searchUser.followersCount} followers
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <span className="w-2 h-2 bg-indigo-400 rounded-full"></span>
+                                    {searchUser.followingCount} following
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-3">
+                                <Link 
+                                  href={`/users/${searchUser.username}`}
+                                  className="px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 rounded-lg transition-all duration-200 text-center border border-blue-200 dark:border-blue-700"
+                                >
+                                  View Profile
+                                </Link>
+                                <Button
+                                  size="sm"
+                                  onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
+                                  disabled={sendFriendRequestMutation.isPending}
+                                  className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 text-white font-semibold px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                                >
+                                  <UserPlus className="w-4 h-4 mr-1" />
+                                  Add to Circle
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                      ) : !isSearching2 ? (
+                        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                          <UserPlus className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                          <h4 className="font-bold text-xl mb-2">No users found</h4>
+                          <p className="text-sm">Try searching with different keywords</p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                          <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                          <h4 className="font-bold text-xl">Searching users...</h4>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {(!Array.isArray(friendRequests) || friendRequests.length === 0) && !searchQuery && !searchQuery2 && (
                   <div className="text-center py-8 text-gray-500">
                     <UserPlus className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p>No friend requests</p>
