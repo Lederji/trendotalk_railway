@@ -37,31 +37,16 @@ export default function AccountCenter() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Redirect to login if not authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-md mx-auto text-center">
-            <p className="text-lg text-muted-foreground">Please log in to access Account Center</p>
-            <Link href="/auth">
-              <Button className="mt-4">Go to Login</Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Fetch account status
   const { data: accountStatus, isLoading: statusLoading } = useQuery<AccountStatus>({
     queryKey: ['/api/account/status'],
+    enabled: !!user,
   });
 
   // Fetch verification data
   const { data: verificationData, isLoading: verificationLoading } = useQuery<VerificationData>({
     queryKey: ['/api/account/verification'],
+    enabled: !!user,
   });
 
   // Send mobile OTP

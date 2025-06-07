@@ -881,10 +881,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user's posts
       const posts = await storage.getUserPosts(userId);
       
+      // Calculate follower counts excluding admin users
+      const followers = await storage.getUserFollowers(userId);
+      const following = await storage.getUserFollowing(userId);
+      
       // Remove sensitive information and add computed fields
       const { password, ...userProfile } = user;
       res.json({
         ...userProfile,
+        followersCount: followers.length,
+        followingCount: following.length,
         isFollowing,
         posts
       });

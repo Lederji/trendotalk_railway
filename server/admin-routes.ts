@@ -40,18 +40,21 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      const todaySignups = users.filter(user => 
+      // Filter out admin users from public stats
+      const nonAdminUsers = users.filter(user => !user.isAdmin);
+      
+      const todaySignups = nonAdminUsers.filter(user => 
         new Date(user.createdAt) >= today
       ).length;
 
-      const activeUsers = users.filter(user => {
+      const activeUsers = nonAdminUsers.filter(user => {
         const lastActive = user.lastActive || user.createdAt;
         const timeDiff = Date.now() - new Date(lastActive).getTime();
         return timeDiff < 30 * 60 * 1000; // 30 minutes
       }).length;
 
       const stats = {
-        totalUsers: users.length,
+        totalUsers: nonAdminUsers.length,
         totalPosts: posts.length,
         totalComments: 0, // Will implement later
         activeUsers,
