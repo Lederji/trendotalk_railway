@@ -454,61 +454,48 @@ export default function Circle() {
                     </div>
                     
                     <div className="space-y-5 min-h-[120px]">
-                      {searchResults.length > 0 ? (
-                        searchResults
-                          .filter((searchUser: any) => searchUser.id !== user?.id)
-                          .map((searchUser: any) => (
-                            <div key={searchUser.id} className="flex items-center gap-5 p-6 bg-white dark:bg-gray-800/80 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-600 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm">
-                              <Avatar className="w-20 h-20 border-4 border-purple-300 dark:border-purple-600 shadow-lg">
-                                <AvatarImage src={searchUser.avatar} />
-                                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white font-bold text-2xl">
-                                  {searchUser.username?.charAt(0)?.toUpperCase() || "?"}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-gray-900 dark:text-gray-100 text-xl mb-2">
-                                  {searchUser.username}
-                                </h4>
-                                <p className="text-base text-gray-600 dark:text-gray-400 mb-3">
-                                  {searchUser.bio || "No bio available"}
-                                </p>
-                                <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-500">
-                                  <span className="flex items-center gap-2">
-                                    <span className="w-3 h-3 bg-purple-400 rounded-full"></span>
-                                    {searchUser.followersCount || 0} followers
-                                  </span>
-                                  <span className="flex items-center gap-2">
-                                    <span className="w-3 h-3 bg-pink-400 rounded-full"></span>
-                                    {searchUser.followingCount || 0} following
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-3">
-                                <Link 
-                                  href={`/users/${searchUser.username}`}
-                                  className="px-6 py-3 text-base font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/40 rounded-xl transition-all duration-200 text-center border-2 border-purple-200 dark:border-purple-700 shadow-md hover:shadow-lg"
-                                >
-                                  View Profile
-                                </Link>
-                                <Button
-                                  size="lg"
-                                  onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
-                                  disabled={sendFriendRequestMutation.isPending}
-                                  className="bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:via-pink-600 hover:to-blue-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-base"
-                                >
-                                  <UserPlus className="w-5 h-5 mr-2" />
-                                  Add to Circle
-                                </Button>
-                              </div>
-                            </div>
-                          ))
-                      ) : !isSearching ? (
+                      {/* Force render test */}
+                      {searchResults && searchResults.length > 0 && (
+                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <h4 className="font-bold text-green-800">✅ Search Results Found!</h4>
+                          <p className="text-green-600">Found {searchResults.length} users</p>
+                        </div>
+                      )}
+                      
+                      {/* Simple list test */}
+                      {searchResults && searchResults.map((user: any, index: number) => (
+                        <div key={user.id || index} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h3 className="font-bold text-blue-800">{user.username}</h3>
+                          <p className="text-blue-600">ID: {user.id}</p>
+                          <p className="text-blue-600">Bio: {user.bio || "No bio"}</p>
+                          <div className="mt-2 flex gap-2">
+                            <Link 
+                              href={`/users/${user.username}`}
+                              className="px-3 py-1 bg-blue-500 text-white rounded"
+                            >
+                              View Profile
+                            </Link>
+                            <Button
+                              size="sm"
+                              onClick={() => sendFriendRequestMutation.mutate(user.id)}
+                              disabled={sendFriendRequestMutation.isPending}
+                              className="bg-green-500 hover:bg-green-600 text-white"
+                            >
+                              Add to Circle
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {(!searchResults || searchResults.length === 0) && !isSearching && (
                         <div className="text-center py-16 text-gray-500 dark:text-gray-400">
                           <UserPlus className="w-20 h-20 mx-auto mb-6 text-gray-300" />
-                          <h4 className="font-bold text-2xl mb-3">No users found</h4>
+                          <h4 className="font-bold text-2xl mb-3">No users found for "{searchQuery}"</h4>
                           <p className="text-lg">Try searching with different keywords</p>
                         </div>
-                      ) : (
+                      )}
+
+                      {isSearching && (
                         <div className="text-center py-16 text-gray-500 dark:text-gray-400">
                           <div className="animate-spin w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-6"></div>
                           <h4 className="font-bold text-2xl">Searching users...</h4>
