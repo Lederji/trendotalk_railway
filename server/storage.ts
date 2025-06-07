@@ -3627,6 +3627,29 @@ class HybridStorage extends DatabaseStorage {
       throw error;
     }
   }
+
+  // Notification methods for DatabaseStorage
+  async getUnreadNotificationCount(userId: number): Promise<number> {
+    try {
+      const userNotifications = await db.select().from(notifications).where(eq(notifications.userId, userId));
+      return userNotifications.filter(n => !n.isRead).length;
+    } catch (error) {
+      console.error('Error getting unread notification count:', error);
+      return 0;
+    }
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<boolean> {
+    try {
+      await db.update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.userId, userId));
+      return true;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      return false;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

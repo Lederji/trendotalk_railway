@@ -5,15 +5,52 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Search, MessageCircle, Heart, Menu, User, Settings, HelpCircle, Info, LogOut, ShieldCheck, Phone, Mail, CheckCircle, DollarSign, AtSign, Megaphone } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export function Header() {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [showAccountCenter, setShowAccountCenter] = useState(false);
   const [showServiceRequest, setShowServiceRequest] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Fetch notifications count
+  const { data: notificationCount = 0 } = useQuery({
+    queryKey: ['/api/notifications/count'],
+    enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Fetch notifications list
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['/api/notifications'],
+    enabled: !!user && showNotifications,
+  });
+
+  // Mark notification as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: (notificationId: number) => 
+      apiRequest(`/api/notifications/${notificationId}/read`, 'POST'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+    },
+  });
+
+  // Mark all as read mutation
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => 
+      apiRequest('/api/notifications/read-all', 'POST'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+    },
+  });
 
 
 
@@ -70,16 +107,91 @@ export function Header() {
                 </Badge>
               </Button>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-2 hover:bg-gray-100 rounded-full relative"
-              >
-                <Heart className="h-5 w-5 text-gray-600" />
-                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
-                  7
-                </Badge>
-              </Button>
+              <DropdownMenu open={showNotifications} onOpenChange={setShowNotifications}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="p-2 hover:bg-gray-100 rounded-full relative"
+                  >
+                    <Heart className="h-5 w-5 text-gray-600" />
+                    {notificationCount?.count > 0 && (
+                      <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
+                        {notificationCount.count}
+                      </Badge>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+                  <div className="flex items-center justify-between p-3 border-b">
+                    <h3 className="font-semibold text-gray-800">Notifications</h3>
+                    {notifications.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => markAllAsReadMutation.mutate()}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Mark all read
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500">
+                      <Heart className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No notifications yet</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.map((notification: any) => (
+                        <DropdownMenuItem
+                          key={notification.id}
+                          className="p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                          onClick={() => {
+                            if (!notification.isRead) {
+                              markAsReadMutation.mutate(notification.id);
+                            }
+                          }}
+                        >
+                          <div className="flex items-start space-x-3 w-full">
+                            <div className="flex-shrink-0">
+                              {notification.type === 'like' && (
+                                <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center">
+                                  <Heart className="h-4 w-4 text-white fill-current" />
+                                </div>
+                              )}
+                              {notification.type === 'comment' && (
+                                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                                  <MessageCircle className="h-4 w-4 text-white" />
+                                </div>
+                              )}
+                              {notification.type === 'follow' && (
+                                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
+                                  <User className="h-4 w-4 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm ${notification.isRead ? 'text-gray-600' : 'text-gray-900 font-medium'}`}>
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {new Date(notification.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            {!notification.isRead && (
+                              <div className="flex-shrink-0">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              </div>
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
           

@@ -1570,6 +1570,48 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     }
   });
 
+  // Notification API endpoints
+  app.get('/api/notifications', authenticateUser, async (req: any, res: any) => {
+    try {
+      const notifications = await storage.getUserNotifications(req.user.userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error getting notifications:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/notifications/count', authenticateUser, async (req: any, res: any) => {
+    try {
+      const count = await storage.getUnreadNotificationCount(req.user.userId);
+      res.json({ count });
+    } catch (error) {
+      console.error('Error getting notification count:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/notifications/:id/read', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.markNotificationAsRead(parseInt(id));
+      res.json({ success });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/notifications/read-all', authenticateUser, async (req: any, res: any) => {
+    try {
+      const success = await storage.markAllNotificationsAsRead(req.user.userId);
+      res.json({ success });
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
