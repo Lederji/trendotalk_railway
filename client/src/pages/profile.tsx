@@ -257,7 +257,7 @@ export default function ProfilePage() {
 
         {/* Bio */}
         <div className="mb-4">
-          <h2 className="font-semibold text-base">{profile?.username}</h2>
+          <h2 className="font-semibold text-base">{profile?.displayName || profile?.username}</h2>
           {profile?.bio && (
             <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{profile.bio}</p>
           )}
