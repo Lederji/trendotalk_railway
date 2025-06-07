@@ -298,12 +298,12 @@ export default function Circle() {
                 ))}
 
                 {/* Search Results - Show when user is typing */}
-                {searchQuery && searchQuery.length >= 2 && Array.isArray(searchResults) && (
-                  <div className="mt-6">
+                {searchQuery && searchQuery.length >= 2 && (
+                  <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border">
                     <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
-                      Search Results for "{searchQuery}"
+                      Search Results for "{searchQuery}" ({Array.isArray(searchResults) ? searchResults.length : 0} found)
                     </h3>
-                    {searchResults.length > 0 ? (
+                    {Array.isArray(searchResults) && searchResults.length > 0 ? (
                       searchResults
                         .filter((searchUser: any) => searchUser.id !== user?.id)
                         .map((searchUser: any) => (
@@ -336,6 +336,7 @@ export default function Circle() {
                     ) : (
                       <div className="text-center py-4 text-gray-500">
                         <p>No users found for "{searchQuery}"</p>
+                        <p className="text-xs mt-1">Search data: {JSON.stringify(searchResults)}</p>
                       </div>
                     )}
                   </div>
