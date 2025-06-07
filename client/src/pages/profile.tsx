@@ -155,7 +155,9 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <h1 className="font-semibold text-lg">{profile?.username}</h1>
+        <div className="flex items-center">
+          <h1 className="font-semibold text-lg text-left">{profile?.username}</h1>
+        </div>
         
         <Button
           variant="ghost"
