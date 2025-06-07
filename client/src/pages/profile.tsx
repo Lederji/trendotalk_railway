@@ -421,11 +421,11 @@ export default function ProfilePage() {
 
       {/* Edit Profile Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 overflow-y-auto pr-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Add Profile Picture
@@ -547,30 +547,31 @@ export default function ProfilePage() {
                 <p className="text-sm text-gray-500">Maximum 2 links allowed</p>
               )}
             </div>
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowEditDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  const formData = {
-                    bio: editForm.bio,
-                    displayName: editForm.displayName,
-                    avatar: editForm.avatar,
-                    links: JSON.stringify(editForm.links.filter(link => link.name && link.url))
-                  };
-                  updateProfileMutation.mutate(formData);
-                }}
-                disabled={updateProfileMutation.isPending}
-              >
-                {updateProfileMutation.isPending ? "Saving..." : "Save"}
-              </Button>
-            </div>
+          </div>
+          
+          <div className="flex space-x-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowEditDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => {
+                const formData = {
+                  bio: editForm.bio,
+                  displayName: editForm.displayName,
+                  avatar: editForm.avatar,
+                  links: JSON.stringify(editForm.links.filter(link => link.name && link.url))
+                };
+                updateProfileMutation.mutate(formData);
+              }}
+              disabled={updateProfileMutation.isPending}
+            >
+              {updateProfileMutation.isPending ? "Saving..." : "Save"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
