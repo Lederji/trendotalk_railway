@@ -98,6 +98,10 @@ export interface IStorage {
   
   // Performance analytics methods
   getUserPerformanceStats(userId: number): Promise<any>;
+  
+  // Notification methods
+  getUnreadNotificationCount(userId: number): Promise<number>;
+  markAllNotificationsAsRead(userId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -2081,6 +2085,25 @@ export class DatabaseStorage implements IStorage {
         .update(posts)
         .set({ commentsCount: sql`${posts.commentsCount} + 1` })
         .where(eq(posts.id, comment.postId));
+
+      // Create notification for post owner (if not commenting on own post)
+      const [post] = await db.select().from(posts).where(eq(posts.id, comment.postId));
+      if (post && post.userId !== comment.userId) {
+        const [commenter] = await db.select().from(users).where(eq(users.id, comment.userId));
+        if (commenter) {
+          try {
+            await this.createNotification(
+              post.userId,
+              'comment',
+              `${commenter.username} commented on your post`,
+              comment.userId,
+              comment.postId
+            );
+          } catch (notifError) {
+            console.error('Error creating comment notification:', notifError);
+          }
+        }
+      }
         
       return newComment;
     } catch (error) {
