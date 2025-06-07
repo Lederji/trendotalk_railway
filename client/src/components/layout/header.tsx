@@ -3,11 +3,17 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Search, MessageCircle, Heart, Menu } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, MessageCircle, Heart, Menu, User, Settings, HelpCircle, Info, LogOut, ShieldCheck, Phone, Mail, CheckCircle, DollarSign, AtSign, Megaphone } from "lucide-react";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 
 export function Header() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
+  const [showAccountCenter, setShowAccountCenter] = useState(false);
+  const [showServiceRequest, setShowServiceRequest] = useState(false);
 
   const handleSearchClick = () => {
     setLocation("/search");
@@ -86,13 +92,127 @@ export function Header() {
           )}
           
           {isProfilePage && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <Menu className="h-5 w-5 text-gray-600" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <Menu className="h-5 w-5 text-gray-600" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <Dialog open={showAccountCenter} onOpenChange={setShowAccountCenter}>
+                  <DialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <User className="mr-2 h-4 w-4" />
+                      Account Center
+                    </DropdownMenuItem>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Account Center</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <ShieldCheck className="h-5 w-5 text-green-500" />
+                          <span>Account Status</span>
+                        </div>
+                        <Badge variant="outline" className="text-green-600 border-green-200">
+                          Active
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <Mail className="h-5 w-5 text-blue-500" />
+                          <span>Email Verification</span>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          toast({ title: "Verification email sent!", description: "Check your inbox for the OTP" });
+                        }}>
+                          Verify
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <Phone className="h-5 w-5 text-purple-500" />
+                          <span>Mobile Verification</span>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          toast({ title: "SMS sent!", description: "Enter the OTP to verify your mobile" });
+                        }}>
+                          Verify
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Time Management
+                </DropdownMenuItem>
+
+                <Dialog open={showServiceRequest} onOpenChange={setShowServiceRequest}>
+                  <DialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      Service Request
+                    </DropdownMenuItem>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Service Request</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 py-4">
+                      <Button variant="outline" className="w-full justify-start" onClick={() => {
+                        toast({ title: "Application submitted!", description: "Your verification request is under review" });
+                      }}>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Apply for Verified Tick
+                      </Button>
+                      
+                      <Button variant="outline" className="w-full justify-start" onClick={() => {
+                        toast({ title: "Request sent!", description: "Username customization request submitted" });
+                      }}>
+                        <AtSign className="mr-2 h-4 w-4" />
+                        Apply to Customize Username
+                      </Button>
+                      
+                      <Button variant="outline" className="w-full justify-start" onClick={() => {
+                        toast({ title: "Ad request sent!", description: "Our team will contact you soon" });
+                      }}>
+                        <Megaphone className="mr-2 h-4 w-4" />
+                        Run TrendoTalk Ads
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <DropdownMenuItem>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Help and Support
+                </DropdownMenuItem>
+
+                <DropdownMenuItem>
+                  <Info className="mr-2 h-4 w-4" />
+                  About
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => {
+                  logout();
+                  setLocation("/login");
+                  toast({ title: "Logged out successfully" });
+                }}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
