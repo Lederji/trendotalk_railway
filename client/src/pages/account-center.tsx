@@ -98,7 +98,8 @@ export default function AccountCenter() {
   const sendEmailOtpMutation = useMutation({
     mutationFn: async (email: string) => {
       console.log('Sending email OTP for:', email);
-      const result = await apiRequest('/api/account/send-email-otp', 'POST', { email });
+      const response = await apiRequest('POST', '/api/account/send-email-otp', { email });
+      const result = await response.json();
       console.log('Email OTP result:', result);
       return result;
     },
@@ -124,7 +125,8 @@ export default function AccountCenter() {
   const verifyEmailOtpMutation = useMutation({
     mutationFn: async ({ email, otp }: { email: string; otp: string }) => {
       console.log('Verifying email OTP for:', email, 'with OTP:', otp);
-      const result = await apiRequest('/api/account/verify-email-otp', 'POST', { email, otp });
+      const response = await apiRequest('POST', '/api/account/verify-email-otp', { email, otp });
+      const result = await response.json();
       console.log('Email verification result:', result);
       return result;
     },
