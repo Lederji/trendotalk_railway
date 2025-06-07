@@ -274,30 +274,30 @@ export default function ProfilePage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex space-x-2">
+        <div className="flex gap-1">
           {isOwnProfile ? (
             <>
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 text-xs px-1 py-2 min-w-0"
                 onClick={() => setShowEditDialog(true)}
               >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Profile
+                <Edit className="w-3 h-3 mr-1" />
+                <span className="truncate">Edit</span>
               </Button>
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 text-xs px-1 py-2 min-w-0"
               >
-                <FileText className="w-4 h-4 mr-2" />
-                My CV
+                <FileText className="w-3 h-3 mr-1" />
+                <span className="truncate">CV</span>
               </Button>
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 text-xs px-1 py-2 min-w-0"
               >
-                <TrendingUp className="w-4 h-4 mr-2" />
-                Performance
+                <TrendingUp className="w-3 h-3 mr-1" />
+                <span className="truncate">Performance</span>
               </Button>
             </>
           ) : (
