@@ -17,6 +17,8 @@ export default function ChatPage() {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState<Map<string, { file: File, progress: number, preview: string }>>(new Map());
+  const [fullScreenMedia, setFullScreenMedia] = useState<{ url: string, type: 'image' | 'video' } | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -41,46 +43,87 @@ export default function ChatPage() {
     refetchInterval: 100, // Ultra-fast polling for real-time feel
   }) as { data: any[] };
 
+  // WhatsApp-style file upload with instant preview
+  const uploadFileInstantly = async (file: File) => {
+    const fileId = Date.now().toString();
+    const preview = URL.createObjectURL(file);
+    
+    // Add to uploading files with preview
+    setUploadingFiles(prev => new Map(prev.set(fileId, { file, progress: 0, preview })));
+    
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('message', message || '');
+      
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadingFiles(prev => {
+          const current = prev.get(fileId);
+          if (current && current.progress < 90) {
+            return new Map(prev.set(fileId, { ...current, progress: current.progress + 10 }));
+          }
+          return prev;
+        });
+      }, 100);
+      
+      const response = await fetch(`/api/chats/${chatId}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionId}`
+        },
+        body: formData,
+      });
+      
+      clearInterval(progressInterval);
+      
+      if (response.ok) {
+        // Complete upload
+        setUploadingFiles(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(fileId);
+          return newMap;
+        });
+        queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
+        setMessage("");
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      setUploadingFiles(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(fileId);
+        return newMap;
+      });
+      toast({
+        title: "Upload failed",
+        description: "Failed to send media",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       const sessionId = localStorage.getItem('sessionId');
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sessionId}`
+      };
       
-      if (sessionId) {
-        headers["Authorization"] = `Bearer ${sessionId}`;
-      }
-      
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('message', content || 'Shared a file');
-        
-        const response = await fetch(`/api/chats/${chatId}/upload`, {
-          method: 'POST',
-          headers: {
-            ...headers
-          },
-          body: formData,
-        });
-        if (!response.ok) throw new Error('Failed to send file');
-        return response.json();
-      } else {
-        headers["Content-Type"] = "application/json";
-        
-        const response = await fetch(`/api/chats/${chatId}/messages`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ message: content }),
-        });
-        if (!response.ok) throw new Error('Failed to send message');
-        return response.json();
-      }
+      const response = await fetch(`/api/chats/${chatId}/messages`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ message: content }),
+      });
+      if (!response.ok) throw new Error('Failed to send message');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
       setMessage("");
-      setSelectedFile(null);
     },
   });
 
@@ -176,7 +219,7 @@ export default function ChatPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      uploadFileInstantly(file);
       setShowAttachmentMenu(false);
     }
   };
@@ -184,7 +227,7 @@ export default function ChatPage() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      uploadFileInstantly(file);
       setShowAttachmentMenu(false);
     }
   };
@@ -411,12 +454,59 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {Array.isArray(messages) && messages.length === 0 ? (
+        {Array.isArray(messages) && messages.length === 0 && uploadingFiles.size === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500">No messages yet. Start the conversation!</p>
           </div>
         ) : (
-          Array.isArray(messages) && messages.map((msg: any) => (
+          <>
+            {/* Uploading Files Preview */}
+            {Array.from(uploadingFiles.entries()).map(([fileId, fileData]) => (
+              <div key={fileId} className="flex justify-end">
+                <div className="max-w-xs lg:max-w-md bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-2xl p-2 relative">
+                  {fileData.file.type.startsWith('image/') ? (
+                    <div className="relative">
+                      <img 
+                        src={fileData.preview} 
+                        alt="Uploading..." 
+                        className="max-w-full h-auto rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                          <span className="text-sm">{fileData.progress}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : fileData.file.type.startsWith('video/') ? (
+                    <div className="relative">
+                      <video 
+                        src={fileData.preview} 
+                        className="max-w-full h-auto rounded-lg"
+                        muted
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                          <span className="text-sm">{fileData.progress}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 flex items-center space-x-3">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                      <div>
+                        <p className="text-sm">📄 {fileData.file.name}</p>
+                        <p className="text-xs opacity-70">{fileData.progress}% uploading...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            
+            {/* Regular Messages */}
+            {Array.isArray(messages) && messages.map((msg: any) => (
             <div
               key={msg.id}
               className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
@@ -444,16 +534,29 @@ export default function ChatPage() {
                           <img 
                             src={mediaUrl} 
                             alt="Shared image" 
-                            className="max-w-full h-auto rounded-lg mb-2"
+                            className="max-w-full h-auto rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity"
                             loading="lazy"
+                            onClick={() => setFullScreenMedia({ url: mediaUrl, type: 'image' })}
                           />
                         )}
                         {description.includes('🎥') && (
-                          <video 
-                            src={mediaUrl} 
-                            controls 
-                            className="max-w-full h-auto rounded-lg mb-2"
-                          />
+                          <div 
+                            className="relative cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setFullScreenMedia({ url: mediaUrl, type: 'video' })}
+                          >
+                            <video 
+                              src={mediaUrl} 
+                              className="max-w-full h-auto rounded-lg mb-2"
+                              muted
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-black bg-opacity-50 rounded-full p-3">
+                                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
                         )}
                         {description.includes('🎵') && (
                           <audio 
@@ -494,7 +597,8 @@ export default function ChatPage() {
                 </p>
               </div>
             </div>
-          ))
+          ))}
+          </>
         )}
         <div ref={messagesEndRef} />
       </div>
