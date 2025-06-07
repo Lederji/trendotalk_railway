@@ -25,6 +25,7 @@ export default function ProfilePage() {
     avatar: '',
     website: ''
   });
+  const [uploading, setUploading] = useState(false);
 
   const profileUserId = userId ? parseInt(userId) : currentUser?.id;
   const isOwnProfile = profileUserId === currentUser?.id;
@@ -134,6 +135,45 @@ export default function ProfilePage() {
     }
   });
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload/avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      setEditForm({ ...editForm, avatar: result.url });
+      
+      toast({
+        title: "Image uploaded",
+        description: "Profile picture uploaded successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   useEffect(() => {
     if (profile) {
       setEditForm({
@@ -238,6 +278,13 @@ export default function ProfilePage() {
               >
                 <FileText className="w-4 h-4 mr-2" />
                 My CV
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Performance
               </Button>
             </>
           ) : (
@@ -345,11 +392,21 @@ export default function ProfilePage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Add Profile Picture
               </label>
-              <Input
-                value={editForm.avatar}
-                onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
-                placeholder="Enter profile picture URL"
-              />
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  disabled={uploading}
+                />
+                <Input
+                  value={editForm.avatar}
+                  onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
+                  placeholder="Or enter profile picture URL"
+                />
+                {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

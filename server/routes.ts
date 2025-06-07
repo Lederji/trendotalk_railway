@@ -877,18 +877,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user profile
+  // Get user profile by ID
   app.get('/api/users/:userId', authenticateUser, async (req: any, res: any) => {
     try {
       const userId = Number(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
       
-      // Remove sensitive information
+      // Check if current user is following this user
+      let isFollowing = false;
+      if (req.user.userId !== userId) {
+        isFollowing = await storage.isFollowing(req.user.userId, userId);
+      }
+      
+      // Get user's posts
+      const posts = await storage.getUserPosts(userId);
+      
+      // Remove sensitive information and add computed fields
       const { password, ...userProfile } = user;
-      res.json(userProfile);
+      res.json({
+        ...userProfile,
+        isFollowing,
+        posts
+      });
     } catch (error) {
       console.error('Error getting user profile:', error);
       res.status(500).json({ message: 'Internal server error' });
