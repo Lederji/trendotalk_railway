@@ -9,6 +9,7 @@ import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
 import { uploadToCloudinary } from "./cloudinary";
+import sgMail from "@sendgrid/mail";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -1427,18 +1428,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user's email
       await storage.updateUser(req.user.userId, { email });
       
-      // Send email with professional template
-      const { sendEmail, createOTPEmailTemplate } = require('./email');
-      const { html, text } = createOTPEmailTemplate(otp, email);
-      
-      const emailSent = await sendEmail({
-        to: email,
-        subject: 'TrendoTalk - Verify Your Email Address',
-        html,
-        text
-      });
-      
-      if (!emailSent) {
+      // Send email with SendGrid
+      if (process.env.SENDGRID_API_KEY) {
+        try {
+          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+          
+          const emailTemplate = `
+<!DOCTYPE html>
+<html>
+<head><style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; }
+.container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+.header { background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; padding: 30px; text-align: center; }
+.header h1 { margin: 0; font-size: 28px; font-weight: bold; }
+.content { padding: 40px 30px; }
+.otp-box { background: linear-gradient(135deg, #f3e8ff, #fce7f3); border: 2px solid #ec4899; border-radius: 12px; padding: 25px; text-align: center; margin: 25px 0; }
+.otp-code { font-size: 36px; font-weight: bold; color: #7c3aed; letter-spacing: 8px; margin: 10px 0; font-family: 'Courier New', monospace; }
+.footer { background-color: #f1f5f9; padding: 20px 30px; text-align: center; color: #64748b; font-size: 14px; }
+.warning { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; }
+</style></head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🎭 TrendoTalk</h1>
+    <p style="margin: 0; opacity: 0.9;">Email Verification Required</p>
+  </div>
+  <div class="content">
+    <h2 style="color: #1e293b; margin-bottom: 20px;">Verify Your Email Address</h2>
+    <p style="color: #475569; font-size: 16px;">Hello! You've requested to verify your email address <strong>${email}</strong> for your TrendoTalk account.</p>
+    <div class="otp-box">
+      <p style="margin: 0; color: #7c3aed; font-weight: bold;">Your Verification Code:</p>
+      <div class="otp-code">${otp}</div>
+      <p style="margin: 0; color: #64748b; font-size: 14px;">Valid for 10 minutes</p>
+    </div>
+    <p style="color: #475569;">Enter this code in the TrendoTalk app to complete your email verification.</p>
+    <div class="warning">
+      <strong>🔒 Security Notice:</strong> Never share this code with anyone. TrendoTalk will never ask for this code via phone, email, or social media.
+    </div>
+  </div>
+  <div class="footer">
+    <p>This email was sent from TrendoTalk's secure verification system.</p>
+    <p>If you didn't request this verification, please ignore this email.</p>
+    <p style="margin-top: 15px;"><strong>TrendoTalk</strong> - Connect, Share, Trend</p>
+  </div>
+</div>
+</body>
+</html>`;
+
+          await sgMail.send({
+            to: email,
+            from: 'noreply@trendotalk.com',
+            subject: 'TrendoTalk - Verify Your Email Address',
+            html: emailTemplate,
+            text: `TrendoTalk Email Verification\n\nYour verification code: ${otp}\n\nValid for 10 minutes.\n\nTrendoTalk - Connect, Share, Trend`
+          });
+          
+          console.log(`Email sent successfully to ${email}`);
+        } catch (emailError) {
+          console.error('SendGrid email error:', emailError);
+          console.log(`Email OTP for ${email}: ${otp}`); // Fallback logging
+        }
+      } else {
         console.log(`Email OTP for ${email}: ${otp}`); // Fallback logging
       }
       
