@@ -25,12 +25,18 @@ export function Header() {
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="px-4 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/">
-          <h1 className="text-xl md:text-2xl font-bold gradient-text cursor-pointer">
-            TrendoTalk
-          </h1>
-        </Link>
+        {/* Logo or Username */}
+        {isProfilePage ? (
+          <h2 className="text-lg font-semibold text-gray-800">
+            {user?.username}
+          </h2>
+        ) : (
+          <Link href="/">
+            <h1 className="text-xl md:text-2xl font-bold gradient-text cursor-pointer">
+              TrendoTalk
+            </h1>
+          </Link>
+        )}
         
         {/* Right Icons */}
         <div className="flex items-center space-x-3">

@@ -119,12 +119,13 @@ export default function ProfilePage() {
       return response.json();
     },
     onSuccess: (updatedUser) => {
-      // Update both profile queries
+      // Update both profile queries with new data
+      queryClient.setQueryData([`/api/users/${currentUser?.id}`], updatedUser);
+      queryClient.setQueryData(['/api/me'], updatedUser);
+      
+      // Also invalidate to ensure fresh data on next load
       queryClient.invalidateQueries({ queryKey: [`/api/users/${currentUser?.id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/me'] });
-      
-      // Force immediate update of the profile data
-      queryClient.setQueryData([`/api/users/${currentUser?.id}`], updatedUser);
       
       setShowEditDialog(false);
       toast({
@@ -164,6 +165,12 @@ export default function ProfilePage() {
 
       const result = await response.json();
       setEditForm({ ...editForm, avatar: result.url });
+      
+      // Update the profile immediately with new avatar
+      queryClient.setQueryData([`/api/users/${currentUser?.id}`], (oldData: any) => ({
+        ...oldData,
+        avatar: result.url
+      }));
       
       toast({
         title: "Image uploaded",
@@ -406,12 +413,13 @@ export default function ProfilePage() {
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   disabled={uploading}
                 />
-                <Input
-                  value={editForm.avatar}
-                  onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
-                  placeholder="Or enter profile picture URL"
-                />
                 {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
+                {editForm.avatar && (
+                  <div className="flex items-center space-x-2">
+                    <img src={editForm.avatar} alt="Profile preview" className="w-12 h-12 rounded-full object-cover" />
+                    <span className="text-sm text-green-600">Profile picture ready</span>
+                  </div>
+                )}
               </div>
             </div>
             <div>
