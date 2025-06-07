@@ -790,6 +790,39 @@ export default function ChatPage() {
           className="hidden"
           onChange={handleImageSelect}
         />
+        
+        {/* Full Screen Media Viewer */}
+        {fullScreenMedia && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
+            onClick={() => setFullScreenMedia(null)}
+          >
+            <div className="relative max-w-4xl max-h-full p-4">
+              <button
+                onClick={() => setFullScreenMedia(null)}
+                className="absolute top-4 right-4 text-white text-2xl z-10 bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-70"
+              >
+                ×
+              </button>
+              {fullScreenMedia.type === 'image' ? (
+                <img 
+                  src={fullScreenMedia.url} 
+                  alt="Full screen view" 
+                  className="max-w-full max-h-full object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <video 
+                  src={fullScreenMedia.url} 
+                  controls 
+                  autoPlay
+                  className="max-w-full max-h-full"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
