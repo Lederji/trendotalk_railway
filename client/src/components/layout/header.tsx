@@ -15,6 +15,9 @@ export function Header() {
   const [showAccountCenter, setShowAccountCenter] = useState(false);
   const [showServiceRequest, setShowServiceRequest] = useState(false);
 
+  // Debug logging for dialog states
+  console.log('Header render - showAccountCenter:', showAccountCenter, 'showServiceRequest:', showServiceRequest);
+
   const handleSearchClick = () => {
     setLocation("/search");
   };
@@ -147,10 +150,12 @@ export function Header() {
                     e.preventDefault();
                     console.log('Logout clicked');
                     try {
-                      await logout();
-                      console.log('Logout successful, redirecting...');
+                      // Clear local storage immediately
+                      localStorage.removeItem('sessionId');
+                      // Redirect immediately to prevent 404 errors
                       window.location.href = "/login";
-                      toast({ title: "Logged out successfully" });
+                      // Call logout API in background
+                      logout();
                     } catch (error) {
                       console.error('Logout error:', error);
                       toast({ title: "Logout failed", description: "Please try again" });
