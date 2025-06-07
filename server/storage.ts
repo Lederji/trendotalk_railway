@@ -344,6 +344,14 @@ export class MemStorage implements IStorage {
     return updatedPost;
   }
 
+  async incrementPostViews(postId: number): Promise<void> {
+    const post = this.posts.get(postId);
+    if (post) {
+      post.viewsCount = (post.viewsCount || 0) + 1;
+      this.posts.set(postId, post);
+    }
+  }
+
   async createPost(postData: InsertPost & { userId: number }): Promise<Post> {
     const post: Post = {
       id: this.currentPostId++,
@@ -2901,6 +2909,17 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error updating post:', error);
       return undefined;
+    }
+  }
+
+  async incrementPostViews(postId: number): Promise<void> {
+    try {
+      await db
+        .update(posts)
+        .set({ viewsCount: sql`${posts.viewsCount} + 1` })
+        .where(eq(posts.id, postId));
+    } catch (error) {
+      console.error('Error incrementing post views:', error);
     }
   }
 
