@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Shield, Phone, Mail, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Link } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
+import { Header } from '@/components/layout/header';
+import { useAuth } from '@/hooks/use-auth';
 
 interface AccountStatus {
   status: 'live' | 'banned' | 'suspended';
@@ -25,6 +27,7 @@ interface VerificationData {
 }
 
 export default function AccountCenter() {
+  const { user } = useAuth();
   const [mobileOtp, setMobileOtp] = useState('');
   const [emailOtp, setEmailOtp] = useState('');
   const [newMobile, setNewMobile] = useState('');
@@ -33,6 +36,23 @@ export default function AccountCenter() {
   const [showEmailOtp, setShowEmailOtp] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto text-center">
+            <p className="text-lg text-muted-foreground">Please log in to access Account Center</p>
+            <Link href="/auth">
+              <Button className="mt-4">Go to Login</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch account status
   const { data: accountStatus, isLoading: statusLoading } = useQuery<AccountStatus>({
@@ -149,12 +169,15 @@ export default function AccountCenter() {
 
   if (statusLoading || verificationLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+              <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -162,19 +185,21 @@ export default function AccountCenter() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Link href="/profile">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-bold">Account Center</h1>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <Header />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-6">
+            <Link href="/profile">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold">Account Center</h1>
+          </div>
 
-        <div className="space-y-6">
+          <div className="space-y-6">
           {/* Account Status */}
           <Card>
             <CardHeader>
@@ -400,6 +425,7 @@ export default function AccountCenter() {
               )}
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
     </div>
