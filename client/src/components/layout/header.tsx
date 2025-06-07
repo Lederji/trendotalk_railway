@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Search, MessageCircle, Heart, Menu, User, Settings, HelpCircle, Info, LogOut, ShieldCheck, Phone, Mail, CheckCircle, DollarSign, AtSign, Megaphone } from "lucide-react";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 
 export function Header() {
@@ -138,7 +138,7 @@ export function Header() {
                   <DropdownMenuItem onClick={async () => {
                     try {
                       await logout();
-                      setLocation("/login");
+                      window.location.href = "/login";
                       toast({ title: "Logged out successfully" });
                     } catch (error) {
                       toast({ title: "Logout failed", description: "Please try again" });
@@ -155,6 +155,9 @@ export function Header() {
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>Account Center</DialogTitle>
+                    <DialogDescription>
+                      Manage your account settings and verification status
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="flex items-center justify-between p-3 border rounded-lg">
@@ -199,6 +202,9 @@ export function Header() {
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>Service Request</DialogTitle>
+                    <DialogDescription>
+                      Submit requests for verification, customization, and advertising services
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-3 py-4">
                     <Button variant="outline" className="w-full justify-start" onClick={() => {
