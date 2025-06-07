@@ -368,47 +368,62 @@ export default function ProfilePage() {
         
         {posts && posts.length > 0 ? (
           <div className="grid grid-cols-3 gap-1">
-            {posts.map((post: any) => (
-              <div
-                key={post.id}
-                className="aspect-square bg-gray-100 relative cursor-pointer hover:opacity-75 transition-opacity"
-                onClick={() => setLocation(`/post/${post.id}`)}
-              >
-                {post.video1Url || post.video2Url || post.video3Url ? (
-                  <video
-                    src={post.video1Url || post.video2Url || post.video3Url}
-                    className="w-full h-full object-cover"
-                    muted
-                  />
-                ) : post.imageUrl ? (
-                  <img
-                    src={post.imageUrl}
-                    alt={post.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-white font-semibold text-xs text-center p-2">
-                      {post.title}
-                    </span>
-                  </div>
-                )}
+            {posts
+              .sort((a: any, b: any) => {
+                // Sort logic: top 3 most viewed videos first, then by date
+                const aIsVideo = !!(a.video1Url || a.video2Url || a.video3Url || a.videoUrl);
+                const bIsVideo = !!(b.video1Url || b.video2Url || b.video3Url || b.videoUrl);
                 
-                {/* Overlay with stats */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
-                  <div className="flex items-center space-x-4 text-white">
-                    <div className="flex items-center space-x-1">
-                      <Heart className="w-5 h-5" />
-                      <span className="font-semibold">{post.likesCount || 0}</span>
+                if (aIsVideo && bIsVideo) {
+                  return (b.viewsCount || 0) - (a.viewsCount || 0);
+                }
+                
+                if (aIsVideo && !bIsVideo) return -1;
+                if (!aIsVideo && bIsVideo) return 1;
+                
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              })
+              .map((post: any) => (
+                <div
+                  key={post.id}
+                  className="aspect-square bg-gray-100 relative cursor-pointer hover:opacity-75 transition-opacity"
+                  onClick={() => setLocation(`/post/${post.id}`)}
+                >
+                  {post.video1Url || post.video2Url || post.video3Url || post.videoUrl ? (
+                    <video
+                      src={post.video1Url || post.video2Url || post.video3Url || post.videoUrl}
+                      className="w-full h-full object-cover"
+                      muted
+                    />
+                  ) : post.imageUrl ? (
+                    <img
+                      src={post.imageUrl}
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                      <span className="text-white font-semibold text-xs text-center p-2">
+                        {post.title}
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="font-semibold">{post.commentsCount || 0}</span>
+                  )}
+                  
+                  {/* Overlay with stats */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
+                    <div className="flex items-center space-x-4 text-white">
+                      <div className="flex items-center space-x-1">
+                        <Heart className="w-5 h-5" />
+                        <span className="font-semibold">{post.likesCount || 0}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <MessageCircle className="w-5 h-5" />
+                        <span className="font-semibold">{post.commentsCount || 0}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         ) : (
           <div className="text-center py-12">

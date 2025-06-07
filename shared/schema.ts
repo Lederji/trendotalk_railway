@@ -40,6 +40,7 @@ export const posts = pgTable("posts", {
   dislikesCount: integer("dislikes_count").notNull().default(0),
   votesCount: integer("votes_count").notNull().default(0),
   commentsCount: integer("comments_count").notNull().default(0),
+  viewsCount: integer("views_count").notNull().default(0),
   isAdminPost: boolean("is_admin_post").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
