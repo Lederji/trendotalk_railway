@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editForm, setEditForm] = useState({
     bio: '',
-    username: '',
+    displayName: '',
     avatar: '',
     website: ''
   });
@@ -191,7 +191,7 @@ export default function ProfilePage() {
     if (profile) {
       setEditForm({
         bio: profile.bio || '',
-        username: profile.username || '',
+        displayName: profile.displayName || '',
         avatar: profile.avatar || '',
         website: profile.website || ''
       });
@@ -427,8 +427,8 @@ export default function ProfilePage() {
                 Name
               </label>
               <Input
-                value={editForm.username}
-                onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                value={editForm.displayName}
+                onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })}
                 placeholder="Enter your name"
               />
             </div>

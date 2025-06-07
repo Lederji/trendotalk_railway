@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 interface User {
   id: number;
   username: string;
+  displayName?: string;
   isAdmin: boolean;
   avatar?: string;
   bio?: string;
