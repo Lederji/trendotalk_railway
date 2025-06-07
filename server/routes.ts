@@ -1483,13 +1483,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
             text: `TrendoTalk Email Verification\n\nYour verification code: ${otp}\n\nValid for 10 minutes.\n\nTrendoTalk - Connect, Share, Trend`
           });
           
-          console.log(`Email sent successfully to ${email}`);
+          console.log(`Email sent successfully to ${email} via SendGrid`);
         } catch (emailError) {
           console.error('SendGrid email error:', emailError);
+          console.error('SendGrid error details:', JSON.stringify(emailError, null, 2));
           console.log(`Email OTP for ${email}: ${otp}`); // Fallback logging
         }
       } else {
-        console.log(`Email OTP for ${email}: ${otp}`); // Fallback logging
+        console.log(`No SendGrid API key found. Email OTP for ${email}: ${otp}`);
       }
       
       res.json({ message: 'OTP sent successfully' });

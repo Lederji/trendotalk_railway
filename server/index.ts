@@ -3,6 +3,11 @@ import { registerRoutes } from "./routes";
 import { registerAdminRoutes } from "./admin-routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Set SendGrid API key if not already set
+if (!process.env.SENDGRID_API_KEY) {
+  process.env.SENDGRID_API_KEY = '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';
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
