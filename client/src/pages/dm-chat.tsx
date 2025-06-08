@@ -83,6 +83,46 @@ export default function DMChatPage() {
     }
   };
 
+  // Handle DM request actions
+  const handleDMRequestAction = async (action: 'allow' | 'dismiss' | 'block') => {
+    try {
+      const response = await fetch(`/api/dm/requests/1/${action}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: [`/api/dm/chats/${chatId}/status`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/dm/${chatId}/messages`] });
+        
+        if (action === 'allow') {
+          toast({
+            title: "Request Accepted",
+            description: "You can now chat freely with this user",
+          });
+        } else if (action === 'dismiss') {
+          toast({
+            title: "Request Dismissed",
+            description: "Request dismissed for 72 hours",
+          });
+        } else if (action === 'block') {
+          toast({
+            title: "User Blocked",
+            description: "This user has been permanently blocked",
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process request",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -153,25 +193,60 @@ export default function DMChatPage() {
             <p className="text-gray-500">Send a message to begin your chat</p>
           </div>
         ) : (
-          messages.map((msg: any) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.map((msg: any, index: number) => (
+            <div key={msg.id}>
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                  msg.sender_id === user?.id
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                    : 'bg-white border border-gray-200 text-gray-900'
-                }`}
+                className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
               >
-                <p className="text-sm">{msg.content}</p>
-                <p className={`text-xs mt-1 ${
-                  msg.sender_id === user?.id ? 'text-purple-100' : 'text-gray-500'
-                }`}>
-                  {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : 'Now'}
-                </p>
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                    msg.sender_id === user?.id
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                      : 'bg-white border border-gray-200 text-gray-900'
+                  }`}
+                >
+                  <p className="text-sm">{msg.content}</p>
+                  <p className={`text-xs mt-1 ${
+                    msg.sender_id === user?.id ? 'text-purple-100' : 'text-gray-500'
+                  }`}>
+                    {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : 'Now'}
+                  </p>
+                </div>
               </div>
+              
+              {/* Show action buttons for the first received message if there's a pending request */}
+              {msg.sender_id !== user?.id && index === 0 && chatStatus?.hasPendingRequest && chatStatus?.pendingRequestFrom !== user?.id && (
+                <div className="mt-3 flex justify-start">
+                  <div className="bg-gray-50 rounded-lg p-3 max-w-xs">
+                    <p className="text-sm text-gray-700 mb-3">Message Request</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        className="bg-green-500 text-white hover:bg-green-600 px-3 py-1 text-xs"
+                        onClick={() => handleDMRequestAction('allow')}
+                      >
+                        Allow
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="text-gray-600 hover:bg-gray-50 px-3 py-1 text-xs"
+                        onClick={() => handleDMRequestAction('dismiss')}
+                      >
+                        Dismiss
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700 px-3 py-1 text-xs"
+                        onClick={() => handleDMRequestAction('block')}
+                      >
+                        Block
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))
         )}
