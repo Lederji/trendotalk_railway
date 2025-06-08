@@ -198,7 +198,7 @@ export function Messages() {
               messages.map((message) => (
                 <div
                   key={message.id}
-                  onClick={() => handleUserClick(message.id)}
+                  onClick={() => handleUserClick(message)}
                   className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
