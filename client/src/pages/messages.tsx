@@ -404,7 +404,7 @@ export function Messages() {
                           </Button>
                           <Button 
                             size="sm" 
-                            onClick={() => handleDMRequest(request.id, 'dismiss')}
+                            onClick={() => handleDMRequest.mutate({ requestId: request.id, action: 'dismiss' })}
                             variant="outline"
                             className="text-gray-600 hover:bg-gray-50 px-4"
                           >
@@ -412,7 +412,7 @@ export function Messages() {
                           </Button>
                           <Button 
                             size="sm" 
-                            onClick={() => handleDMRequest(request.id, 'block')}
+                            onClick={() => handleDMRequest.mutate({ requestId: request.id, action: 'block' })}
                             variant="outline"
                             className="text-red-600 hover:bg-red-50 px-4"
                           >
