@@ -473,6 +473,34 @@ export class MemStorage implements IStorage {
     }));
   }
 
+  async getPostsFromUsers(userIds: number[]): Promise<PostWithUser[]> {
+    const posts = Array.from(this.posts.values())
+      .filter(post => userIds.includes(post.userId))
+      // Filter out posts without media content (videos or photos)
+      .filter(post => 
+        post.imageUrl || post.videoUrl || post.video1Url || post.video2Url || post.video3Url
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    const postsWithUsers = [];
+    for (const post of posts) {
+      const user = await this.getUser(post.userId);
+      if (user) {
+        postsWithUsers.push({
+          ...post,
+          user: {
+            id: user.id,
+            username: user.username,
+            avatar: user.avatar,
+            isAdmin: user.isAdmin,
+          },
+        });
+      }
+    }
+    
+    return postsWithUsers;
+  }
+
   async deletePost(id: number, userId: number): Promise<boolean> {
     const post = this.posts.get(id);
     if (!post) return false;
