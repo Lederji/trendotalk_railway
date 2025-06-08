@@ -333,55 +333,100 @@ export default function Circle() {
           {/* Tab Content */}
           <div className="h-64 overflow-y-auto pb-20">
             {activeTab === "timeline" && (
-              <div className="p-4 space-y-3">
-                {Array.isArray(chats) && chats.filter((chat: any, index: number, self: any[]) => 
-                  index === self.findIndex((c: any) => c.user?.id === chat.user?.id)
-                ).map((chat: any) => (
-                  <div key={chat.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={chat.user?.avatar} />
-                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
-                        {chat.user?.username?.charAt(3)?.toUpperCase() || "?"}
+              <div className="p-4 space-y-4">
+                {/* New Message Input */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="w-10 h-10 border-2 border-purple-300">
+                      <AvatarImage src={user?.avatar} />
+                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white font-bold text-sm">
+                        {user?.username?.charAt(3)?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <Link href={`/chat/${chat.id}`} className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {chat.user?.username}
-                        </p>
+                    <div className="flex-1">
+                      <Textarea
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Share something with your Circle..."
+                        className="min-h-[80px] resize-none border-0 bg-transparent focus:ring-0 text-gray-900 dark:text-gray-100 placeholder-gray-500"
+                      />
+                      <div className="flex justify-end mt-2">
+                        <Button
+                          onClick={() => {
+                            if (newMessage.trim()) {
+                              postMessageMutation.mutate(newMessage.trim());
+                            }
+                          }}
+                          disabled={!newMessage.trim() || postMessageMutation.isPending}
+                          size="sm"
+                          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          Share
+                        </Button>
                       </div>
-                      {chat.lastMessage && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {chat.lastMessage.content}
-                        </p>
-                      )}
-                    </Link>
-                    <div className="flex flex-col items-end gap-1">
-                      <Link 
-                        href={`/users/${chat.user?.username}`}
-                        className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900"
-                      >
-                        View Profile
-                      </Link>
-                      {chat.lastMessage && (
-                        <div className="text-xs text-gray-400">
-                          {formatDate(chat.lastMessage.createdAt)}
-                        </div>
-                      )}
                     </div>
                   </div>
-                ))}
-                {(!Array.isArray(chats) || chats.length === 0) && (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p>No conversations yet</p>
-                    <p className="text-sm">Add friends to start chatting!</p>
-                  </div>
-                )}
+                </div>
+
+                {/* Timeline Messages */}
+                <div className="space-y-3">
+                  {Array.isArray(circleMessages) && circleMessages.map((message: any) => (
+                    <div key={message.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="w-10 h-10 border-2 border-purple-300">
+                          <AvatarImage src={message.user?.avatar} />
+                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white font-bold text-sm">
+                            {message.user?.username?.charAt(3)?.toUpperCase() || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                              {message.user?.username?.replace('tp-', '') || 'Unknown'}
+                            </h4>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {format(new Date(message.createdAt), 'MMM d, h:mm a')}
+                            </span>
+                          </div>
+                          <p className="text-gray-800 dark:text-gray-200 mb-3 leading-relaxed">
+                            {message.content}
+                          </p>
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={() => toggleLikeMutation.mutate(message.id)}
+                              disabled={toggleLikeMutation.isPending}
+                              className={`flex items-center gap-2 text-sm transition-colors ${
+                                message.isLiked 
+                                  ? 'text-pink-500 hover:text-pink-600' 
+                                  : 'text-gray-500 dark:text-gray-400 hover:text-pink-500'
+                              }`}
+                            >
+                              <Heart className={`w-4 h-4 ${message.isLiked ? 'fill-current' : ''}`} />
+                              {message.likesCount || 0}
+                            </button>
+                            <button className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-purple-500 transition-colors">
+                              <MessageSquare className="w-4 h-4" />
+                              Reply
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {(!circleMessages || circleMessages.length === 0) && (
+                    <div className="text-center py-8">
+                      <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 dark:text-gray-400 mb-2">No timeline messages yet</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">Be the first to share something with your Circle!</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {activeTab === "requests" && (
+            {activeTab === "friends" && (
               <div className="p-6 space-y-6">
 
                 {/* Friend Requests */}

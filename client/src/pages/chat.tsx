@@ -37,11 +37,13 @@ export default function ChatPage() {
     enabled: !!chatId,
   }) as { data: any, isLoading: boolean };
 
-  // Fetch messages with fast polling
+  // Fetch messages with optimized polling
   const { data: messages = [] } = useQuery({
     queryKey: [`/api/chats/${chatId}/messages`],
     enabled: !!chatId,
-    refetchInterval: 100, // Ultra-fast polling for real-time feel
+    refetchInterval: 1000, // 1 second polling for good real-time experience
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   }) as { data: any[] };
 
   // WhatsApp-style file upload with instant preview
@@ -105,7 +107,7 @@ export default function ChatPage() {
     }
   };
 
-  // Send message mutation
+  // Send message mutation with better error handling
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       const sessionId = localStorage.getItem('sessionId');
@@ -119,13 +121,25 @@ export default function ChatPage() {
         headers,
         body: JSON.stringify({ message: content }),
       });
-      if (!response.ok) throw new Error('Failed to send message');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || 'Failed to send message');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
       setMessage("");
+      setSelectedFile(null);
     },
+    onError: (error: any) => {
+      toast({
+        title: "Message failed",
+        description: error.message || "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Kick out mutation to remove user from friend list
@@ -636,14 +650,36 @@ export default function ChatPage() {
                   return <p className="text-sm whitespace-pre-wrap">{content}</p>;
                 })()}
                 
-                <p className={`text-xs mt-1 ${
+                {/* Message status and timestamp */}
+                <div className={`flex items-center justify-between mt-1 text-xs ${
                   msg.senderId === user?.id ? 'text-white/70' : 'text-gray-500'
                 }`}>
-                  {new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
+                  <span>
+                    {new Date(msg.createdAt).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </span>
+                  {msg.senderId === user?.id && (
+                    <div className="flex items-center ml-2">
+                      {/* Message status indicators */}
+                      {sendMessageMutation.isPending && msg.id === 'temp' ? (
+                        <div className="w-3 h-3 border border-white/50 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <div className="flex">
+                          {/* Single check - sent */}
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {/* Double check - delivered */}
+                          <svg className="w-3 h-3 -ml-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
