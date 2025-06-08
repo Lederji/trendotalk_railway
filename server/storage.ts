@@ -3732,37 +3732,7 @@ class HybridStorage extends DatabaseStorage {
     }
   }
 
-  // Override chat methods to use memory
-  async getUserChats(userId: number): Promise<any[]> {
-    const userChats = Array.from(this.memChats.values())
-      .filter(chat => chat.participants.includes(userId));
-
-    const chatsWithUsers = [];
-    for (const chat of userChats) {
-      const otherUserId = chat.participants.find(id => id !== userId);
-      const otherUser = await this.getUser(otherUserId);
-      
-      if (otherUser) {
-        const messages = Array.from(this.memMessages.values())
-          .filter(msg => msg.chatId === chat.id)
-          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-
-        chatsWithUsers.push({
-          id: chat.id,
-          user: {
-            id: otherUser.id,
-            username: otherUser.username,
-            avatar: otherUser.avatar
-          },
-          messages,
-          lastMessage: chat.lastMessage,
-          lastMessageTime: chat.lastMessageTime
-        });
-      }
-    }
-    
-    return chatsWithUsers;
-  }
+  // Removed duplicate getUserChats implementation - using database version instead
 
   async sendMessage(chatId: number, senderId: number, message: string): Promise<any> {
     try {
