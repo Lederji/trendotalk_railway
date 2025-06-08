@@ -1473,7 +1473,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (request.status === 'dismissed') {
           return res.status(403).json({ message: 'You cannot send another request to this user yet' });
         }
-        return res.json({ requestId: request.id, exists: true });
+        
+        // Find the chat ID for this existing request
+        const existingChatForRequestResult = await db.execute(sql`
+          SELECT id FROM dm_chats 
+          WHERE (user1_id = ${req.user.userId} AND user2_id = ${targetUserId})
+             OR (user1_id = ${targetUserId} AND user2_id = ${req.user.userId})
+          LIMIT 1
+        `);
+        
+        if (existingChatForRequestResult.rows && existingChatForRequestResult.rows.length > 0) {
+          const chatId = (existingChatForRequestResult.rows[0] as any).id;
+          return res.json({ requestId: request.id, chatId, exists: true });
+        }
+        
+        // Chat doesn't exist for this request, create it now
+        const newChatForExistingRequestResult = await db.execute(sql`
+          INSERT INTO dm_chats (user1_id, user2_id) 
+          VALUES (${req.user.userId}, ${targetUserId}) 
+          RETURNING id
+        `);
+        
+        const newChatForExistingRequest = newChatForExistingRequestResult.rows[0] as any;
+        
+        // Add the first message to the chat if it doesn't exist
+        const messageExists = await db.execute(sql`
+          SELECT id FROM dm_messages 
+          WHERE chat_id = ${newChatForExistingRequest.id} 
+          AND content = ${request.first_message}
+          LIMIT 1
+        `);
+        
+        if (!messageExists.rows || messageExists.rows.length === 0) {
+          await db.execute(sql`
+            INSERT INTO dm_messages (chat_id, sender_id, content) 
+            VALUES (${newChatForExistingRequest.id}, ${req.user.userId}, ${request.first_message})
+          `);
+        }
+        
+        return res.json({ requestId: request.id, chatId: newChatForExistingRequest.id, exists: true });
       }
       
       // Create new DM chat immediately (even for pending requests)
