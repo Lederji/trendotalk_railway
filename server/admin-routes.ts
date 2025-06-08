@@ -113,6 +113,10 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
         return res.status(404).json({ message: 'User not found' });
       }
       
+      // Send ban message to user
+      const banMessage = `Your account has been temporarily suspended. Reason: ${reason || 'Policy violation'}. Please contact support if you believe this is an error.`;
+      await storage.sendAdminMessage(userId, banMessage, (req as any).user.id);
+      
       res.json({ message: 'User banned successfully' });
     } catch (error) {
       console.error('Ban user error:', error);
@@ -129,6 +133,10 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
       if (!success) {
         return res.status(404).json({ message: 'User not found' });
       }
+      
+      // Send unban message to user
+      const unbanMessage = `Good news! Your account suspension has been lifted. You can now use TrendoTalk normally. Please follow our community guidelines to avoid future issues.`;
+      await storage.sendAdminMessage(userId, unbanMessage, (req as any).user.id);
       
       res.json({ message: 'User unbanned successfully' });
     } catch (error) {
