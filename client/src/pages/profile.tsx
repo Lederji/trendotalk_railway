@@ -416,47 +416,48 @@ export default function ProfilePage() {
             <>
               <Button
                 variant={isFollowing ? "outline" : "default"}
-                className="flex-1 text-xs px-1 py-2 min-w-0"
+                className="flex-1 text-sm px-2 py-2"
                 onClick={() => followMutation.mutate()}
                 disabled={followMutation.isPending}
               >
                 {isFollowing ? (
                   <>
-                    <UserMinus className="w-3 h-3 mr-1" />
-                    <span className="truncate">Unfollow</span>
+                    <UserMinus className="w-4 h-4 mr-2" />
+                    Unfollow
                   </>
                 ) : (
                   <>
-                    <UserPlus className="w-3 h-3 mr-1" />
-                    <span className="truncate">Follow</span>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Follow
                   </>
                 )}
               </Button>
               <Button
                 variant="outline"
-                className="flex-1 text-xs px-1 py-2 min-w-0"
+                className="flex-1 text-sm px-2 py-2"
                 onClick={() => friendRequestMutation.mutate()}
                 disabled={friendRequestMutation.isPending}
               >
-                <Users className="w-3 h-3 mr-1" />
-                <span className="truncate">Message</span>
+                <Users className="w-4 h-4 mr-2" />
+                DM
               </Button>
-              <Button
-                variant="outline"
-                className="flex-1 text-xs px-1 py-2 min-w-0"
-                onClick={() => setLocation('/cv')}
-              >
-                <FileText className="w-3 h-3 mr-1" />
-                <span className="truncate">CV</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 text-xs px-1 py-2 min-w-0"
-                onClick={() => setShowPerformanceStats(!showPerformanceStats)}
-              >
-                <TrendingUp className="w-3 h-3 mr-1" />
-                <span className="truncate">Performance</span>
-              </Button>
+              <div className="flex-1 flex gap-1">
+                <Button
+                  variant="outline"
+                  className="flex-1 text-xs px-1 py-2"
+                  onClick={() => setLocation('/cv')}
+                >
+                  <FileText className="w-3 h-3 mr-1" />
+                  CV
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 text-xs px-1 py-2"
+                  onClick={() => setShowPerformanceStats(!showPerformanceStats)}
+                >
+                  <TrendingUp className="w-3 h-3" />
+                </Button>
+              </div>
             </>
           )}
         </div>
