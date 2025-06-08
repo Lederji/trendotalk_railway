@@ -1580,6 +1580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // Get DM requests for current user
   app.get('/api/dm/requests', authenticateUser, async (req: any, res: any) => {
     try {
@@ -1821,21 +1823,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.userId;
       console.log('DM chats - authenticated userId:', userId, 'type:', typeof userId);
       
-      // Get all DM chats for this user - only show approved chats
+      // Get DM chats with message count to categorize them
       const dmChatsResult = await db.execute(sql`
         SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
                u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
-               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name
+               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name,
+               COUNT(dm.id) as message_count
         FROM dm_chats dc
         JOIN users u1 ON dc.user1_id = u1.id
         JOIN users u2 ON dc.user2_id = u2.id
+        LEFT JOIN dm_messages dm ON dc.id = dm.chat_id
         WHERE (dc.user1_id = ${userId} OR dc.user2_id = ${userId})
-        AND NOT EXISTS (
-          SELECT 1 FROM dm_requests dr 
-          WHERE ((dr.from_user_id = dc.user1_id AND dr.to_user_id = dc.user2_id) 
-                 OR (dr.from_user_id = dc.user2_id AND dr.to_user_id = dc.user1_id))
-          AND dr.status = 'pending'
-        )
+        GROUP BY dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
+                 u1.username, u1.avatar, u1.display_name,
+                 u2.username, u2.avatar, u2.display_name
+        HAVING message_count > 3
         ORDER BY dc.updated_at DESC
       `);
       

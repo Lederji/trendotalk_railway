@@ -42,6 +42,20 @@ export function Messages() {
     },
   });
 
+  // Fetch new DM chats for Requests tab
+  const { data: newDmChats = [] } = useQuery({
+    queryKey: ["/api/dm/new-chats"],
+    queryFn: async () => {
+      const response = await fetch("/api/dm/new-chats", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch new DM chats');
+      return response.json();
+    },
+  });
+
   // Fetch DM requests
   const { data: dmRequests = [] } = useQuery({
     queryKey: ["/api/dm/requests"],
