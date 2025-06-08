@@ -6,10 +6,17 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, ArrowLeft, Phone, Video, Info } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 
 export function Messages() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Search for users when typing in search bar
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ['/api/users/search', searchQuery],
+    enabled: searchQuery.length > 0,
+  });
 
   // Mock data for messages and requests
   const messages = [
@@ -56,6 +63,10 @@ export function Messages() {
     req.displayName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleUserClick = (username: string) => {
+    setLocation(`/chat/${username}`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       {/* Header */}
@@ -71,7 +82,7 @@ export function Messages() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Messages
+              Direct Messages
             </h1>
           </div>
         </div>
@@ -82,12 +93,63 @@ export function Messages() {
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <Input
-            placeholder="Search conversations..."
+            placeholder="Search users to start a conversation..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-12 bg-white/70 backdrop-blur-sm border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20"
           />
         </div>
+
+        {/* Search Results */}
+        {searchQuery && searchResults.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Search Results</h3>
+            <div className="space-y-2">
+              {searchResults.map((user: any) => (
+                <div
+                  key={user.id}
+                  onClick={() => handleUserClick(user.username)}
+                  className="bg-white/70 backdrop-blur-sm rounded-xl p-3 border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                      <AvatarImage src={user.avatar} alt={user.displayName || user.username} />
+                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-sm">
+                        {(user.displayName || user.username).charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 truncate">
+                        {user.displayName || user.username}
+                      </h4>
+                      <p className="text-sm text-gray-600 truncate">
+                        @{user.username}
+                      </p>
+                    </div>
+                    
+                    <Button 
+                      size="sm" 
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none hover:from-purple-600 hover:to-pink-600 px-4"
+                    >
+                      Message
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* No search results */}
+        {searchQuery && searchResults.length === 0 && (
+          <div className="mb-6 text-center py-8">
+            <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+              <Search className="h-6 w-6 text-purple-400" />
+            </div>
+            <p className="text-gray-500 text-sm">No users found for "{searchQuery}"</p>
+          </div>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="messages" className="w-full">
