@@ -182,7 +182,15 @@ export function Header() {
                                   
                                   return (
                                     <>
-                                      <span className="font-bold">{username}</span>
+                                      <span 
+                                        className="font-bold text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setLocation(`/profile/${username}`);
+                                        }}
+                                      >
+                                        {username}
+                                      </span>
                                       <span className="font-normal"> {restOfMessage}</span>
                                     </>
                                   );
