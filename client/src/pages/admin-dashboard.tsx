@@ -193,6 +193,28 @@ export default function AdminDashboard() {
     }
   });
 
+  // Unban user mutation
+  const unbanUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/unban`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User unbanned successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to unban user",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
@@ -414,16 +436,28 @@ export default function AdminDashboard() {
                             >
                               <MessageSquare className="h-4 w-4" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setBanModalOpen(true);
-                              }}
-                            >
-                              <Ban className="h-4 w-4" />
-                            </Button>
+                            {user.accountStatus === 'banned' ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-green-500 text-green-600 hover:bg-green-50"
+                                onClick={() => unbanUserMutation.mutate(user.id)}
+                                disabled={unbanUserMutation.isPending}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setBanModalOpen(true);
+                                }}
+                              >
+                                <Ban className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
