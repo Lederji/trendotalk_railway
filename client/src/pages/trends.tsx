@@ -4,7 +4,7 @@ import { Navigation } from "@/components/layout/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share, Link as LinkIcon, MoreVertical, Volume2, VolumeX, Copy, BookmarkPlus, ThumbsUp, ThumbsDown, Users } from "lucide-react";
+import { Heart, MessageCircle, Share, Link as LinkIcon, MoreVertical, Volume2, VolumeX, Copy, BookmarkPlus, ThumbsUp, ThumbsDown, Users, Flag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { CommentModal } from "@/components/post/comment-modal";
@@ -74,6 +74,25 @@ export default function Trends() {
       setFollowingUsers(followingIds);
     }
   }, [followingList]);
+
+  const reportPostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      return apiRequest(`/api/posts/${postId}/report`, 'POST', { reason: 'Inappropriate content' });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Post reported",
+        description: "Thank you for your report. We'll review this content.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to report post. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
 
   const likeMutation = useMutation({
     mutationFn: async (postId: number) => {
@@ -690,6 +709,11 @@ export default function Trends() {
                       <DropdownMenuItem onClick={() => markNotInterested(post.id)} className="hover:bg-white/10">
                         <ThumbsDown className="w-4 h-4 mr-2" />
                         Not interested
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-gray-600" />
+                      <DropdownMenuItem onClick={() => reportPostMutation.mutate(post.id)} className="hover:bg-red-600/20 text-red-400">
+                        <Flag className="w-4 h-4 mr-2" />
+                        Report this post
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
