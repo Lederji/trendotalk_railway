@@ -71,7 +71,7 @@ export default function DMChatPage() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (message.trim() && !chatStatus?.isRestricted) {
+    if (message.trim() && !(chatStatus as any)?.isRestricted) {
       sendMessageMutation.mutate(message.trim());
     }
   };
@@ -86,7 +86,29 @@ export default function DMChatPage() {
   // Handle DM request actions
   const handleDMRequestAction = async (action: 'allow' | 'dismiss' | 'block') => {
     try {
-      const response = await fetch(`/api/dm/requests/1/${action}`, {
+      // Find the pending request for this chat
+      const requestsResponse = await fetch('/api/dm/requests', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      
+      if (!requestsResponse.ok) throw new Error('Failed to fetch requests');
+      const requests = await requestsResponse.json();
+      
+      const otherUserId = (chat as any)?.user?.id;
+      const pendingRequest = requests.find((req: any) => req.fromUser.id === otherUserId);
+      
+      if (!pendingRequest) {
+        toast({
+          title: "Error",
+          description: "No pending request found for this user",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/dm/requests/${pendingRequest.id}/${action}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
@@ -96,6 +118,9 @@ export default function DMChatPage() {
       if (response.ok) {
         queryClient.invalidateQueries({ queryKey: [`/api/dm/chats/${chatId}/status`] });
         queryClient.invalidateQueries({ queryKey: [`/api/dm/${chatId}/messages`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/dm/requests`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/dm/chats`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/dm-new-chats`] });
         
         if (action === 'allow') {
           toast({
@@ -107,11 +132,13 @@ export default function DMChatPage() {
             title: "Request Dismissed",
             description: "Request dismissed for 72 hours",
           });
+          setLocation('/messages');
         } else if (action === 'block') {
           toast({
             title: "User Blocked",
             description: "This user has been permanently blocked",
           });
+          setLocation('/messages');
         }
       }
     } catch (error) {
@@ -214,6 +241,39 @@ export default function DMChatPage() {
                 </div>
               </div>
               
+              {/* Show action buttons for new messages from other users if there's a pending request */}
+              {msg.sender_id !== user?.id && index === 0 && (chatStatus as any)?.hasPendingRequest && (
+                <div className="mt-3 flex justify-start">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 max-w-xs">
+                    <p className="text-xs text-gray-600 mb-2">New message request</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleDMRequestAction('allow')}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none hover:from-purple-600 hover:to-pink-600 px-3 py-1 text-xs"
+                      >
+                        Allow
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleDMRequestAction('dismiss')}
+                        variant="outline"
+                        className="text-gray-600 hover:bg-gray-50 px-3 py-1 text-xs"
+                      >
+                        Dismiss
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleDMRequestAction('block')}
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50 px-3 py-1 text-xs"
+                      >
+                        Block
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </div>
           ))
@@ -223,7 +283,7 @@ export default function DMChatPage() {
 
       {/* Message Input */}
       <div className="bg-white border-t border-gray-200 p-4">
-        {chatStatus?.isRestricted ? (
+        {(chatStatus as any)?.isRestricted ? (
           <div className="text-center py-4">
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-3">
               <p className="text-orange-800 text-sm font-medium">Message Request Sent</p>
