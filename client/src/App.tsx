@@ -19,6 +19,7 @@ import NotFound from "@/pages/not-found";
 import AccountCenter from "@/pages/account-center";
 import CVPage from "@/pages/cv";
 import { Messages } from "@/pages/messages";
+import BannedPage from "@/pages/banned";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/cv" component={CVPage} />
       <Route path="/auth" component={Auth} />
       <Route path="/login" component={Auth} />
+      <Route path="/banned" component={BannedPage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>

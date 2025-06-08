@@ -3,6 +3,15 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    
+    // Handle banned user status
+    if (res.status === 403 && text.includes('Account suspended')) {
+      localStorage.removeItem('sessionId');
+      localStorage.setItem('bannedReason', text);
+      window.location.href = '/banned';
+      return;
+    }
+    
     throw new Error(`${res.status}: ${text}`);
   }
 }

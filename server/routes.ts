@@ -54,8 +54,21 @@ async function authenticateUser(req: any, res: any, next: any) {
   
   // Check if session exists in memory
   if (sessions.has(sessionId)) {
-    req.user = sessions.get(sessionId);
-    return next();
+    const sessionData = sessions.get(sessionId);
+    
+    if (sessionData) {
+      // Check if user is banned
+      const user = await storage.getUser(sessionData.userId);
+      if (user && user.accountStatus === 'banned') {
+        return res.status(403).json({ 
+          message: 'Account suspended',
+          reason: user.accountStatusReason || 'Policy violation'
+        });
+      }
+      
+      req.user = sessionData;
+      return next();
+    }
   }
   
   // If session not found, try to recreate from sessionId format
@@ -70,6 +83,14 @@ async function authenticateUser(req: any, res: any, next: any) {
         const user = await storage.getUser(userId);
         
         if (user) {
+          // Check if user is banned
+          if (user.accountStatus === 'banned') {
+            return res.status(403).json({ 
+              message: 'Account suspended',
+              reason: user.accountStatusReason || 'Policy violation'
+            });
+          }
+          
           // Recreate session
           const sessionData = { userId: user.id, username: user.username };
           sessions.set(sessionId, sessionData);
