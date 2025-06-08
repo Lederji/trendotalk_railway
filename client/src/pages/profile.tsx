@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Navigation } from "@/components/layout/navigation";
-import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp, User, Clock, HelpCircle, Info, LogOut, MessageSquare, CheckCircle, AtSign, Megaphone, Send } from "lucide-react";
+import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp, User, Clock, HelpCircle, Info, LogOut, MessageSquare, CheckCircle, AtSign, Megaphone, Send, MoreHorizontal, Flag, UserX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
@@ -283,54 +283,82 @@ export default function ProfilePage() {
           <h1 className="font-semibold text-lg text-left">{displayProfile?.username}</h1>
         </div>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => {
-              console.log('Account Center clicked from profile');
-              setLocation('/account-center');
-            }}>
-              <User className="mr-2 h-4 w-4" />
-              <span>Account Center</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {/* Time Management */}}>
-              <Clock className="mr-2 h-4 w-4" />
-              <span>Time Management</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowServiceRequest(true)}>
-              <MessageSquare className="mr-2 h-4 w-4" />
-              <span>Service Request</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {/* Help and Support */}}>
-              <HelpCircle className="mr-2 h-4 w-4" />
-              <span>Help and Support</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {/* About */}}>
-              <Info className="mr-2 h-4 w-4" />
-              <span>About</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={() => {
-                localStorage.removeItem('sessionId');
-                setLocation('/login');
-              }}
-              className="text-red-600"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log Out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+{isOwnProfile ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => {
+                console.log('Account Center clicked from profile');
+                setLocation('/account-center');
+              }}>
+                <User className="mr-2 h-4 w-4" />
+                <span>Account Center</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {/* Time Management */}}>
+                <Clock className="mr-2 h-4 w-4" />
+                <span>Time Management</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowServiceRequest(true)}>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                <span>Service Request</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {/* Help and Support */}}>
+                <HelpCircle className="mr-2 h-4 w-4" />
+                <span>Help and Support</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {/* About */}}>
+                <Info className="mr-2 h-4 w-4" />
+                <span>About</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => {
+                  localStorage.removeItem('sessionId');
+                  setLocation('/login');
+                }}
+                className="text-red-600"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => {/* Report User */}}>
+                <Flag className="mr-2 h-4 w-4" />
+                <span>Report User</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {/* Block User */}}>
+                <UserX className="mr-2 h-4 w-4" />
+                <span>Block User</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {/* Share Profile */}}>
+                <Share className="mr-2 h-4 w-4" />
+                <span>Share Profile</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Profile Header */}
