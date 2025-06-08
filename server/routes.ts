@@ -1417,6 +1417,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create or get existing chat with a user
+  app.post('/api/chats/create', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { userId } = req.body;
+      const targetUserId = Number(userId);
+      
+      if (!targetUserId || targetUserId === req.user.userId) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Check if chat already exists between these users
+      const userChats = await storage.getUserChats(req.user.userId);
+      const existingChat = userChats.find(chat => chat.user.id === targetUserId);
+      
+      if (existingChat) {
+        return res.json({ chatId: existingChat.id, exists: true });
+      }
+      
+      // Check if there's a pending message request
+      const pendingRequest = await db
+        .select()
+        .from(messageRequests)
+        .where(
+          and(
+            eq(messageRequests.fromUserId, req.user.userId),
+            eq(messageRequests.toUserId, targetUserId),
+            eq(messageRequests.status, 'pending')
+          )
+        );
+      
+      if (pendingRequest.length > 0) {
+        return res.status(400).json({ message: 'Message request already sent' });
+      }
+      
+      // Create new message request
+      const [newRequest] = await db
+        .insert(messageRequests)
+        .values({
+          fromUserId: req.user.userId,
+          toUserId: targetUserId,
+          message: 'Wants to start a conversation',
+          status: 'pending'
+        })
+        .returning();
+      
+      res.json({ requestId: newRequest.id, message: 'Message request sent' });
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.post('/api/chats/:chatId/messages', authenticateUser, async (req: any, res: any) => {
     try {
       const chatId = Number(req.params.chatId);
