@@ -40,6 +40,11 @@ export default function ProfilePage() {
     contactInfo: ''
   });
   const [showPerformanceStats, setShowPerformanceStats] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportForm, setReportForm] = useState({
+    reason: '',
+    message: ''
+  });
 
   const profileUserId = userId ? parseInt(userId) : currentUser?.id;
   const isOwnProfile = profileUserId === currentUser?.id;
@@ -98,6 +103,42 @@ export default function ProfilePage() {
     (cvData.achievements && cvData.achievements.length > 0) ||
     (cvData.summary && cvData.summary.trim().length > 0)
   );
+
+  // Report user mutation
+  const reportUserMutation = useMutation({
+    mutationFn: async () => {
+      if (!reportForm.reason) {
+        throw new Error('Please select a reason for reporting');
+      }
+      
+      const response = await apiRequest('POST', `/api/users/${profileUserId}/report`, {
+        reason: reportForm.reason,
+        message: reportForm.message
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to submit report');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Report submitted",
+        description: "Thank you for your report. We'll review it soon.",
+      });
+      setShowReportDialog(false);
+      setReportForm({ reason: '', message: '' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to submit report",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch performance statistics
   const { data: performanceStats, isLoading: statsLoading } = useQuery({
@@ -344,15 +385,18 @@ export default function ProfilePage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => {/* Report User */}}>
+              <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                 <Flag className="mr-2 h-4 w-4" />
                 <span>Report User</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {/* Block User */}}>
-                <UserX className="mr-2 h-4 w-4" />
-                <span>Block User</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {/* Share Profile */}}>
+              <DropdownMenuItem onClick={() => {/* Share Profile */
+                const url = `${window.location.origin}/profile/${profileUserId}`;
+                navigator.clipboard.writeText(url);
+                toast({
+                  title: "Profile link copied",
+                  description: "The profile link has been copied to your clipboard.",
+                });
+              }}>
                 <Share className="mr-2 h-4 w-4" />
                 <span>Share Profile</span>
               </DropdownMenuItem>
@@ -1166,6 +1210,70 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Report User Dialog */}
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Report User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for reporting
+              </label>
+              <select
+                value={reportForm.reason}
+                onChange={(e) => setReportForm({ ...reportForm, reason: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                required
+              >
+                <option value="">Select a reason</option>
+                <option value="spam">Spam</option>
+                <option value="harassment">Harassment</option>
+                <option value="inappropriate_content">Inappropriate Content</option>
+                <option value="fake_account">Fake Account</option>
+                <option value="violence">Violence or Threats</option>
+                <option value="hate_speech">Hate Speech</option>
+                <option value="copyright">Copyright Violation</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Additional details (optional)
+              </label>
+              <Textarea
+                placeholder="Please provide any additional information about this report..."
+                value={reportForm.message}
+                onChange={(e) => setReportForm({ ...reportForm, message: e.target.value })}
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
+          
+          <div className="flex space-x-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setShowReportDialog(false);
+                setReportForm({ reason: '', message: '' });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700"
+              onClick={() => reportUserMutation.mutate()}
+              disabled={reportUserMutation.isPending || !reportForm.reason}
+            >
+              {reportUserMutation.isPending ? "Submitting..." : "Submit Report"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
       
