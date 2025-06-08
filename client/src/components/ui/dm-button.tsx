@@ -28,20 +28,12 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
     },
     onSuccess: (response: any) => {
       if (response.chatId) {
-        // Redirect to chat room (existing or newly created)
+        // Always redirect to chat room (existing or newly created)
         setLocation(`/dm/${response.chatId}`);
         setIsOpen(false);
         setMessage("");
-        
-        if (response.requestId && !response.exists) {
-          // Show notification for new request
-          toast({
-            title: "Message Sent",
-            description: "Your message request has been sent",
-          });
-        }
       } else if (response.requestId) {
-        // Request created successfully without chat
+        // Fallback: Request created successfully without chat
         toast({
           title: "Message Sent",
           description: "Your message request has been sent",
