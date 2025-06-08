@@ -115,9 +115,21 @@ export function SearchPage() {
     setActiveTab("posts");
   };
 
-  const handlePostClick = (postId: number) => {
-    // Navigate to post detail or expand post
-    console.log('Post clicked:', postId);
+  const handleVideoClick = (postId: number) => {
+    setLocation('/trends');
+  };
+
+  const toggleMute = (postId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMutedVideos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -178,12 +190,30 @@ export function SearchPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (post.video1Url || post.videoUrl) ? (
-                        <video 
-                          src={post.video1Url || post.videoUrl}
-                          className="w-full h-full object-cover"
-                          controls
-                          poster={post.imageUrl}
-                        />
+                        <div 
+                          onClick={() => handleVideoClick(post.id)}
+                          className="w-full h-full relative cursor-pointer"
+                        >
+                          <video 
+                            src={post.video1Url || post.videoUrl}
+                            className="w-full h-full object-cover"
+                            autoPlay
+                            loop
+                            muted={mutedVideos.has(post.id)}
+                            poster={post.imageUrl}
+                          />
+                          {/* Mute/Unmute Button */}
+                          <button
+                            onClick={(e) => toggleMute(post.id, e)}
+                            className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                          >
+                            {mutedVideos.has(post.id) ? (
+                              <VolumeX className="h-4 w-4" />
+                            ) : (
+                              <Volume2 className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                           <Image className="h-12 w-12 text-purple-400" />
@@ -375,7 +405,7 @@ export function SearchPage() {
                       {filteredPosts.slice(0, 4).map((post) => (
                         <div
                           key={post.id}
-                          onClick={() => handlePostClick(post.id)}
+                          onClick={() => handleVideoClick(post.id)}
                           className="bg-white/70 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
                         >
                           <div className="aspect-square">
@@ -507,7 +537,7 @@ export function SearchPage() {
                     {filteredPosts.map((post) => (
                       <div
                         key={post.id}
-                        onClick={() => handlePostClick(post.id)}
+                        onClick={() => handleVideoClick(post.id)}
                         className="bg-white/70 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
                       >
                         <div className="aspect-square relative">
