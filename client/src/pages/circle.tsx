@@ -4,17 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Search, MessageCircle, UserPlus, Plus } from "lucide-react";
+import { Search, MessageCircle, UserPlus, Plus, Heart, MessageSquare, Send } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { Navigation } from "@/components/layout/navigation";
 import { VibeUpload } from "@/components/vibe/vibe-upload";
+import { format } from "date-fns";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Circle() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("chats");
+  const [activeTab, setActiveTab] = useState("timeline");
   const [showVibeUpload, setShowVibeUpload] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -22,6 +26,51 @@ export default function Circle() {
   const { data: friendRequests = [] } = useQuery({
     queryKey: ["/api/friend-requests"],
     refetchInterval: 5000,
+  });
+
+  // Circle timeline messages (completely separate from DM system)
+  const { data: circleMessages = [] } = useQuery({
+    queryKey: ["/api/circle/messages"],
+    refetchInterval: 5000,
+  });
+
+  // Post new Circle message
+  const postMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return apiRequest('POST', '/api/circle/messages', { content });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message posted",
+        description: "Your message has been shared with your Circle.",
+      });
+      setNewMessage('');
+      queryClient.invalidateQueries({ queryKey: ["/api/circle/messages"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to post message",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Like/Unlike Circle message
+  const toggleLikeMutation = useMutation({
+    mutationFn: async (messageId: number) => {
+      return apiRequest('POST', `/api/circle/messages/${messageId}/like`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/circle/messages"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Action failed",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    }
   });
 
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
@@ -116,7 +165,7 @@ export default function Circle() {
         <div className="px-6 py-6">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-2">Your Circle</h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
-            Connect with friends and share your moments
+            Share public messages with your friends and connect with others
           </p>
 
           {/* Search Bar */}
@@ -248,37 +297,42 @@ export default function Circle() {
           {/* Tab Navigation */}
           <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
-              onClick={() => setActiveTab("chats")}
+              onClick={() => setActiveTab("timeline")}
               className={`flex-1 px-6 py-4 text-center font-medium ${
-                activeTab === "chats"
+                activeTab === "timeline"
                   ? "text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text border-b-2 border-pink-500"
                   : "text-gray-500 dark:text-gray-400"
               }`}
             >
               <MessageCircle className="w-5 h-5 inline mr-2" />
-              Chats
-              {Array.isArray(chats) && chats.length > 0 && (
+              Timeline
+              {Array.isArray(circleMessages) && circleMessages.length > 0 && (
                 <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-pink-100 to-purple-100 text-pink-600">
-                  {chats.length}
+                  {circleMessages.length}
                 </Badge>
               )}
             </button>
             <button
-              onClick={() => setActiveTab("requests")}
+              onClick={() => setActiveTab("friends")}
               className={`flex-1 px-6 py-4 text-center font-medium ${
-                activeTab === "requests"
+                activeTab === "friends"
                   ? "text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text border-b-2 border-pink-500"
                   : "text-gray-500 dark:text-gray-400"
               }`}
             >
               <UserPlus className="w-5 h-5 inline mr-2" />
-              Requests
+              Friends
+              {Array.isArray(friendRequests) && friendRequests.length > 0 && (
+                <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-pink-100 to-purple-100 text-pink-600">
+                  {friendRequests.length}
+                </Badge>
+              )}
             </button>
           </div>
 
           {/* Tab Content */}
           <div className="h-64 overflow-y-auto pb-20">
-            {activeTab === "chats" && (
+            {activeTab === "timeline" && (
               <div className="p-4 space-y-3">
                 {Array.isArray(chats) && chats.filter((chat: any, index: number, self: any[]) => 
                   index === self.findIndex((c: any) => c.user?.id === chat.user?.id)
