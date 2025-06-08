@@ -2812,8 +2812,6 @@ export class DatabaseStorage implements IStorage {
           eq(chats.user2Id, userId)
         ));
       
-      console.log(`Found ${userChats.length} chats for user ${userId}:`, userChats.map(c => `Chat ${c.id}: ${c.user1Id} <-> ${c.user2Id}`));
-      
       // Filter chats to include mutual friends OR admin chats
       const validChats = [];
       for (const chat of userChats) {
@@ -2827,7 +2825,6 @@ export class DatabaseStorage implements IStorage {
         
         // Include chat if other user is admin OR if both users are following each other
         if (otherUser?.isAdmin) {
-          console.log(`Including admin chat ${chat.id} with user ${otherUserId} (admin: ${otherUser.isAdmin})`);
           validChats.push(chat);
         } else {
           // Check if both users are following each other for non-admin chats
@@ -2853,8 +2850,6 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      console.log(`Found ${validChats.length} valid chats:`, validChats.map(c => `Chat ${c.id}`));
-      
       // Get the other user details and messages for each valid chat
       const formattedChats = [];
       for (const chat of validChats) {
@@ -2878,7 +2873,6 @@ export class DatabaseStorage implements IStorage {
           .orderBy(messages.createdAt);
         
         if (otherUser) {
-          console.log(`Formatting chat ${chat.id} with user ${otherUser.username} (admin: ${otherUser.isAdmin}), messages: ${chatMessages.length}`);
           formattedChats.push({
             id: chat.id,
             user: {
@@ -2890,12 +2884,9 @@ export class DatabaseStorage implements IStorage {
             lastMessage: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].content : null,
             lastMessageTime: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].createdAt : chat.createdAt
           });
-        } else {
-          console.log(`No user found for chat ${chat.id} with otherUserId ${otherUserId}`);
         }
       }
       
-      console.log(`Returning ${formattedChats.length} formatted chats for user ${userId}`);
       return formattedChats;
     } catch (error) {
       console.error('Error getting user chats:', error);
