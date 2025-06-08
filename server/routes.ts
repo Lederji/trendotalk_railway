@@ -1465,6 +1465,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const chatId = Number(req.params.chatId);
       
+      if (!req.user || !req.user.userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      
+      const userId = Number(req.user.userId);
+      
       const chatResult = await db.execute(sql`
         SELECT dc.*, 
                u1.username as user1_username, u1.avatar as user1_avatar,
@@ -1473,7 +1479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         JOIN users u1 ON dc.user1_id = u1.id
         JOIN users u2 ON dc.user2_id = u2.id
         WHERE dc.id = ${chatId} 
-        AND (dc.user1_id = ${req.user.userId} OR dc.user2_id = ${req.user.userId})
+        AND (dc.user1_id = ${userId} OR dc.user2_id = ${userId})
       `);
       
       if (!chatResult.rows || chatResult.rows.length === 0) {
@@ -1583,14 +1589,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessionId = authHeader.substring(7);
       console.log('DM chats - sessionId:', sessionId);
       
-      // Extract user ID from session ID (format: userId_randomString_timestamp)
-      const parts = sessionId.split('_');
-      if (parts.length < 3) {
-        return res.status(401).json({ message: 'Invalid session format' });
+      // Check if session exists in memory first
+      let userId;
+      if (sessions.has(sessionId)) {
+        const sessionData = sessions.get(sessionId);
+        userId = sessionData?.userId;
+        console.log('DM chats - userId from session store:', userId);
+      } else {
+        // Extract user ID from session ID (format: userId_randomString_timestamp)
+        const parts = sessionId.split('_');
+        if (parts.length >= 3) {
+          userId = parseInt(parts[0]);
+          console.log('DM chats - extracted userId from sessionId:', userId);
+        }
       }
-      
-      const userId = parseInt(parts[0]);
-      console.log('DM chats - extracted userId:', userId);
       
       if (isNaN(userId)) {
         return res.status(401).json({ message: 'Invalid user ID in session' });
