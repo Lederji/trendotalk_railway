@@ -285,13 +285,20 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="users" className="space-y-6">
+        <Tabs defaultValue="notifications" className="space-y-6">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="moderation">Moderation</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="notifications" className="relative">
+              Notifications
+              {notifications.filter((n: AdminNotification) => n.type === 'post_report').length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {notifications.filter((n: AdminNotification) => n.type === 'post_report').length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
