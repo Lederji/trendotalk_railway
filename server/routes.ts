@@ -1184,11 +1184,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get friend chats only (excluding admin messages)
   app.get('/api/chats', authenticateUser, async (req: any, res: any) => {
     try {
+      const currentUser = await storage.getUser(req.user.userId);
       const chats = await storage.getUserChats(req.user.userId);
+      
       // Filter out admin chats - only show friend chats
+      // If current user is not admin, hide all chats with admin users
       const friendChats = await Promise.all(chats.map(async (chat) => {
         const otherUser = await storage.getUser(chat.user.id);
-        return otherUser?.isAdmin ? null : chat;
+        // Hide admin chats for non-admin users
+        if (!currentUser?.isAdmin && otherUser?.isAdmin) {
+          return null;
+        }
+        return chat;
       }));
       res.json(friendChats.filter(chat => chat !== null));
     } catch (error) {
@@ -1248,10 +1255,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user has access to this chat
       const userChats = await storage.getUserChats(req.user.userId);
-      const hasAccess = userChats.some(chat => chat.id === chatId);
+      const chat = userChats.find(c => c.id === chatId);
       
-      if (!hasAccess) {
+      if (!chat) {
         return res.status(403).json({ message: 'Access denied to this chat' });
+      }
+      
+      // Get the current user and other user in the chat
+      const currentUser = await storage.getUser(req.user.userId);
+      const otherUser = await storage.getUser(chat.user.id);
+      
+      // Prevent non-admin users from messaging admin users
+      if (!currentUser?.isAdmin && otherUser?.isAdmin) {
+        return res.status(403).json({ message: 'You cannot send messages to admin users. Only admins can initiate conversations with users.' });
       }
       
       const newMessage = await storage.sendMessage(chatId, req.user.userId, message.trim());

@@ -850,8 +850,9 @@ export class MemStorage implements IStorage {
   }
 
   async getUnreadNotificationCount(userId: number): Promise<number> {
-    // For in-memory implementation, return a mock count
-    return 3;
+    const userNotifications = Array.from(this.notifications.values())
+      .filter(notif => notif.userId === userId && !notif.isRead);
+    return userNotifications.length;
   }
 
   async markNotificationAsRead(notificationId: number): Promise<boolean> {
@@ -2660,7 +2661,29 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
 
-      // Simple database insertion with minimal validation for now
+      // Get both users to check admin status
+      const [fromUser] = await db.select().from(users).where(eq(users.id, fromUserId));
+      const [toUser] = await db.select().from(users).where(eq(users.id, toUserId));
+      
+      // Prevent non-admin users from sending friend requests to admin users
+      if (!fromUser?.isAdmin && toUser?.isAdmin) {
+        console.log(`Blocked friend request from non-admin ${fromUserId} to admin ${toUserId}`);
+        return false; // Block friend request to admin
+      }
+
+      // Check if request already exists
+      const existingRequest = await db
+        .select()
+        .from(friendRequests)
+        .where(and(
+          eq(friendRequests.fromUserId, fromUserId),
+          eq(friendRequests.toUserId, toUserId)
+        ));
+      
+      if (existingRequest.length > 0) {
+        return false; // Request already exists
+      }
+
       await db.insert(friendRequests).values({
         fromUserId,
         toUserId,
@@ -2724,6 +2747,19 @@ export class DatabaseStorage implements IStorage {
         ));
       
       if (!request) {
+        return false;
+      }
+      
+      // Get both users to check admin status
+      const [fromUser] = await db.select().from(users).where(eq(users.id, request.fromUserId));
+      const [toUser] = await db.select().from(users).where(eq(users.id, request.toUserId));
+      
+      // Prevent non-admin users from connecting with admin users
+      if ((fromUser?.isAdmin && !toUser?.isAdmin) || (!fromUser?.isAdmin && toUser?.isAdmin)) {
+        // Delete the friend request instead of accepting it
+        await db
+          .delete(friendRequests)
+          .where(eq(friendRequests.id, requestId));
         return false;
       }
       
