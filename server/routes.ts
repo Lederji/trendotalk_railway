@@ -1555,12 +1555,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isBlocked = blockResult.rows && blockResult.rows.length > 0;
       const blockInfo = blockResult.rows?.[0] as any;
       
-      // Check if there's a pending DM request between these users
+      // Check for any DM requests between these users (including dismissed)
       const requestResult = await db.execute(sql`
         SELECT * FROM dm_requests 
         WHERE ((from_user_id = ${userId} AND to_user_id = ${otherUserId}) 
                OR (from_user_id = ${otherUserId} AND to_user_id = ${userId}))
-        AND status = 'pending'
+        AND status IN ('pending', 'dismissed')
+        ORDER BY created_at DESC
+        LIMIT 1
       `);
       
       // Count messages sent by current user in this chat
@@ -1570,22 +1572,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `);
       
       const messageCount = Number(messageCountResult.rows?.[0]?.count || 0);
-      const hasPendingRequest = requestResult.rows && requestResult.rows.length > 0;
-      const pendingRequest = requestResult.rows?.[0];
+      const hasRequest = requestResult.rows && requestResult.rows.length > 0;
+      const request = requestResult.rows?.[0];
+      
+      // Determine restriction type
+      const wasDismissed = hasRequest && request?.status === 'dismissed' && request?.from_user_id === userId;
+      const hasPendingRequest = hasRequest && request?.status === 'pending';
       
       // If current user sent the request and has already sent 1+ messages, restrict further messages
-      const isRestricted = hasPendingRequest && 
-                          pendingRequest?.from_user_id === userId && 
-                          messageCount >= 1;
+      const isRestricted = (hasPendingRequest && request?.from_user_id === userId && messageCount >= 1) || isBlocked;
       
       res.json({
-        isRestricted: isRestricted || isBlocked,
+        isRestricted,
         isBlocked,
+        wasDismissed,
         blockType: blockInfo?.block_type,
         blockExpiresAt: blockInfo?.expires_at,
         messageCount,
         hasPendingRequest,
-        pendingRequestFrom: pendingRequest?.from_user_id
+        pendingRequestFrom: request?.from_user_id
       });
     } catch (error) {
       console.error('Error getting DM chat status:', error);

@@ -290,12 +290,17 @@ export default function DMChatPage() {
 
       {/* Message Input */}
       <div className="bg-white border-t border-gray-200 p-4">
-        {(chatStatus as any)?.isRestricted ? (
+        {(chatStatus as any)?.isRestricted && !(chatStatus as any)?.isBlocked ? (
           <div className="text-center py-4">
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-3">
-              <p className="text-orange-800 text-sm font-medium">Message Request Sent</p>
+              <p className="text-orange-800 text-sm font-medium">
+                {(chatStatus as any)?.wasDismissed ? "Request Dismissed" : "Message Request Sent"}
+              </p>
               <p className="text-orange-600 text-xs mt-1">
-                You can send more messages once they accept your request
+                {(chatStatus as any)?.wasDismissed 
+                  ? "You can send another message after 72 hours"
+                  : "You can send more messages once they accept your request"
+                }
               </p>
             </div>
           </div>
