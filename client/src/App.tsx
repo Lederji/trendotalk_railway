@@ -13,6 +13,7 @@ import Auth from "@/pages/auth";
 import { SearchPage } from "@/pages/search";
 import ChatPage from "@/pages/chat";
 import ChatNew from "@/pages/chat-new";
+import DMChatPage from "@/pages/dm-chat";
 import AdminDashboard from "@/pages/admin-dashboard";
 import PostDetail from "@/pages/PostDetail";
 import NotFound from "@/pages/not-found";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/circle/add-vibe" component={Circle} />
       <Route path="/chats" component={ChatNew} />
       <Route path="/chat/:chatId" component={ChatPage} />
+      <Route path="/dm/:chatId" component={DMChatPage} />
       <Route path="/messages" component={Messages} />
       <Route path="/profile/:userId?" component={Profile} />
       <Route path="/users/:userId" component={Profile} />

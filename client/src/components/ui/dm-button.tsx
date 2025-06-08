@@ -24,8 +24,8 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
     },
     onSuccess: (response: any) => {
       if (response.chatId) {
-        // Always redirect to chat directly (Instagram-style)
-        setLocation(`/chat/${response.chatId}`);
+        // Always redirect to DM chat directly (Instagram-style)
+        setLocation(`/dm/${response.chatId}`);
       }
     },
     onError: (error: any) => {
