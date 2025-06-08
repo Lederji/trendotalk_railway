@@ -1562,7 +1562,8 @@ export class DatabaseStorage implements IStorage {
       await db.execute(`
         ALTER TABLE users 
         ADD COLUMN IF NOT EXISTS followers_count INTEGER DEFAULT 0,
-        ADD COLUMN IF NOT EXISTS following_count INTEGER DEFAULT 0;
+        ADD COLUMN IF NOT EXISTS following_count INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS total_posts_created INTEGER DEFAULT 0;
       `);
 
       // Create posts table with all required fields

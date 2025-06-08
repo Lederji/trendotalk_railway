@@ -516,7 +516,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-lg">
                       <div className="text-2xl font-bold text-pink-600">{performanceStats.totalPosts || 0}</div>
-                      <div className="text-sm text-gray-600">Total Posts</div>
+                      <div className="text-sm text-gray-600">Total Posts Created</div>
                     </div>
                     <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg">
                       <div className="text-2xl font-bold text-blue-600">{performanceStats.videoCount || 0}</div>
