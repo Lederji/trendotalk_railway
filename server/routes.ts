@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { users, reports, messageRequests, chats, messages, circleMessages, circleMessageComments, circleMessageLikes } from "@shared/schema";
+import { users, reports, messageRequests, chats, messages, circleMessages, circleMessageComments, circleMessageLikes, dmChats, dmMessages } from "@shared/schema";
 import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
 import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema, insertVibeSchema, insertMessageRequestSchema } from "@shared/schema";
 import { z } from "zod";
@@ -1433,32 +1433,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if DM chat already exists between these users
-      const existingChat = await db
-        .select()
-        .from(dmChats)
-        .where(
-          or(
-            and(eq(dmChats.user1Id, req.user.userId), eq(dmChats.user2Id, targetUserId)),
-            and(eq(dmChats.user1Id, targetUserId), eq(dmChats.user2Id, req.user.userId))
-          )
-        );
+      const existingChatQuery = `
+        SELECT id FROM dm_chats 
+        WHERE (user1_id = $1 AND user2_id = $2)
+           OR (user1_id = $2 AND user2_id = $1)
+        LIMIT 1
+      `;
+      const existingChat = await db.execute(sql.raw(existingChatQuery, [req.user.userId, targetUserId]));
       
-      if (existingChat.length > 0) {
-        return res.json({ chatId: existingChat[0].id, exists: true });
+      if (existingChat.rowCount && existingChat.rowCount > 0) {
+        return res.json({ chatId: (existingChat.rows[0] as any).id, exists: true });
       }
       
       // Create new DM chat
-      const [newChat] = await db
-        .insert(dmChats)
-        .values({
-          user1Id: req.user.userId,
-          user2Id: targetUserId,
-        })
-        .returning();
+      const createChatQuery = `
+        INSERT INTO dm_chats (user1_id, user2_id) 
+        VALUES ($1, $2) 
+        RETURNING id
+      `;
+      const newChatResult = await db.execute(sql.raw(createChatQuery, [req.user.userId, targetUserId]));
+      
+      const newChat = newChatResult.rows[0] as any;
       
       res.json({ chatId: newChat.id, exists: false });
     } catch (error) {
       console.error('Error creating DM chat:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get DM chat details
+  app.get('/api/dm/:chatId', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      
+      const chatResult = await db.execute(sql`
+        SELECT dc.*, 
+               u1.username as user1_username, u1.avatar as user1_avatar,
+               u2.username as user2_username, u2.avatar as user2_avatar
+        FROM dm_chats dc
+        JOIN users u1 ON dc.user1_id = u1.id
+        JOIN users u2 ON dc.user2_id = u2.id
+        WHERE dc.id = ${chatId} 
+        AND (dc.user1_id = ${req.user.userId} OR dc.user2_id = ${req.user.userId})
+      `);
+      
+      if (chatResult.length === 0) {
+        return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      const chat = chatResult[0];
+      const otherUser = chat.user1_id === req.user.userId ? 
+        { id: chat.user2_id, username: chat.user2_username, avatar: chat.user2_avatar } :
+        { id: chat.user1_id, username: chat.user1_username, avatar: chat.user1_avatar };
+      
+      res.json({
+        id: chat.id,
+        user: otherUser,
+        createdAt: chat.created_at
+      });
+    } catch (error) {
+      console.error('Error getting DM chat:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get DM messages
+  app.get('/api/dm/:chatId/messages', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      
+      // Verify user has access to this chat
+      const chatResult = await db.execute(sql`
+        SELECT * FROM dm_chats 
+        WHERE id = ${chatId} 
+        AND (user1_id = ${req.user.userId} OR user2_id = ${req.user.userId})
+      `);
+      
+      if (chatResult.length === 0) {
+        return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      const messagesResult = await db.execute(sql`
+        SELECT dm.*, 
+               u.username, u.avatar, u.display_name
+        FROM dm_messages dm
+        JOIN users u ON dm.sender_id = u.id
+        WHERE dm.chat_id = ${chatId}
+        ORDER BY dm.created_at ASC
+      `);
+      
+      res.json(messagesResult);
+    } catch (error) {
+      console.error('Error getting DM messages:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Send DM message
+  app.post('/api/dm/:chatId/messages', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const { message } = req.body;
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: 'Message content is required' });
+      }
+      
+      // Verify user has access to this chat
+      const chatResult = await db.execute(sql`
+        SELECT * FROM dm_chats 
+        WHERE id = ${chatId} 
+        AND (user1_id = ${req.user.userId} OR user2_id = ${req.user.userId})
+      `);
+      
+      if (chatResult.length === 0) {
+        return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      // Insert message
+      const messageResult = await db.execute(sql`
+        INSERT INTO dm_messages (chat_id, sender_id, content) 
+        VALUES (${chatId}, ${req.user.userId}, ${message.trim()}) 
+        RETURNING *
+      `);
+      
+      // Update chat timestamp
+      await db.execute(sql`
+        UPDATE dm_chats 
+        SET updated_at = NOW() 
+        WHERE id = ${chatId}
+      `);
+      
+      const newMessage = messageResult[0];
+      res.json(newMessage);
+    } catch (error) {
+      console.error('Error sending DM message:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

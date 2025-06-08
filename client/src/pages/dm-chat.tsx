@@ -21,13 +21,13 @@ export default function DMChatPage() {
 
   // Fetch chat data
   const { data: chat, isLoading } = useQuery({
-    queryKey: [`/api/chats/${chatId}`],
+    queryKey: [`/api/dm/${chatId}`],
     enabled: !!chatId,
   });
 
   // Fetch messages
   const { data: messages = [] } = useQuery({
-    queryKey: [`/api/chats/${chatId}/messages`],
+    queryKey: [`/api/dm/${chatId}/messages`],
     enabled: !!chatId,
     refetchInterval: 2000,
   }) as { data: any[] };
@@ -35,12 +35,12 @@ export default function DMChatPage() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await apiRequest('POST', `/api/chats/${chatId}/messages`, { message: content });
+      const response = await apiRequest('POST', `/api/dm/${chatId}/messages`, { message: content });
       return response.json();
     },
     onSuccess: () => {
       setMessage("");
-      queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/dm/${chatId}/messages`] });
     },
     onError: (error: any) => {
       toast({
