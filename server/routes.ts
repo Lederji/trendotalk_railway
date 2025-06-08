@@ -2112,6 +2112,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Check for dismissed request that may allow one new message after cooldown
+      const dismissedRequestResult = await db.execute(sql`
+        SELECT * FROM dm_requests 
+        WHERE from_user_id = ${req.user.userId} AND to_user_id = ${otherUserId}
+        AND status = 'dismissed'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `);
+      
       // Check if there's a pending DM request that restricts messaging
       const requestResult = await db.execute(sql`
         SELECT * FROM dm_requests 
@@ -2127,6 +2136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const messageCount = Number(messageCountResult.rows?.[0]?.count || 0);
       const hasPendingRequest = requestResult.rows && requestResult.rows.length > 0;
+      const hasDismissedRequest = dismissedRequestResult.rows && dismissedRequestResult.rows.length > 0;
       
       // If user sent the request and has already sent 1+ messages, restrict further messages
       if (hasPendingRequest && messageCount >= 1) {
@@ -2134,6 +2144,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: 'You can only send one message until the recipient accepts your request',
           isRestricted: true 
         });
+      }
+      
+      // If user was dismissed and 72-hour cooldown has expired, allow only one new message
+      if (hasDismissedRequest && !hasPendingRequest) {
+        // Count messages sent after the dismissal
+        const dismissedRequest = dismissedRequestResult.rows[0] as any;
+        const messagesAfterDismissalResult = await db.execute(sql`
+          SELECT COUNT(*) as count FROM dm_messages 
+          WHERE chat_id = ${chatId} 
+          AND sender_id = ${req.user.userId}
+          AND created_at > ${dismissedRequest.updated_at}
+        `);
+        
+        const messagesAfterDismissal = Number(messagesAfterDismissalResult.rows?.[0]?.count || 0);
+        
+        // If user already sent a message after dismissal, block further messages
+        if (messagesAfterDismissal >= 1) {
+          return res.status(403).json({
+            message: 'You can only send one message after being dismissed. Wait for a response.',
+            isRestricted: true
+          });
+        }
       }
       
       // Insert message
