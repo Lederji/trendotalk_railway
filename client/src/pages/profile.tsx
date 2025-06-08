@@ -263,11 +263,23 @@ export default function ProfilePage() {
       setDmMessage('');
     },
     onError: (error: any) => {
-      toast({
-        title: "Failed to send message",
-        description: error.message || "Something went wrong.",
-        variant: "destructive",
-      });
+      if (error.message.includes('Chat already exists')) {
+        toast({
+          title: "Chat exists",
+          description: "You can already message this user. Redirecting to Messages...",
+        });
+        setShowDMDialog(false);
+        setDmMessage('');
+        setTimeout(() => {
+          setLocation('/messages');
+        }, 1000);
+      } else {
+        toast({
+          title: "Failed to send message",
+          description: error.message || "Something went wrong.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -571,12 +583,9 @@ export default function ProfilePage() {
                 variant="outline"
                 className="flex-1 text-sm px-2 py-2"
                 onClick={(e) => {
-                  console.log('DM button clicked', e);
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('About to set showDMDialog to true');
                   setShowDMDialog(true);
-                  console.log('showDMDialog state updated');
                 }}
                 type="button"
               >

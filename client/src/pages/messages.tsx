@@ -206,15 +206,15 @@ export function Messages() {
 
           {/* Requests Tab */}
           <TabsContent value="requests" className="space-y-3">
-            {requests.length === 0 ? (
+            {messageRequests.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
-                  <Info className="h-8 w-8 text-purple-400" />
+                  <MessageCircle className="h-8 w-8 text-purple-400" />
                 </div>
                 <p className="text-gray-500">No message requests</p>
               </div>
             ) : (
-              requests.map((request) => (
+              messageRequests.map((request: any) => (
                 <div
                   key={request.id}
                   className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:bg-white/90 transition-all"
