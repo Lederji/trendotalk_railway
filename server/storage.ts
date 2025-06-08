@@ -40,6 +40,7 @@ export interface IStorage {
   getPostById(id: number): Promise<PostWithUser | undefined>;
   getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]>;
   getUserPosts(userId: number): Promise<PostWithUser[]>;
+  getPostsFromUsers(userIds: number[]): Promise<PostWithUser[]>;
   deletePost(id: number, userId: number): Promise<boolean>;
   
   // Like methods
@@ -1845,6 +1846,40 @@ export class DatabaseStorage implements IStorage {
         } as PostWithUser));
     } catch (error) {
       console.error('Error getting user posts:', error);
+      return [];
+    }
+  }
+
+  async getPostsFromUsers(userIds: number[]): Promise<PostWithUser[]> {
+    try {
+      if (userIds.length === 0) return [];
+      
+      // Clean up old videos before returning posts
+      await this.cleanupOldVideos();
+
+      const result = await db
+        .select({
+          post: posts,
+          user: {
+            id: users.id,
+            username: users.username,
+            avatar: users.avatar,
+            isAdmin: users.isAdmin,
+          },
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .where(inArray(posts.userId, userIds))
+        .orderBy(desc(posts.createdAt));
+
+      return result
+        .filter(row => row.user)
+        .map((row) => ({
+          ...row.post,
+          user: row.user,
+        } as PostWithUser));
+    } catch (error) {
+      console.error('Error getting posts from users:', error);
       return [];
     }
   }

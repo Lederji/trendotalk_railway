@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle } from "lucide-react";
+import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle, VolumeX, Volume2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Navigation } from "@/components/layout/navigation";
@@ -13,6 +13,7 @@ export function SearchPage() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [mutedVideos, setMutedVideos] = useState<Set<number>>(new Set());
 
   // Search for users when typing in search bar
   const { data: searchResults = [] } = useQuery({
@@ -34,9 +35,18 @@ export function SearchPage() {
     staleTime: 30000,
   });
 
-  // Fetch top posts for Instagram-style feed
+  // Fetch posts from followed users for Instagram-style feed
   const { data: topPosts = [] } = useQuery({
-    queryKey: ['/api/posts'],
+    queryKey: ['/api/posts/following'],
+    queryFn: async () => {
+      const response = await fetch('/api/posts/following', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch posts");
+      return response.json();
+    },
     enabled: !searchQuery, // Only show when not searching
   });
 

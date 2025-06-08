@@ -323,6 +323,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get posts from followed users
+  app.get('/api/posts/following', authenticateUser, async (req: any, res: any) => {
+    try {
+      const followingUsers = await storage.getUserFollowing(req.user.userId);
+      const followingIds = followingUsers.map(user => user.id);
+      
+      if (followingIds.length === 0) {
+        return res.json([]);
+      }
+      
+      const posts = await storage.getPostsFromUsers(followingIds);
+      
+      // Check if posts are liked by current user
+      const userLikes = await storage.getUserLikes(req.user.userId);
+      const postsWithLikes = posts.map(post => ({
+        ...post,
+        isLiked: userLikes.includes(post.id)
+      }));
+      
+      res.json(postsWithLikes);
+    } catch (error) {
+      console.error('Error getting following posts:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/posts', async (req, res) => {
     try {
       const { category, adminOnly, userId } = req.query;
