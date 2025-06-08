@@ -18,7 +18,17 @@ export function SearchPage() {
   const { data: searchResults = [] } = useQuery({
     queryKey: ['/api/users/search', searchQuery],
     enabled: searchQuery.length > 0,
+    queryFn: () => fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`).then(res => res.json()),
   });
+
+  // Type the search results properly
+  const typedSearchResults = searchResults as Array<{
+    id: number;
+    username: string;
+    displayName?: string;
+    avatar?: string;
+    bio?: string;
+  }>;
 
   // Mock data for different search types
   const mockPosts = [
@@ -85,17 +95,8 @@ export function SearchPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
-        <div className="max-w-2xl mx-auto flex items-center gap-4 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLocation("/")}
-            className="shrink-0"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          
-          <div className="relative flex-1">
+        <div className="max-w-2xl mx-auto p-4">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
               placeholder="Search users, hashtags, posts..."
@@ -138,7 +139,7 @@ export function SearchPage() {
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Suggested Users</h2>
               <div className="space-y-3">
-                {searchResults.slice(0, 3).map((user: any) => (
+                {typedSearchResults.slice(0, 3).map((user) => (
                   <div
                     key={user.id}
                     onClick={() => handleUserClick(user.username)}
@@ -211,11 +212,11 @@ export function SearchPage() {
               {/* All Tab */}
               <TabsContent value="all" className="space-y-6">
                 {/* Users Section */}
-                {searchResults.length > 0 && (
+                {typedSearchResults.length > 0 && (
                   <div>
                     <h3 className="text-sm font-medium text-gray-700 mb-3">Users</h3>
                     <div className="space-y-2">
-                      {searchResults.slice(0, 3).map((user: any) => (
+                      {typedSearchResults.slice(0, 3).map((user) => (
                         <div
                           key={user.id}
                           onClick={() => handleUserClick(user.username)}
@@ -303,7 +304,7 @@ export function SearchPage() {
                 )}
 
                 {/* No Results */}
-                {searchResults.length === 0 && filteredHashtags.length === 0 && filteredPosts.length === 0 && (
+                {typedSearchResults.length === 0 && filteredHashtags.length === 0 && filteredPosts.length === 0 && (
                   <div className="text-center py-12">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
                       <Search className="h-8 w-8 text-purple-400" />
@@ -315,7 +316,7 @@ export function SearchPage() {
 
               {/* Users Tab */}
               <TabsContent value="users" className="space-y-3">
-                {searchResults.length === 0 ? (
+                {typedSearchResults.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
                       <Users className="h-8 w-8 text-purple-400" />
@@ -323,7 +324,7 @@ export function SearchPage() {
                     <p className="text-gray-500">No users found for "{searchQuery}"</p>
                   </div>
                 ) : (
-                  searchResults.map((user: any) => (
+                  typedSearchResults.map((user) => (
                     <div
                       key={user.id}
                       onClick={() => handleUserClick(user.username)}
