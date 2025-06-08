@@ -1632,21 +1632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get reports summary (admin only)
-  app.get('/api/admin/reports', authenticateUser, async (req: any, res: any) => {
-    try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-      
-      const reports = await storage.getReportsSummary();
-      res.json(reports);
-    } catch (error) {
-      console.error('Error getting reports:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
+
 
   // Send email OTP
   app.post('/api/account/send-email-otp', authenticateUser, async (req: any, res: any) => {

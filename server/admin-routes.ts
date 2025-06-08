@@ -1,5 +1,8 @@
 import { Express } from "express";
 import { storage } from "./storage";
+import { db } from "./db";
+import { reports } from "@shared/schema";
+import { sql } from "drizzle-orm";
 
 function authenticateAdmin(req: any, res: any, next: any) {
   const sessionId = req.headers.authorization?.replace('Bearer ', '');
@@ -194,6 +197,28 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
       res.json({ message: 'Post deleted successfully' });
     } catch (error) {
       console.error('Admin delete post error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get Reports for Admin
+  app.get('/api/admin/reports', authenticateAdmin, async (req, res) => {
+    try {
+      const reportsSummary = await db
+        .select({
+          reportedUsername: reports.reportedUsername,
+          reportCount: sql<number>`count(*)`,
+          latestReport: sql<Date>`max(${reports.createdAt})`,
+          reportedUserId: reports.reportedUserId,
+          reason: reports.reason
+        })
+        .from(reports)
+        .groupBy(reports.reportedUsername, reports.reportedUserId, reports.reason)
+        .orderBy(sql<number>`count(*) DESC`);
+      
+      res.json(reportsSummary);
+    } catch (error) {
+      console.error('Get reports error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

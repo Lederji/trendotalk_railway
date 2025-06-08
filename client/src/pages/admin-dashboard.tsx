@@ -144,6 +144,20 @@ export default function AdminDashboard() {
     },
   });
 
+  // Fetch user reports
+  const { data: reports = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/reports"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/reports", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch reports');
+      return response.json();
+    },
+  });
+
   // Fetch notifications including reports
   const { data: notifications = [] } = useQuery<AdminNotification[]>({
     queryKey: ["/api/notifications"],
