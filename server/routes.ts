@@ -1433,25 +1433,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if DM chat already exists between these users
-      const existingChatQuery = `
+      const existingChatResult = await db.execute(sql`
         SELECT id FROM dm_chats 
-        WHERE (user1_id = $1 AND user2_id = $2)
-           OR (user1_id = $2 AND user2_id = $1)
+        WHERE (user1_id = ${req.user.userId} AND user2_id = ${targetUserId})
+           OR (user1_id = ${targetUserId} AND user2_id = ${req.user.userId})
         LIMIT 1
-      `;
-      const existingChat = await db.execute(sql.raw(existingChatQuery, [req.user.userId, targetUserId]));
+      `);
       
-      if (existingChat.rowCount && existingChat.rowCount > 0) {
-        return res.json({ chatId: (existingChat.rows[0] as any).id, exists: true });
+      if (existingChatResult.rows && existingChatResult.rows.length > 0) {
+        return res.json({ chatId: (existingChatResult.rows[0] as any).id, exists: true });
       }
       
       // Create new DM chat
-      const createChatQuery = `
+      const newChatResult = await db.execute(sql`
         INSERT INTO dm_chats (user1_id, user2_id) 
-        VALUES ($1, $2) 
+        VALUES (${req.user.userId}, ${targetUserId}) 
         RETURNING id
-      `;
-      const newChatResult = await db.execute(sql.raw(createChatQuery, [req.user.userId, targetUserId]));
+      `);
       
       const newChat = newChatResult.rows[0] as any;
       
@@ -1478,11 +1476,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         AND (dc.user1_id = ${req.user.userId} OR dc.user2_id = ${req.user.userId})
       `);
       
-      if (chatResult.length === 0) {
+      if (!chatResult.rows || chatResult.rows.length === 0) {
         return res.status(404).json({ message: 'Chat not found' });
       }
       
-      const chat = chatResult[0];
+      const chat = chatResult.rows[0] as any;
       const otherUser = chat.user1_id === req.user.userId ? 
         { id: chat.user2_id, username: chat.user2_username, avatar: chat.user2_avatar } :
         { id: chat.user1_id, username: chat.user1_username, avatar: chat.user1_avatar };
@@ -1510,7 +1508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         AND (user1_id = ${req.user.userId} OR user2_id = ${req.user.userId})
       `);
       
-      if (chatResult.length === 0) {
+      if (!chatResult.rows || chatResult.rows.length === 0) {
         return res.status(404).json({ message: 'Chat not found' });
       }
       
@@ -1523,7 +1521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY dm.created_at ASC
       `);
       
-      res.json(messagesResult);
+      res.json(messagesResult.rows || []);
     } catch (error) {
       console.error('Error getting DM messages:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -1547,7 +1545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         AND (user1_id = ${req.user.userId} OR user2_id = ${req.user.userId})
       `);
       
-      if (chatResult.length === 0) {
+      if (!chatResult.rows || chatResult.rows.length === 0) {
         return res.status(404).json({ message: 'Chat not found' });
       }
       
@@ -1565,7 +1563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE id = ${chatId}
       `);
       
-      const newMessage = messageResult[0];
+      const newMessage = messageResult.rows[0] as any;
       res.json(newMessage);
     } catch (error) {
       console.error('Error sending DM message:', error);
