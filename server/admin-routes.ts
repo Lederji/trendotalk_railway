@@ -115,7 +115,8 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
       
       // Send ban message to user
       const banMessage = `Your account has been temporarily suspended. Reason: ${reason || 'Policy violation'}. Please contact support if you believe this is an error.`;
-      await storage.sendAdminMessage(userId, banMessage, (req as any).user.id);
+      console.log('Sending admin message from admin ID:', (req as any).user.adminId, 'to user ID:', userId);
+      await storage.sendAdminMessage(userId, banMessage, (req as any).user.adminId);
       
       res.json({ message: 'User banned successfully' });
     } catch (error) {
