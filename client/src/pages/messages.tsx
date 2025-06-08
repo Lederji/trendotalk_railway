@@ -88,7 +88,13 @@ export function Messages() {
   }));
 
   const handleUserClick = (chatId: number) => {
-    setLocation(`/chat/${chatId}`);
+    // Navigate to home page with messages tab active and open specific chat
+    setLocation(`/?tab=messages&chat=${chatId}`);
+  };
+
+  const handleStartNewDM = (userId: number) => {
+    // Navigate to home page to start new DM conversation
+    setLocation(`/?tab=messages&newchat=${userId}`);
   };
 
   return (

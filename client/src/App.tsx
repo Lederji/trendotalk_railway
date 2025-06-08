@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
-import Home from "@/pages/home";
+import HomePage from "@/pages/home";
 import Trends from "@/pages/trends";
 import Create from "@/pages/create";
 import Circle from "@/pages/circle";
@@ -24,7 +24,7 @@ import BannedPage from "@/pages/banned";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={HomePage} />
       <Route path="/trends" component={Trends} />
       <Route path="/create" component={Create} />
       <Route path="/circle" component={Circle} />
