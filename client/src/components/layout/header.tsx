@@ -160,10 +160,8 @@ export function Header() {
                     </div>
                   ) : (
                     <div className="max-h-80 overflow-y-auto">
-                      {(notifications as any[]).map((notification: any) => {
-                        console.log('Notification data:', notification);
-                        return (
-                          <DropdownMenuItem
+                      {(notifications as any[]).map((notification: any) => (
+                        <DropdownMenuItem
                           key={notification.id}
                           className="p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                           onClick={() => {
@@ -229,28 +227,29 @@ export function Header() {
                                     setLocation(`/`);
                                   }}
                                 >
-                                  {notification.postImage || notification.postVideo ? (
-                                    notification.postImage ? (
-                                      <img 
-                                        src={notification.postImage} 
-                                        alt="Post preview" 
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                          console.log('Image failed to load:', notification.postImage);
-                                          e.currentTarget.style.display = 'none';
-                                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                        }}
-                                      />
-                                    ) : (
-                                      <video 
-                                        src={notification.postVideo} 
-                                        className="w-full h-full object-cover"
-                                        muted
-                                        playsInline
-                                      />
-                                    )
+                                  {notification.postImage ? (
+                                    <img 
+                                      src={notification.postImage} 
+                                      alt="Post preview" 
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                        if (fallback) fallback.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : notification.postVideo ? (
+                                    <video 
+                                      src={notification.postVideo} 
+                                      className="w-full h-full object-cover"
+                                      muted
+                                      playsInline
+                                    />
                                   ) : null}
-                                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500 ${(notification.postImage || notification.postVideo) ? 'hidden' : ''}`}>
+                                  <div 
+                                    className="w-full h-full flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500"
+                                    style={{ display: (notification.postImage || notification.postVideo) ? 'none' : 'flex' }}
+                                  >
                                     <div className="w-4 h-4 bg-white rounded"></div>
                                   </div>
                                 </div>
@@ -304,8 +303,7 @@ export function Header() {
                             )}
                           </div>
                         </DropdownMenuItem>
-                        );
-                      })}
+                      ))}
                     </div>
                   )}
                 </DropdownMenuContent>
