@@ -103,6 +103,42 @@ export function Messages() {
     }
   });
 
+  // Handle DM request response
+  const handleDMRequest = useMutation({
+    mutationFn: async ({ requestId, action }: { requestId: number; action: 'allow' | 'dismiss' | 'block' }) => {
+      const response = await apiRequest('POST', `/api/dm/requests/${requestId}/action`, { action });
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dm/requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dm/chats"] });
+      
+      if (variables.action === 'allow') {
+        toast({
+          title: "Request Accepted",
+          description: "Chat has been created and moved to Messages",
+        });
+      } else if (variables.action === 'dismiss') {
+        toast({
+          title: "Request Dismissed", 
+          description: "User cannot send requests for 72 hours",
+        });
+      } else if (variables.action === 'block') {
+        toast({
+          title: "User Blocked",
+          description: "User has been permanently blocked",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to handle DM request",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Combine admin messages and DM chats for display
   const messages = [
     ...adminMessages.map((chat: any) => ({
@@ -191,9 +227,9 @@ export function Messages() {
               className="rounded-lg font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
             >
               Requests
-              {messageRequests.length > 0 && (
+              {(messageRequests.length + dmRequests.length) > 0 && (
                 <Badge className="ml-2 bg-red-500 text-white h-5 w-5 p-0 text-xs">
-                  {messageRequests.length}
+                  {messageRequests.length + dmRequests.length}
                 </Badge>
               )}
             </TabsTrigger>
