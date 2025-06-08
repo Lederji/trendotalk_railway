@@ -18,17 +18,22 @@ export function SearchPage() {
   const { data: searchResults = [] } = useQuery({
     queryKey: ['/api/users/search', searchQuery],
     enabled: searchQuery.length > 0,
-    queryFn: () => fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`).then(res => res.json()),
   });
 
-  // Type the search results properly
-  const typedSearchResults = searchResults as Array<{
+  // Fetch top posts for Instagram-style feed
+  const { data: topPosts = [] } = useQuery({
+    queryKey: ['/api/posts'],
+    enabled: !searchQuery, // Only show when not searching
+  });
+
+  // Type the search results properly and ensure it's always an array
+  const typedSearchResults = Array.isArray(searchResults) ? searchResults as Array<{
     id: number;
     username: string;
     displayName?: string;
     avatar?: string;
     bio?: string;
-  }>;
+  }> : [];
 
   // Mock data for different search types
   const mockPosts = [
@@ -110,68 +115,90 @@ export function SearchPage() {
       </div>
 
       <div className="max-w-2xl mx-auto p-4">
-        {/* Recent Searches / Trending (when no query) */}
+        {/* Instagram-style Feed (when no query) */}
         {!searchQuery && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Trending Hashtags</h2>
-              <div className="grid grid-cols-2 gap-3">
-                {mockHashtags.slice(0, 6).map((hashtag) => (
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Videos</h2>
+              <div className="grid grid-cols-3 gap-1">
+                {Array.isArray(topPosts) && topPosts.filter((post: any) => post.videoUrl || post.video1Url).slice(0, 9).map((post: any) => (
                   <div
-                    key={hashtag.tag}
-                    onClick={() => handleHashtagClick(hashtag.tag)}
-                    className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
+                    key={post.id}
+                    onClick={() => handlePostClick(post.id)}
+                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer relative group"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                        <Hash className="h-5 w-5 text-white" />
+                    {post.imageUrl ? (
+                      <img 
+                        src={post.imageUrl} 
+                        alt={post.caption || post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
+                        <Video className="h-8 w-8 text-purple-600" />
                       </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">#{hashtag.tag}</h3>
-                        <p className="text-sm text-gray-600">{hashtag.postCount} posts</p>
-                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <Video className="h-6 w-6 text-white" />
                     </div>
+                    {post.likesCount && (
+                      <div className="absolute bottom-1 left-1">
+                        <Badge className="bg-black/50 text-white text-xs px-1">
+                          {post.likesCount}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Suggested Users</h2>
-              <div className="space-y-3">
-                {typedSearchResults.slice(0, 3).map((user) => (
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Posts</h2>
+              <div className="grid grid-cols-3 gap-1">
+                {Array.isArray(topPosts) && topPosts.slice(0, 12).map((post: any) => (
                   <div
-                    key={user.id}
-                    onClick={() => handleUserClick(user.username)}
-                    className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
+                    key={post.id}
+                    onClick={() => handlePostClick(post.id)}
+                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer relative group"
                   >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                        <AvatarImage src={user.avatar} alt={user.displayName || user.username} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                          {(user.displayName || user.username).charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 truncate">
-                          {user.displayName || user.username}
-                        </h3>
-                        <p className="text-sm text-gray-600 truncate">@{user.username}</p>
+                    {post.imageUrl ? (
+                      <img 
+                        src={post.imageUrl} 
+                        alt={post.caption || post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
+                        <Image className="h-8 w-8 text-purple-600" />
                       </div>
-                      
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="border-purple-200 text-purple-600 hover:bg-purple-50"
-                      >
-                        Follow
-                      </Button>
+                    )}
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      {post.videoUrl || post.video1Url ? (
+                        <Video className="h-6 w-6 text-white absolute top-2 right-2" />
+                      ) : null}
                     </div>
+                    {(post.likesCount || post.votesCount) && (
+                      <div className="absolute bottom-1 left-1">
+                        <Badge className="bg-black/50 text-white text-xs px-1">
+                          {post.likesCount || post.votesCount || 0}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
+
+            {Array.isArray(topPosts) && topPosts.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+                  <Image className="h-8 w-8 text-purple-400" />
+                </div>
+                <p className="text-gray-500">No posts available</p>
+                <p className="text-sm text-gray-400 mt-1">Start following users or create your first post</p>
+              </div>
+            )}
           </div>
         )}
 
