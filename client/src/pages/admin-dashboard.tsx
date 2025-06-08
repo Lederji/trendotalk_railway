@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
+import { toast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +36,6 @@ import {
   Activity,
   ArrowLeft
 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
 
 interface AdminStats {
   totalUsers: number;
@@ -604,10 +605,29 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                if (notification.postId) {
+                                  window.open(`/trends`, '_blank');
+                                }
+                              }}
+                              title="View post in trends"
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="destructive">
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => {
+                                if (notification.postId && confirm('Are you sure you want to delete this reported post? This action cannot be undone.')) {
+                                  deletePostMutation.mutate(notification.postId);
+                                }
+                              }}
+                              disabled={deletePostMutation.isPending}
+                              title="Delete reported post"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
