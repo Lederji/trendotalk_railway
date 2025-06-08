@@ -2857,7 +2857,8 @@ export class DatabaseStorage implements IStorage {
           createdAt: notifications.createdAt,
           fromUsername: users.username,
           fromAvatar: users.avatar,
-          postImage: posts.imageUrl
+          postImage: posts.imageUrl,
+          postVideo: posts.videoUrl
         })
         .from(notifications)
         .leftJoin(users, eq(notifications.fromUserId, users.id))

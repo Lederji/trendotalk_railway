@@ -107,7 +107,23 @@ export function Header() {
                 </Badge>
               </Button>
               
-              <DropdownMenu open={showNotifications} onOpenChange={setShowNotifications}>
+              <DropdownMenu open={showNotifications} onOpenChange={async (isOpen) => {
+                setShowNotifications(isOpen);
+                if (isOpen && (notificationCount as any)?.count > 0) {
+                  // Mark all notifications as read when opening
+                  try {
+                    await fetch('/api/notifications/read-all', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      }
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+                  } catch (error) {
+                    console.error('Failed to mark notifications as read:', error);
+                  }
+                }
+              }}>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -144,8 +160,10 @@ export function Header() {
                     </div>
                   ) : (
                     <div className="max-h-80 overflow-y-auto">
-                      {(notifications as any[]).map((notification: any) => (
-                        <DropdownMenuItem
+                      {(notifications as any[]).map((notification: any) => {
+                        console.log('Notification data:', notification);
+                        return (
+                          <DropdownMenuItem
                           key={notification.id}
                           className="p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                           onClick={() => {
@@ -211,17 +229,30 @@ export function Header() {
                                     setLocation(`/`);
                                   }}
                                 >
-                                  {notification.postImage ? (
-                                    <img 
-                                      src={notification.postImage} 
-                                      alt="Post preview" 
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500">
-                                      <div className="w-4 h-4 bg-white rounded"></div>
-                                    </div>
-                                  )}
+                                  {notification.postImage || notification.postVideo ? (
+                                    notification.postImage ? (
+                                      <img 
+                                        src={notification.postImage} 
+                                        alt="Post preview" 
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          console.log('Image failed to load:', notification.postImage);
+                                          e.currentTarget.style.display = 'none';
+                                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        }}
+                                      />
+                                    ) : (
+                                      <video 
+                                        src={notification.postVideo} 
+                                        className="w-full h-full object-cover"
+                                        muted
+                                        playsInline
+                                      />
+                                    )
+                                  ) : null}
+                                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500 ${(notification.postImage || notification.postVideo) ? 'hidden' : ''}`}>
+                                    <div className="w-4 h-4 bg-white rounded"></div>
+                                  </div>
                                 </div>
                               )}
                               
@@ -273,7 +304,8 @@ export function Header() {
                             )}
                           </div>
                         </DropdownMenuItem>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </DropdownMenuContent>
