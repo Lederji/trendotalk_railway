@@ -19,7 +19,8 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
 
   const createChatMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('POST', '/api/chats/create', { userId });
+      const response = await apiRequest('POST', '/api/chats/create', { userId });
+      return response.json();
     },
     onSuccess: (response: any) => {
       if (response.chatId) {
