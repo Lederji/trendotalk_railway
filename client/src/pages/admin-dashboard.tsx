@@ -63,8 +63,8 @@ interface AdminUser {
   username: string;
   avatar?: string;
   isAdmin: boolean;
-  isBanned?: boolean;
-  isVerified?: boolean;
+  accountStatus: string;
+  emailVerified: boolean;
   followersCount: number;
   postsCount: number;
   createdAt: string;
@@ -382,11 +382,11 @@ export default function AdminDashboard() {
                           </div>
                           <div>
                             <p className="font-medium">{user.username}</p>
-                            {user.isVerified && <Badge variant="secondary">Verified</Badge>}
+                            {user.emailVerified && <Badge variant="secondary">Verified</Badge>}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {user.isBanned ? (
+                          {user.accountStatus === 'banned' ? (
                             <Badge variant="destructive">Banned</Badge>
                           ) : (
                             <Badge variant="default">Active</Badge>

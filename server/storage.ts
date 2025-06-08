@@ -3086,7 +3086,10 @@ export class DatabaseStorage implements IStorage {
     try {
       await db
         .update(users)
-        .set({ isBanned: true, banReason: reason })
+        .set({ 
+          accountStatus: 'banned', 
+          accountStatusReason: reason 
+        })
         .where(eq(users.id, userId));
       return true;
     } catch (error) {
@@ -3099,7 +3102,10 @@ export class DatabaseStorage implements IStorage {
     try {
       await db
         .update(users)
-        .set({ isBanned: false, banReason: null })
+        .set({ 
+          accountStatus: 'live', 
+          accountStatusReason: null 
+        })
         .where(eq(users.id, userId));
       return true;
     } catch (error) {
@@ -3112,7 +3118,7 @@ export class DatabaseStorage implements IStorage {
     try {
       await db
         .update(users)
-        .set({ isVerified: true })
+        .set({ emailVerified: true })
         .where(eq(users.id, userId));
       return true;
     } catch (error) {
