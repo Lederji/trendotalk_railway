@@ -1632,19 +1632,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const request = requestResult.rows[0] as any;
       
-      // Create the chat now that it's approved
-      const chatResult = await db.execute(sql`
-        INSERT INTO dm_chats (user1_id, user2_id) 
-        VALUES (${request.from_user_id}, ${req.user.userId}) 
-        RETURNING id
+      // Check if chat already exists
+      const existingChatResult = await db.execute(sql`
+        SELECT id FROM dm_chats 
+        WHERE (user1_id = ${request.from_user_id} AND user2_id = ${req.user.userId})
+           OR (user1_id = ${req.user.userId} AND user2_id = ${request.from_user_id})
       `);
       
-      const chat = chatResult.rows[0] as any;
+      let chatId;
+      if (existingChatResult.rows && existingChatResult.rows.length > 0) {
+        // Use existing chat
+        chatId = (existingChatResult.rows[0] as any).id;
+      } else {
+        // Create new chat
+        const chatResult = await db.execute(sql`
+          INSERT INTO dm_chats (user1_id, user2_id) 
+          VALUES (${request.from_user_id}, ${req.user.userId}) 
+          RETURNING id
+        `);
+        chatId = (chatResult.rows[0] as any).id;
+        
+        // Add the first message to new chat
+        await db.execute(sql`
+          INSERT INTO dm_messages (chat_id, sender_id, content) 
+          VALUES (${chatId}, ${request.from_user_id}, ${request.first_message})
+        `);
+      }
       
-      // Add the first message to the chat
+      // Add system messages to move this chat to Messages tab (4+ messages required)
       await db.execute(sql`
         INSERT INTO dm_messages (chat_id, sender_id, content) 
-        VALUES (${chat.id}, ${request.from_user_id}, ${request.first_message})
+        VALUES 
+        (${chatId}, ${req.user.userId}, 'Message request accepted'),
+        (${chatId}, ${req.user.userId}, 'You can now chat freely'),
+        (${chatId}, ${req.user.userId}, 'Start your conversation!')
       `);
       
       // Update request status to accepted
@@ -1654,7 +1675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE id = ${requestId}
       `);
       
-      res.json({ success: true, message: 'Request accepted', chatId: chat.id });
+      res.json({ success: true, message: 'Request accepted', chatId: chatId });
     } catch (error) {
       console.error('Error accepting DM request:', error);
       res.status(500).json({ message: 'Internal server error' });
