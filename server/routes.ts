@@ -1417,14 +1417,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create or get existing DM chat (separate from Circle messaging)
+  // Create DM request (separate from Circle messaging)
   app.post('/api/dm/create', authenticateUser, async (req: any, res: any) => {
     try {
-      const { userId } = req.body;
+      const { userId, message } = req.body;
       const targetUserId = Number(userId);
       
       if (!targetUserId || targetUserId === req.user.userId) {
         return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: 'Message is required' });
       }
       
       const targetUser = await storage.getUser(targetUserId);
@@ -1432,7 +1436,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
       
-      // Check if DM chat already exists between these users
+      // Check if user is blocked
+      const blockResult = await db.execute(sql`
+        SELECT * FROM dm_blocks 
+        WHERE blocker_id = ${targetUserId} AND blocked_id = ${req.user.userId}
+        AND (block_type = 'permanent' OR (block_type = 'temporary' AND expires_at > NOW()))
+      `);
+      
+      if (blockResult.rows && blockResult.rows.length > 0) {
+        return res.status(403).json({ message: 'You cannot send messages to this user' });
+      }
+      
+      // Check if chat already exists (accepted request)
       const existingChatResult = await db.execute(sql`
         SELECT id FROM dm_chats 
         WHERE (user1_id = ${req.user.userId} AND user2_id = ${targetUserId})
@@ -1444,18 +1459,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ chatId: (existingChatResult.rows[0] as any).id, exists: true });
       }
       
-      // Create new DM chat
-      const newChatResult = await db.execute(sql`
-        INSERT INTO dm_chats (user1_id, user2_id) 
-        VALUES (${req.user.userId}, ${targetUserId}) 
+      // Check if request already exists
+      const existingRequestResult = await db.execute(sql`
+        SELECT id, status FROM dm_requests 
+        WHERE from_user_id = ${req.user.userId} AND to_user_id = ${targetUserId}
+        AND status IN ('pending', 'dismissed')
+        ORDER BY created_at DESC
+        LIMIT 1
+      `);
+      
+      if (existingRequestResult.rows && existingRequestResult.rows.length > 0) {
+        const request = existingRequestResult.rows[0] as any;
+        if (request.status === 'dismissed') {
+          return res.status(403).json({ message: 'You cannot send another request to this user yet' });
+        }
+        return res.json({ requestId: request.id, exists: true });
+      }
+      
+      // Create new DM request
+      const newRequestResult = await db.execute(sql`
+        INSERT INTO dm_requests (from_user_id, to_user_id, first_message) 
+        VALUES (${req.user.userId}, ${targetUserId}, ${message.trim()}) 
         RETURNING id
       `);
       
-      const newChat = newChatResult.rows[0] as any;
+      const newRequest = newRequestResult.rows[0] as any;
       
-      res.json({ chatId: newChat.id, exists: false });
+      res.json({ requestId: newRequest.id, exists: false });
     } catch (error) {
-      console.error('Error creating DM chat:', error);
+      console.error('Error creating DM request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get DM requests for current user
+  app.get('/api/dm/requests', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = req.user.userId;
+      
+      const requestsResult = await db.execute(sql`
+        SELECT dr.*, 
+               u.username, u.avatar, u.display_name
+        FROM dm_requests dr
+        JOIN users u ON dr.from_user_id = u.id
+        WHERE dr.to_user_id = ${userId} AND dr.status = 'pending'
+        ORDER BY dr.created_at DESC
+      `);
+      
+      const requests = requestsResult.rows?.map((request: any) => ({
+        id: request.id,
+        fromUser: {
+          id: request.from_user_id,
+          username: request.username,
+          avatar: request.avatar,
+          displayName: request.display_name
+        },
+        firstMessage: request.first_message,
+        createdAt: request.created_at
+      })) || [];
+      
+      res.json(requests);
+    } catch (error) {
+      console.error('Error getting DM requests:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Handle DM request actions (allow, dismiss, block)
+  app.post('/api/dm/requests/:requestId/action', authenticateUser, async (req: any, res: any) => {
+    try {
+      const requestId = Number(req.params.requestId);
+      const { action } = req.body; // allow, dismiss, block
+      
+      if (!['allow', 'dismiss', 'block'].includes(action)) {
+        return res.status(400).json({ message: 'Invalid action' });
+      }
+      
+      // Get the request
+      const requestResult = await db.execute(sql`
+        SELECT * FROM dm_requests 
+        WHERE id = ${requestId} AND to_user_id = ${req.user.userId} AND status = 'pending'
+      `);
+      
+      if (!requestResult.rows || requestResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Request not found' });
+      }
+      
+      const request = requestResult.rows[0] as any;
+      
+      if (action === 'allow') {
+        // Create chat and move first message
+        const chatResult = await db.execute(sql`
+          INSERT INTO dm_chats (user1_id, user2_id) 
+          VALUES (${request.from_user_id}, ${req.user.userId}) 
+          RETURNING id
+        `);
+        
+        const chat = chatResult.rows[0] as any;
+        
+        // Add first message to the chat
+        await db.execute(sql`
+          INSERT INTO dm_messages (chat_id, sender_id, content) 
+          VALUES (${chat.id}, ${request.from_user_id}, ${request.first_message})
+        `);
+        
+        // Update request status
+        await db.execute(sql`
+          UPDATE dm_requests 
+          SET status = 'accepted', updated_at = NOW() 
+          WHERE id = ${requestId}
+        `);
+        
+        res.json({ chatId: chat.id, success: true });
+      } else if (action === 'dismiss') {
+        // Dismiss for 72 hours
+        await db.execute(sql`
+          UPDATE dm_requests 
+          SET status = 'dismissed', updated_at = NOW() 
+          WHERE id = ${requestId}
+        `);
+        
+        // Add temporary block
+        await db.execute(sql`
+          INSERT INTO dm_blocks (blocker_id, blocked_id, block_type, expires_at) 
+          VALUES (${req.user.userId}, ${request.from_user_id}, 'temporary', NOW() + INTERVAL '72 hours')
+        `);
+        
+        res.json({ success: true });
+      } else if (action === 'block') {
+        // Permanent block
+        await db.execute(sql`
+          UPDATE dm_requests 
+          SET status = 'blocked', updated_at = NOW() 
+          WHERE id = ${requestId}
+        `);
+        
+        // Add permanent block
+        await db.execute(sql`
+          INSERT INTO dm_blocks (blocker_id, blocked_id, block_type) 
+          VALUES (${req.user.userId}, ${request.from_user_id}, 'permanent')
+        `);
+        
+        res.json({ success: true });
+      }
+    } catch (error) {
+      console.error('Error handling DM request action:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

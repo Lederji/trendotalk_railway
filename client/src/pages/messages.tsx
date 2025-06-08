@@ -42,7 +42,21 @@ export function Messages() {
     },
   });
 
-  // Fetch message requests
+  // Fetch DM requests
+  const { data: dmRequests = [] } = useQuery({
+    queryKey: ["/api/dm/requests"],
+    queryFn: async () => {
+      const response = await fetch("/api/dm/requests", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch DM requests');
+      return response.json();
+    },
+  });
+
+  // Fetch message requests (existing system)
   const { data: messageRequests = [] } = useQuery({
     queryKey: ["/api/message-requests"],
     queryFn: async () => {

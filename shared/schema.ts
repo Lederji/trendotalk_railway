@@ -224,6 +224,27 @@ export const dmMessages = pgTable("dm_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// DM Request System
+export const dmRequests = pgTable("dm_requests", {
+  id: serial("id").primaryKey(),
+  fromUserId: integer("from_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  toUserId: integer("to_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  firstMessage: text("first_message").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, dismissed, blocked
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// DM Blocks (permanent and temporary)
+export const dmBlocks = pgTable("dm_blocks", {
+  id: serial("id").primaryKey(),
+  blockerId: integer("blocker_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  blockedId: integer("blocked_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  blockType: text("block_type").notNull().default("permanent"), // permanent, temporary
+  expiresAt: timestamp("expires_at"), // null for permanent blocks
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
