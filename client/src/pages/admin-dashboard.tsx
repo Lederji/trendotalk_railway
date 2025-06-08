@@ -369,21 +369,23 @@ export default function AdminDashboard() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="notifications" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="moderation">Moderation</TabsTrigger>
-            <TabsTrigger value="notifications" className="relative">
-              Notifications
-              {notifications.filter((n: AdminNotification) => n.type === 'post_report').length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {notifications.filter((n: AdminNotification) => n.type === 'post_report').length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto">
+            <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground min-w-fit">
+              <TabsTrigger value="users" className="whitespace-nowrap px-3 py-1.5 text-sm">Users</TabsTrigger>
+              <TabsTrigger value="posts" className="whitespace-nowrap px-3 py-1.5 text-sm">Posts</TabsTrigger>
+              <TabsTrigger value="analytics" className="whitespace-nowrap px-3 py-1.5 text-sm">Analytics</TabsTrigger>
+              <TabsTrigger value="moderation" className="whitespace-nowrap px-3 py-1.5 text-sm">Moderation</TabsTrigger>
+              <TabsTrigger value="notifications" className="relative whitespace-nowrap px-3 py-1.5 text-sm">
+                Notifications
+                {notifications.filter((n: AdminNotification) => n.type === 'post_report').length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {notifications.filter((n: AdminNotification) => n.type === 'post_report').length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="whitespace-nowrap px-3 py-1.5 text-sm">Settings</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* User Management Tab */}
           <TabsContent value="users" className="space-y-6">
