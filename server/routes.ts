@@ -1622,7 +1622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'pending'
       };
       
-      await storage.createReport(reportData);
+      await (storage as any).createReport(reportData);
       
       res.json({ message: 'Report submitted successfully' });
     } catch (error) {
