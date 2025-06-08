@@ -44,9 +44,9 @@ export function Messages() {
 
   // Fetch new DM chats for Requests tab
   const { data: newDmChats = [] } = useQuery({
-    queryKey: ["/api/dm/new-chats"],
+    queryKey: ["/api/dm-new-chats"],
     queryFn: async () => {
-      const response = await fetch("/api/dm/new-chats", {
+      const response = await fetch("/api/dm-new-chats", {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         }

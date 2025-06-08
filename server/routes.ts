@@ -1816,15 +1816,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all DM chats for a user (must be before parameterized route)
-  app.get('/api/dm/chats', authenticateUser, async (req: any, res: any) => {
+  // Get new/short DM conversations for Requests tab 
+  app.get('/api/dm-new-chats', authenticateUser, async (req: any, res: any) => {
     try {
-      console.log('DM chats endpoint called - req.user:', req.user);
       const userId = req.user.userId;
-      console.log('DM chats - authenticated userId:', userId, 'type:', typeof userId);
       
-      // Get DM chats with message count to categorize them
-      const dmChatsResult = await db.execute(sql`
+      // Get DM chats with 3 or fewer messages (new conversations)
+      const newChatsResult = await db.execute(sql`
         SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
                u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
                u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name,
@@ -1837,7 +1835,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         GROUP BY dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
                  u1.username, u1.avatar, u1.display_name,
                  u2.username, u2.avatar, u2.display_name
-        HAVING message_count > 3
+        HAVING COUNT(dm.id) <= 3
+        ORDER BY dc.updated_at DESC
+      `);
+      
+      const newChats = newChatsResult.rows?.map((chat: any) => {
+        const otherUser = chat.user1_id === userId ? 
+          { 
+            id: chat.user2_id, 
+            username: chat.user2_username, 
+            avatar: chat.user2_avatar,
+            displayName: chat.user2_display_name 
+          } :
+          { 
+            id: chat.user1_id, 
+            username: chat.user1_username, 
+            avatar: chat.user1_avatar,
+            displayName: chat.user1_display_name 
+          };
+        
+        return {
+          id: chat.id,
+          user: otherUser,
+          messageCount: Number(chat.message_count || 0),
+          lastMessage: null,
+          lastMessageTime: null,
+          createdAt: chat.created_at,
+          updatedAt: chat.updated_at
+        };
+      }) || [];
+      
+      res.json(newChats);
+    } catch (error) {
+      console.error('Error getting new DM chats:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get all DM chats for a user (must be before parameterized route)
+  app.get('/api/dm/chats', authenticateUser, async (req: any, res: any) => {
+    try {
+      console.log('DM chats endpoint called - req.user:', req.user);
+      const userId = req.user.userId;
+      console.log('DM chats - authenticated userId:', userId, 'type:', typeof userId);
+      
+      // Get ongoing DM chats (more than 3 messages) for Messages tab
+      const dmChatsResult = await db.execute(sql`
+        SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
+               u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
+               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name
+        FROM dm_chats dc
+        JOIN users u1 ON dc.user1_id = u1.id
+        JOIN users u2 ON dc.user2_id = u2.id
+        WHERE (dc.user1_id = ${userId} OR dc.user2_id = ${userId})
+        AND (
+          SELECT COUNT(*) FROM dm_messages dm WHERE dm.chat_id = dc.id
+        ) > 3
         ORDER BY dc.updated_at DESC
       `);
       
