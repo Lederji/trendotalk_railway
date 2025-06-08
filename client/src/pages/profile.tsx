@@ -416,29 +416,46 @@ export default function ProfilePage() {
             <>
               <Button
                 variant={isFollowing ? "outline" : "default"}
-                className="flex-1"
+                className="flex-1 text-xs px-1 py-2 min-w-0"
                 onClick={() => followMutation.mutate()}
                 disabled={followMutation.isPending}
               >
                 {isFollowing ? (
                   <>
-                    <UserMinus className="w-4 h-4 mr-2" />
-                    Unfollow
+                    <UserMinus className="w-3 h-3 mr-1" />
+                    <span className="truncate">Unfollow</span>
                   </>
                 ) : (
                   <>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Follow
+                    <UserPlus className="w-3 h-3 mr-1" />
+                    <span className="truncate">Follow</span>
                   </>
                 )}
               </Button>
               <Button
                 variant="outline"
+                className="flex-1 text-xs px-1 py-2 min-w-0"
                 onClick={() => friendRequestMutation.mutate()}
                 disabled={friendRequestMutation.isPending}
               >
-                <Users className="w-4 h-4 mr-2" />
-                Message
+                <Users className="w-3 h-3 mr-1" />
+                <span className="truncate">Message</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 text-xs px-1 py-2 min-w-0"
+                onClick={() => setLocation('/cv')}
+              >
+                <FileText className="w-3 h-3 mr-1" />
+                <span className="truncate">CV</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 text-xs px-1 py-2 min-w-0"
+                onClick={() => setShowPerformanceStats(!showPerformanceStats)}
+              >
+                <TrendingUp className="w-3 h-3 mr-1" />
+                <span className="truncate">Performance</span>
               </Button>
             </>
           )}
