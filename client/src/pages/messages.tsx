@@ -45,20 +45,25 @@ export function Messages() {
   // Handle message request response
   const handleMessageRequest = useMutation({
     mutationFn: async ({ requestId, action }: { requestId: number; action: 'accept' | 'reject' }) => {
-      return apiRequest(`/api/message-requests/${requestId}`, {
-        method: 'PATCH',
-        body: { action }
-      });
+      return apiRequest('PATCH', `/api/message-requests/${requestId}`, { action });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (response, variables) => {
       toast({
         title: variables.action === 'accept' ? "Message request accepted" : "Message request rejected",
         description: variables.action === 'accept' ? "You can now chat with this user." : "Message request has been dismissed.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/message-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
-      if (variables.action === 'accept' && data.chatId) {
-        setLocation(`/chat/${data.chatId}`);
+      
+      if (variables.action === 'accept') {
+        try {
+          const data = await response.json();
+          if (data.chatId) {
+            setLocation(`/chat/${data.chatId}`);
+          }
+        } catch (e) {
+          // If no JSON response, that's fine
+        }
       }
     },
     onError: (error: any) => {

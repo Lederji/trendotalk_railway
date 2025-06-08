@@ -249,12 +249,9 @@ export default function ProfilePage() {
 
   const sendDMMutation = useMutation({
     mutationFn: async (message: string) => {
-      return apiRequest('/api/message-requests', {
-        method: 'POST',
-        body: {
-          toUserId: profileUserId,
-          message: message
-        }
+      return apiRequest('POST', '/api/message-requests', {
+        toUserId: profileUserId,
+        message: message
       });
     },
     onSuccess: () => {
@@ -573,7 +570,12 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 className="flex-1 text-sm px-2 py-2"
-                onClick={() => setShowDMDialog(true)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowDMDialog(true);
+                }}
+                type="button"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 DM
