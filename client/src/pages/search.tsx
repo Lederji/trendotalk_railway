@@ -197,6 +197,35 @@ export function SearchPage() {
     setLocation('/trends');
   };
 
+  const getRelativeTime = (dateString: string) => {
+    if (!dateString) return 'Recently';
+    
+    const now = new Date();
+    const postDate = new Date(dateString);
+    const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)}w ago`;
+    return `${Math.floor(diffInSeconds / 2592000)}mo ago`;
+  };
+
+  const [expandedTitles, setExpandedTitles] = useState<Set<number>>(new Set());
+
+  const toggleTitleExpansion = (postId: number) => {
+    setExpandedTitles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  };
+
   const toggleMute = (postId: number, e: React.MouseEvent) => {
     e.stopPropagation();
     setMutedVideos(prev => {
@@ -309,14 +338,55 @@ export function SearchPage() {
                       </Button>
                     </div>
 
-                    {/* Post Caption */}
+                    {/* Post Title */}
                     {(post.caption || post.title) && (
                       <div className="mb-2">
                         <p className="text-sm text-gray-900">
-                          {post.caption || post.title}
+                          {(() => {
+                            const content = post.caption || post.title;
+                            const isExpanded = expandedTitles.has(post.id);
+                            const shouldTruncate = content.length > 100;
+                            
+                            if (!shouldTruncate) {
+                              return content;
+                            }
+                            
+                            if (isExpanded) {
+                              return (
+                                <>
+                                  {content}
+                                  <button
+                                    onClick={() => toggleTitleExpansion(post.id)}
+                                    className="text-gray-500 ml-1 hover:text-gray-700"
+                                  >
+                                    see less
+                                  </button>
+                                </>
+                              );
+                            }
+                            
+                            return (
+                              <>
+                                {content.substring(0, 100)}...
+                                <button
+                                  onClick={() => toggleTitleExpansion(post.id)}
+                                  className="text-gray-500 ml-1 hover:text-gray-700"
+                                >
+                                  see more
+                                </button>
+                              </>
+                            );
+                          })()}
                         </p>
                       </div>
                     )}
+
+                    {/* Relative Time */}
+                    <div className="mb-2">
+                      <p className="text-xs text-gray-500">
+                        {getRelativeTime(post.createdAt)}
+                      </p>
+                    </div>
 
 
                   </div>
