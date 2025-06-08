@@ -10,7 +10,7 @@ import Create from "@/pages/create";
 import Circle from "@/pages/circle";
 import Profile from "@/pages/profile";
 import Auth from "@/pages/auth";
-import SearchPage from "@/pages/search";
+import { SearchPage } from "@/pages/search";
 import ChatPage from "@/pages/chat";
 import ChatNew from "@/pages/chat-new";
 import AdminDashboard from "@/pages/admin-dashboard";
