@@ -28,6 +28,20 @@ export function Messages() {
     },
   });
 
+  // Fetch DM chats
+  const { data: dmChats = [] } = useQuery({
+    queryKey: ["/api/dm/chats"],
+    queryFn: async () => {
+      const response = await fetch("/api/dm/chats", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch DM chats');
+      return response.json();
+    },
+  });
+
   // Fetch message requests
   const { data: messageRequests = [] } = useQuery({
     queryKey: ["/api/message-requests"],
@@ -75,21 +89,41 @@ export function Messages() {
     }
   });
 
-  // Format admin messages for display
-  const messages = adminMessages.map((chat: any) => ({
-    id: chat.id,
-    username: chat.user.username,
-    displayName: chat.user.displayName,
-    avatar: chat.user.avatar,
-    lastMessage: chat.messages?.length > 0 ? chat.messages[chat.messages.length - 1].content : "No messages yet",
-    timestamp: chat.lastMessageTime ? format(new Date(chat.lastMessageTime), 'MMM d, h:mm a') : "Just now",
-    unreadCount: 0, // Could implement unread count logic
-    isOnline: true
-  }));
+  // Combine admin messages and DM chats for display
+  const messages = [
+    ...adminMessages.map((chat: any) => ({
+      id: chat.id,
+      type: 'admin',
+      username: chat.user.username,
+      displayName: chat.user.displayName,
+      avatar: chat.user.avatar,
+      lastMessage: chat.messages?.length > 0 ? chat.messages[chat.messages.length - 1].content : "No messages yet",
+      timestamp: chat.lastMessageTime ? format(new Date(chat.lastMessageTime), 'MMM d, h:mm a') : "Just now",
+      unreadCount: 0,
+      isOnline: true
+    })),
+    ...dmChats.map((chat: any) => ({
+      id: chat.id,
+      type: 'dm',
+      username: chat.user.username,
+      displayName: chat.user.displayName || chat.user.username,
+      avatar: chat.user.avatar,
+      lastMessage: chat.lastMessage || "Start a conversation",
+      timestamp: chat.lastMessageTime ? format(new Date(chat.lastMessageTime), 'MMM d, h:mm a') : 
+                chat.updatedAt ? format(new Date(chat.updatedAt), 'MMM d, h:mm a') : "Just now",
+      unreadCount: 0,
+      isOnline: true
+    }))
+  ];
 
-  const handleUserClick = (chatId: number) => {
-    // Navigate to home page with messages tab active and open specific chat
-    setLocation(`/?tab=messages&chat=${chatId}`);
+  const handleUserClick = (message: any) => {
+    if (message.type === 'dm') {
+      // Navigate to DM chat
+      setLocation(`/dm/${message.id}`);
+    } else {
+      // Navigate to admin chat
+      setLocation(`/?tab=messages&chat=${message.id}`);
+    }
   };
 
   const handleStartNewDM = (userId: number) => {
