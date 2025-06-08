@@ -229,8 +229,8 @@ export function SearchPage() {
     hashtag.tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleUserClick = (username: string) => {
-    setLocation(`/profile/${username}`);
+  const handleUserClick = (userId: number) => {
+    setLocation(`/profile/${userId}`);
   };
 
   const handleHashtagClick = (hashtag: string) => {
@@ -323,9 +323,12 @@ export function SearchPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-sm">
+                        <button 
+                          onClick={() => handleUserClick(post.user?.id)}
+                          className="font-semibold text-gray-900 text-sm hover:text-purple-600 transition-colors text-left"
+                        >
                           {post.user?.username || 'Unknown User'}
-                        </h3>
+                        </button>
                       </div>
                     </div>
                     <DropdownMenu>
