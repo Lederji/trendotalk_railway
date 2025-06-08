@@ -283,12 +283,22 @@ export function SearchPage() {
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-red-500">
-                          <Heart className="h-6 w-6" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-blue-500">
-                          <MessageCircle className="h-6 w-6" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-red-500">
+                            <Heart className="h-6 w-6" />
+                          </Button>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {post.likesCount || post.votesCount || 0}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-blue-500">
+                            <MessageCircle className="h-6 w-6" />
+                          </Button>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {post.commentsCount || 0}
+                          </span>
+                        </div>
                         <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-purple-500">
                           <Send className="h-6 w-6" />
                         </Button>
@@ -297,13 +307,6 @@ export function SearchPage() {
                       <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-purple-500">
                         <Bookmark className="h-6 w-6" />
                       </Button>
-                    </div>
-
-                    {/* Likes Count */}
-                    <div className="mb-2">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {post.likesCount || post.votesCount || 0} likes
-                      </p>
                     </div>
 
                     {/* Post Caption */}
