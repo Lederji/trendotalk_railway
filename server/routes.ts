@@ -1417,7 +1417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create or get existing chat with a user
+  // Create or get existing chat with a user (Instagram-style direct messaging)
   app.post('/api/chats/create', authenticateUser, async (req: any, res: any) => {
     try {
       const { userId } = req.body;
@@ -1433,41 +1433,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if chat already exists between these users
-      const userChats = await storage.getUserChats(req.user.userId);
-      const existingChat = userChats.find(chat => chat.user.id === targetUserId);
-      
-      if (existingChat) {
-        return res.json({ chatId: existingChat.id, exists: true });
-      }
-      
-      // Check if there's a pending message request
-      const pendingRequest = await db
+      const existingChat = await db
         .select()
-        .from(messageRequests)
+        .from(chats)
         .where(
-          and(
-            eq(messageRequests.fromUserId, req.user.userId),
-            eq(messageRequests.toUserId, targetUserId),
-            eq(messageRequests.status, 'pending')
+          or(
+            and(eq(chats.user1Id, req.user.userId), eq(chats.user2Id, targetUserId)),
+            and(eq(chats.user1Id, targetUserId), eq(chats.user2Id, req.user.userId))
           )
         );
       
-      if (pendingRequest.length > 0) {
-        return res.status(400).json({ message: 'Message request already sent' });
+      if (existingChat.length > 0) {
+        return res.json({ chatId: existingChat[0].id, exists: true });
       }
       
-      // Create new message request
-      const [newRequest] = await db
-        .insert(messageRequests)
+      // Create new chat directly (Instagram-style)
+      const [newChat] = await db
+        .insert(chats)
         .values({
-          fromUserId: req.user.userId,
-          toUserId: targetUserId,
-          message: 'Wants to start a conversation',
-          status: 'pending'
+          user1Id: req.user.userId,
+          user2Id: targetUserId,
         })
         .returning();
       
-      res.json({ requestId: newRequest.id, message: 'Message request sent' });
+      res.json({ chatId: newChat.id, exists: false });
     } catch (error) {
       console.error('Error creating chat:', error);
       res.status(500).json({ message: 'Internal server error' });

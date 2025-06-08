@@ -23,15 +23,8 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
     },
     onSuccess: (response: any) => {
       if (response.chatId) {
-        // Existing chat found - redirect to chat
+        // Always redirect to chat directly (Instagram-style)
         setLocation(`/chat/${response.chatId}`);
-      } else if (response.requestId) {
-        // Message request sent - redirect to messages page
-        toast({
-          title: "Message request sent",
-          description: "Your message request has been sent. You'll be able to chat once they accept.",
-        });
-        setLocation('/messages');
       }
     },
     onError: (error: any) => {
