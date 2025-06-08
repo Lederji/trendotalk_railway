@@ -283,6 +283,214 @@ export default function CVPage() {
     );
   }
 
+  // Render read-only CV view for other users
+  if (isViewingOtherUser) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <Link href={`/profile/${targetUserId}`}>
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-500" />
+              <h1 className="font-semibold text-lg">CV Profile</h1>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 max-w-4xl mx-auto space-y-6">
+          {savedCV ? (
+            <>
+              {/* Personal Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    Personal Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-semibold text-gray-700">Full Name</h3>
+                      <p className="text-gray-900">{savedCV.fullName || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-700">Account Type</h3>
+                      <Badge variant="secondary">{savedCV.accountType}</Badge>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-700">Email</h3>
+                      <p className="text-gray-900">{savedCV.email || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-700">Phone</h3>
+                      <p className="text-gray-900">{savedCV.phone || 'Not provided'}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <h3 className="font-semibold text-gray-700">Location</h3>
+                      <p className="text-gray-900">{savedCV.location || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  {savedCV.summary && (
+                    <div>
+                      <h3 className="font-semibold text-gray-700">Professional Summary</h3>
+                      <p className="text-gray-900 mt-2">{savedCV.summary}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Experience */}
+              {savedCV.experience && savedCV.experience.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Briefcase className="w-5 h-5" />
+                      Work Experience
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {savedCV.experience.map((exp: any) => (
+                      <div key={exp.id} className="border-l-4 border-blue-500 pl-4">
+                        <h3 className="font-semibold text-gray-900">{exp.position}</h3>
+                        <p className="font-medium text-blue-600">{exp.company}</p>
+                        <p className="text-sm text-gray-600">{exp.duration}</p>
+                        {exp.description && <p className="text-gray-700 mt-2">{exp.description}</p>}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Education */}
+              {savedCV.education && savedCV.education.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5" />
+                      Education
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {savedCV.education.map((edu: any) => (
+                      <div key={edu.id} className="border-l-4 border-green-500 pl-4">
+                        <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
+                        <p className="font-medium text-green-600">{edu.institution}</p>
+                        <p className="text-sm text-gray-600">{edu.year}</p>
+                        {edu.description && <p className="text-gray-700 mt-2">{edu.description}</p>}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Skills */}
+              {savedCV.skills && savedCV.skills.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Skills</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {savedCV.skills.map((skill: string, index: number) => (
+                        <Badge key={index} variant="outline">{skill}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Languages */}
+              {savedCV.languages && savedCV.languages.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Languages className="w-5 h-5" />
+                      Languages
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {savedCV.languages.map((language: string, index: number) => (
+                        <Badge key={index} variant="outline">{language}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Projects */}
+              {savedCV.projects && savedCV.projects.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Projects</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {savedCV.projects.map((project: any) => (
+                      <div key={project.id} className="border-l-4 border-purple-500 pl-4">
+                        <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                        <p className="text-gray-700 mt-1">{project.description}</p>
+                        {project.technologies && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            <strong>Technologies:</strong> {project.technologies}
+                          </p>
+                        )}
+                        {project.link && (
+                          <a 
+                            href={project.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            View Project
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Achievements */}
+              {savedCV.achievements && savedCV.achievements.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="w-5 h-5" />
+                      Achievements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {savedCV.achievements.map((achievement: any) => (
+                      <div key={achievement.id} className="border-l-4 border-yellow-500 pl-4">
+                        <h3 className="font-semibold text-gray-900">{achievement.title}</h3>
+                        <p className="text-sm text-gray-600">{achievement.date}</p>
+                        <p className="text-gray-700 mt-1">{achievement.description}</p>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-8">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No CV Available</h3>
+                <p className="text-gray-600">This user hasn't created a CV yet.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
