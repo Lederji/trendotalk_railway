@@ -8,7 +8,7 @@ function authenticateAdmin(req: any, res: any, next: any) {
   }
   
   // Get session from routes.ts sessions map
-  const sessions = (global as any).adminSessions || new Map();
+  const sessions = (global as any).sessions || new Map();
   const session = sessions.get(sessionId);
   
   if (!session) {
