@@ -292,9 +292,7 @@ export function SearchPage() {
                         <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-blue-500">
                           <MessageCircle className="h-6 w-6" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-green-500">
-                          <Search className="h-6 w-6" />
-                        </Button>
+
                       </div>
                       <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-purple-500">
                         <Bookmark className="h-6 w-6" />
@@ -325,30 +323,10 @@ export function SearchPage() {
                       </Button>
                     </div>
 
-                    {/* Time stamp */}
-                    <p className="text-xs text-gray-400 mt-2 uppercase">
-                      {post.createdAt ? `${new Date(post.createdAt).toLocaleDateString()} • ${new Date(post.createdAt).toLocaleTimeString()}` : 'Recently posted'}
-                    </p>
+
                   </div>
 
-                  {/* Add Comment Section */}
-                  <div className="border-t border-gray-100 p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/default-avatar.png" />
-                        <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                          You
-                        </AvatarFallback>
-                      </Avatar>
-                      <Input 
-                        placeholder="Add a comment..."
-                        className="flex-1 border-none bg-transparent p-0 focus-visible:ring-0 text-sm"
-                      />
-                      <Button variant="ghost" size="sm" className="text-blue-500 font-semibold text-sm p-0">
-                        Post
-                      </Button>
-                    </div>
-                  </div>
+
                 </div>
               ))
             ) : (
