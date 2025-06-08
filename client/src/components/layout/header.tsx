@@ -112,13 +112,18 @@ export function Header() {
                 if (isOpen && (notificationCount as any)?.count > 0) {
                   // Mark all notifications as read when opening
                   try {
-                    await fetch('/api/notifications/read-all', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      }
-                    });
-                    queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+                    const sessionId = localStorage.getItem('sessionId');
+                    if (sessionId) {
+                      await fetch('/api/notifications/read-all', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${sessionId}`
+                        },
+                        credentials: 'include'
+                      });
+                      queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+                    }
                   } catch (error) {
                     console.error('Failed to mark notifications as read:', error);
                   }
@@ -265,22 +270,27 @@ export function Header() {
                                     const username = notification.message.split(' ')[0];
                                     
                                     try {
-                                      const response = await fetch(`/api/users/${username}/follow-back`, {
-                                        method: 'POST',
-                                        headers: {
-                                          'Content-Type': 'application/json'
-                                        }
-                                      });
-                                      
-                                      if (response.ok) {
-                                        toast({
-                                          title: "Success",
-                                          description: `You are now following ${username}`,
+                                      const sessionId = localStorage.getItem('sessionId');
+                                      if (sessionId) {
+                                        const response = await fetch(`/api/users/${username}/follow-back`, {
+                                          method: 'POST',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${sessionId}`
+                                          },
+                                          credentials: 'include'
                                         });
                                         
-                                        // Refresh notifications
-                                        queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-                                        queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+                                        if (response.ok) {
+                                          toast({
+                                            title: "Success",
+                                            description: `You are now following ${username}`,
+                                          });
+                                          
+                                          // Refresh notifications
+                                          queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+                                          queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+                                        }
                                       }
                                     } catch (error) {
                                       toast({
