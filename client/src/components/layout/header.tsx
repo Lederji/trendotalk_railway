@@ -235,8 +235,11 @@ export function Header() {
                                     const username = notification.message.split(' ')[0];
                                     
                                     try {
-                                      const response = await apiRequest(`/api/users/${username}/follow-back`, {
-                                        method: 'POST'
+                                      const response = await fetch(`/api/users/${username}/follow-back`, {
+                                        method: 'POST',
+                                        headers: {
+                                          'Content-Type': 'application/json'
+                                        }
                                       });
                                       
                                       if (response.ok) {
