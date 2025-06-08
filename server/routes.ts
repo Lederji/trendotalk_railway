@@ -2,6 +2,9 @@ import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema, insertVibeSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -1054,10 +1057,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Store the report by creating notifications for admins
       try {
-        const adminUsers = await storage.getUsers();
-        const admins = adminUsers.filter(user => user.isAdmin);
+        // Get admin users directly from database using the existing createPostReport method implementation
+        const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true));
         
-        for (const admin of admins) {
+        for (const admin of adminUsers) {
           await storage.createNotification(
             admin.id,
             'post_report',
