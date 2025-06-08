@@ -1629,6 +1629,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Handle DM request actions (allow, dismiss, block)
+  app.post('/api/dm/requests/:requestId/allow', authenticateUser, async (req: any, res: any) => {
+    try {
+      const requestId = Number(req.params.requestId);
+      
+      // Get the request
+      const requestResult = await db.execute(sql`
+        SELECT * FROM dm_requests 
+        WHERE id = ${requestId} AND to_user_id = ${req.user.userId} AND status = 'pending'
+      `);
+      
+      if (!requestResult.rows || requestResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Request not found' });
+      }
+      
+      const request = requestResult.rows[0] as any;
+      
+      // Update request status to accepted
+      await db.execute(sql`
+        UPDATE dm_requests 
+        SET status = 'accepted', updated_at = NOW() 
+        WHERE id = ${requestId}
+      `);
+      
+      res.json({ success: true, message: 'Request accepted' });
+    } catch (error) {
+      console.error('Error accepting DM request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/dm/requests/:requestId/dismiss', authenticateUser, async (req: any, res: any) => {
+    try {
+      const requestId = Number(req.params.requestId);
+      
+      // Get the request
+      const requestResult = await db.execute(sql`
+        SELECT * FROM dm_requests 
+        WHERE id = ${requestId} AND to_user_id = ${req.user.userId} AND status = 'pending'
+      `);
+      
+      if (!requestResult.rows || requestResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Request not found' });
+      }
+      
+      const request = requestResult.rows[0] as any;
+      
+      // Update request status to dismissed
+      await db.execute(sql`
+        UPDATE dm_requests 
+        SET status = 'dismissed', updated_at = NOW() 
+        WHERE id = ${requestId}
+      `);
+      
+      // Add temporary block for 72 hours
+      await db.execute(sql`
+        INSERT INTO dm_blocks (blocker_id, blocked_id, block_type, expires_at) 
+        VALUES (${req.user.userId}, ${request.from_user_id}, 'temporary', NOW() + INTERVAL '72 hours')
+      `);
+      
+      res.json({ success: true, message: 'Request dismissed' });
+    } catch (error) {
+      console.error('Error dismissing DM request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/dm/requests/:requestId/block', authenticateUser, async (req: any, res: any) => {
+    try {
+      const requestId = Number(req.params.requestId);
+      
+      // Get the request
+      const requestResult = await db.execute(sql`
+        SELECT * FROM dm_requests 
+        WHERE id = ${requestId} AND to_user_id = ${req.user.userId} AND status = 'pending'
+      `);
+      
+      if (!requestResult.rows || requestResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Request not found' });
+      }
+      
+      const request = requestResult.rows[0] as any;
+      
+      // Update request status to blocked
+      await db.execute(sql`
+        UPDATE dm_requests 
+        SET status = 'blocked', updated_at = NOW() 
+        WHERE id = ${requestId}
+      `);
+      
+      // Add permanent block
+      await db.execute(sql`
+        INSERT INTO dm_blocks (blocker_id, blocked_id, block_type) 
+        VALUES (${req.user.userId}, ${request.from_user_id}, 'permanent')
+      `);
+      
+      res.json({ success: true, message: 'User blocked' });
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Handle DM request actions (allow, dismiss, block) - legacy endpoint
   app.post('/api/dm/requests/:requestId/action', authenticateUser, async (req: any, res: any) => {
     try {
       const requestId = Number(req.params.requestId);

@@ -106,7 +106,13 @@ export function Messages() {
   // Handle DM request response
   const handleDMRequest = useMutation({
     mutationFn: async ({ requestId, action }: { requestId: number; action: 'allow' | 'dismiss' | 'block' }) => {
-      const response = await apiRequest('POST', `/api/dm/requests/${requestId}/action`, { action });
+      const response = await fetch(`/api/dm/requests/${requestId}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to process request');
       return response.json();
     },
     onSuccess: (data, variables) => {
