@@ -446,7 +446,7 @@ export default function Trends() {
   // Auto-scroll to specific post when postId is in URL
   useEffect(() => {
     if (targetPostId && posts.length > 0) {
-      const targetIndex = posts.findIndex(post => post.id === targetPostId);
+      const targetIndex = posts.findIndex((post: any) => post.id === targetPostId);
       if (targetIndex !== -1) {
         const element = document.getElementById(`post-${targetPostId}`);
         if (element) {
