@@ -1160,12 +1160,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat routes
+  // Get friend chats only (excluding admin messages)
   app.get('/api/chats', authenticateUser, async (req: any, res: any) => {
     try {
       const chats = await storage.getUserChats(req.user.userId);
-      res.json(chats);
+      // Filter out admin chats - only show friend chats
+      const friendChats = await Promise.all(chats.map(async (chat) => {
+        const otherUser = await storage.getUser(chat.user.id);
+        return otherUser?.isAdmin ? null : chat;
+      }));
+      res.json(friendChats.filter(chat => chat !== null));
     } catch (error) {
       console.error('Error getting chats:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get admin messages for Messages page (separate from friend chats)
+  app.get('/api/admin-messages', authenticateUser, async (req: any, res: any) => {
+    try {
+      const allChats = await storage.getUserChats(req.user.userId);
+      // Filter to only show admin chats
+      const adminChats = await Promise.all(allChats.map(async (chat) => {
+        const otherUser = await storage.getUser(chat.user.id);
+        if (otherUser?.isAdmin) {
+          return {
+            id: chat.id,
+            user: {
+              id: otherUser.id,
+              username: otherUser.username,
+              displayName: "TrendoTalk Admin",
+              avatar: otherUser.avatar
+            },
+            messages: chat.messages,
+            lastMessage: chat.lastMessage,
+            lastMessageTime: chat.lastMessageTime
+          };
+        }
+        return null;
+      }));
+      res.json(adminChats.filter(chat => chat !== null));
+    } catch (error) {
+      console.error('Error getting admin messages:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

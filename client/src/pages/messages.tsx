@@ -4,49 +4,54 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Phone, Video, Info } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 
 export function Messages() {
   const [, setLocation] = useLocation();
 
-
-
-  // Mock data for messages and requests
-  const messages = [
-    {
-      id: 1,
-      username: "admin",
-      displayName: "TrendoTalk Admin",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      lastMessage: "Welcome to TrendoTalk! 🎉",
-      timestamp: "2 min ago",
-      unreadCount: 1,
-      isOnline: true
+  // Fetch admin messages
+  const { data: adminMessages = [] } = useQuery({
+    queryKey: ["/api/admin-messages"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin-messages", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch admin messages');
+      return response.json();
     },
-    {
-      id: 2,
-      username: "jane_doe",
-      displayName: "Jane Doe",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-      lastMessage: "Hey! How are you doing?",
-      timestamp: "1 hour ago",
-      unreadCount: 0,
-      isOnline: false
-    }
-  ];
+  });
 
-  const requests = [
-    {
-      id: 1,
-      username: "new_user",
-      displayName: "New User",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      mutualFriends: 3,
-      timestamp: "5 min ago"
-    }
-  ];
+  // Fetch friend requests
+  const { data: requests = [] } = useQuery({
+    queryKey: ["/api/friend-requests"],
+    queryFn: async () => {
+      const response = await fetch("/api/friend-requests", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch friend requests');
+      return response.json();
+    },
+  });
 
-  const handleUserClick = (username: string) => {
-    setLocation(`/chat/${username}`);
+  // Format admin messages for display
+  const messages = adminMessages.map((chat: any) => ({
+    id: chat.id,
+    username: chat.user.username,
+    displayName: chat.user.displayName,
+    avatar: chat.user.avatar,
+    lastMessage: chat.messages?.length > 0 ? chat.messages[chat.messages.length - 1].content : "No messages yet",
+    timestamp: chat.lastMessageTime ? format(new Date(chat.lastMessageTime), 'MMM d, h:mm a') : "Just now",
+    unreadCount: 0, // Could implement unread count logic
+    isOnline: true
+  }));
+
+  const handleUserClick = (chatId: number) => {
+    setLocation(`/chat/${chatId}`);
   };
 
   return (
@@ -113,6 +118,7 @@ export function Messages() {
               messages.map((message) => (
                 <div
                   key={message.id}
+                  onClick={() => handleUserClick(message.id)}
                   className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
