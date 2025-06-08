@@ -332,6 +332,7 @@ export class MemStorage implements IStorage {
       bio: insertUser.bio || "",
       followersCount: 0,
       followingCount: 0,
+      totalPostsCreated: 0,
       createdAt: new Date(),
     };
     this.users.set(user.id, user);
@@ -1799,6 +1800,15 @@ export class DatabaseStorage implements IStorage {
         .insert(posts)
         .values(insertData)
         .returning();
+
+      // Increment totalPostsCreated counter for the user
+      await db
+        .update(users)
+        .set({ 
+          totalPostsCreated: sql`${users.totalPostsCreated} + 1`
+        })
+        .where(eq(users.id, postData.userId));
+
       return post;
     } catch (error) {
       console.error('Error creating post:', error);

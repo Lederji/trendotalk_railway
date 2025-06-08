@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   links: text("links"), // JSON string of [{name: "YouTube", url: "https://..."}]
   followersCount: integer("followers_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
+  totalPostsCreated: integer("total_posts_created").notNull().default(0),
   // Account status and verification
   accountStatus: text("account_status").notNull().default("live"), // live, banned, suspended
   accountStatusReason: text("account_status_reason"),
