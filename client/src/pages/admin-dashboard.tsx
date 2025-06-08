@@ -310,6 +310,14 @@ export default function AdminDashboard() {
     }
   });
 
+  // Track when new reports come in
+  useEffect(() => {
+    if (reports.length > lastReportsCount) {
+      setReportsViewed(false);
+    }
+    setLastReportsCount(reports.length);
+  }, [reports.length, lastReportsCount]);
+
   const filteredUsers = users.filter(user => 
     user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -399,9 +407,13 @@ export default function AdminDashboard() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="reports" className="relative whitespace-nowrap px-3 py-1.5 text-sm">
+              <TabsTrigger 
+                value="reports" 
+                className="relative whitespace-nowrap px-3 py-1.5 text-sm"
+                onClick={() => setReportsViewed(true)}
+              >
                 User Reports
-                {reports.length > 0 && (
+                {reports.length > 0 && !reportsViewed && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {reports.length}
                   </span>

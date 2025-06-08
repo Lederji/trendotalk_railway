@@ -400,6 +400,17 @@ export default function ProfilePage() {
                 <Share className="mr-2 h-4 w-4" />
                 <span>Share Profile</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                const url = `${window.location.origin}/profile/${profileUserId}`;
+                navigator.clipboard.writeText(url);
+                toast({
+                  title: "Profile URL copied",
+                  description: "The profile URL has been copied to your clipboard.",
+                });
+              }}>
+                <AtSign className="mr-2 h-4 w-4" />
+                <span>Copy Profile URL</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
