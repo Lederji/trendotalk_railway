@@ -142,20 +142,20 @@ export default function DMChatPage() {
           messages.map((msg: any) => (
             <div
               key={msg.id}
-              className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
             >
               <div
                 className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                  msg.senderId === user?.id
+                  msg.sender_id === user?.id
                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                     : 'bg-white border border-gray-200 text-gray-900'
                 }`}
               >
                 <p className="text-sm">{msg.content}</p>
                 <p className={`text-xs mt-1 ${
-                  msg.senderId === user?.id ? 'text-purple-100' : 'text-gray-500'
+                  msg.sender_id === user?.id ? 'text-purple-100' : 'text-gray-500'
                 }`}>
-                  {format(new Date(msg.createdAt), 'HH:mm')}
+                  {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : 'Now'}
                 </p>
               </div>
             </div>
