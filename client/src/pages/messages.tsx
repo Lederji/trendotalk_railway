@@ -123,9 +123,9 @@ export function Messages() {
       console.log('Messages page - navigating to DM chat:', `/dm/${message.id}`);
       setLocation(`/dm/${message.id}`);
     } else {
-      // Navigate to admin chat
-      console.log('Messages page - navigating to admin chat:', `/?tab=messages&chat=${message.id}`);
-      setLocation(`/?tab=messages&chat=${message.id}`);
+      // Navigate to admin chat using existing chat route
+      console.log('Messages page - navigating to admin chat:', `/chat/${message.id}`);
+      setLocation(`/chat/${message.id}`);
     }
   };
 
