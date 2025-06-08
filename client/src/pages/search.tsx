@@ -17,7 +17,21 @@ export function SearchPage() {
   // Search for users when typing in search bar
   const { data: searchResults = [] } = useQuery({
     queryKey: ['/api/users/search', searchQuery],
-    enabled: searchQuery.length > 0,
+    queryFn: async () => {
+      if (!searchQuery || searchQuery.length < 2) return [];
+      
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("sessionId")}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error("Search failed");
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: searchQuery.length >= 2,
+    staleTime: 30000,
   });
 
   // Fetch top posts for Instagram-style feed
