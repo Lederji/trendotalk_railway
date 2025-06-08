@@ -3127,8 +3127,22 @@ export class DatabaseStorage implements IStorage {
 
   async adminDeletePost(postId: number): Promise<boolean> {
     try {
+      // First check if post exists
+      const [existingPost] = await db.select().from(posts).where(eq(posts.id, postId));
+      if (!existingPost) {
+        return false; // Post not found
+      }
+
+      // Delete related data in correct order to avoid foreign key constraints
       await db.delete(comments).where(eq(comments.postId, postId));
       await db.delete(likes).where(eq(likes.postId, postId));
+      await db.delete(dislikes).where(eq(dislikes.postId, postId));
+      await db.delete(votes).where(eq(votes.postId, postId));
+      
+      // Delete notifications that reference this post
+      await db.delete(notifications).where(eq(notifications.postId, postId));
+      
+      // Finally delete the post
       await db.delete(posts).where(eq(posts.id, postId));
       return true;
     } catch (error) {
