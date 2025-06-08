@@ -148,16 +148,6 @@ export function Header() {
                 <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
                   <div className="flex items-center justify-between p-3 border-b">
                     <h3 className="font-semibold text-gray-800">Notifications</h3>
-                    {(notifications as any[]).length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => markAllAsReadMutation.mutate()}
-                        className="text-xs text-blue-600 hover:text-blue-800"
-                      >
-                        Mark all read
-                      </Button>
-                    )}
                   </div>
                   
                   {(notifications as any[]).length === 0 ? (
