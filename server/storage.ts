@@ -2812,30 +2812,44 @@ export class DatabaseStorage implements IStorage {
           eq(chats.user2Id, userId)
         ));
       
-      // Filter chats to only include mutual friends
+      console.log(`Found ${userChats.length} chats for user ${userId}:`, userChats.map(c => `Chat ${c.id}: ${c.user1Id} <-> ${c.user2Id}`));
+      
+      // Filter chats to include mutual friends OR admin chats
       const validChats = [];
       for (const chat of userChats) {
         const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
         
-        // Check if both users are following each other
-        const [follow1] = await db
-          .select()
-          .from(follows)
-          .where(and(
-            eq(follows.followerId, userId),
-            eq(follows.followingId, otherUserId)
-          ));
-          
-        const [follow2] = await db
-          .select()
-          .from(follows)
-          .where(and(
-            eq(follows.followerId, otherUserId),
-            eq(follows.followingId, userId)
-          ));
+        // Check if other user is admin
+        const [otherUser] = await db
+          .select({ isAdmin: users.isAdmin })
+          .from(users)
+          .where(eq(users.id, otherUserId));
         
-        if (follow1 && follow2) {
+        // Include chat if other user is admin OR if both users are following each other
+        if (otherUser?.isAdmin) {
+          console.log(`Including admin chat ${chat.id} with user ${otherUserId} (admin: ${otherUser.isAdmin})`);
           validChats.push(chat);
+        } else {
+          // Check if both users are following each other for non-admin chats
+          const [follow1] = await db
+            .select()
+            .from(follows)
+            .where(and(
+              eq(follows.followerId, userId),
+              eq(follows.followingId, otherUserId)
+            ));
+            
+          const [follow2] = await db
+            .select()
+            .from(follows)
+            .where(and(
+              eq(follows.followerId, otherUserId),
+              eq(follows.followingId, userId)
+            ));
+          
+          if (follow1 && follow2) {
+            validChats.push(chat);
+          }
         }
       }
       
