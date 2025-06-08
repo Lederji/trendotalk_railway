@@ -3,8 +3,8 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { users, reports, messageRequests, chats, messages } from "@shared/schema";
-import { eq, and, or } from "drizzle-orm";
+import { users, reports, messageRequests, chats, messages, circleMessages, circleMessageComments, circleMessageLikes } from "@shared/schema";
+import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
 import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema, insertVibeSchema, insertMessageRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -1987,6 +1987,241 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
       res.json(stats);
     } catch (error) {
       console.error('Error getting user performance stats:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Circle timeline message system (completely separate from DM system)
+  // Get Circle timeline messages (public timeline from user's friends)
+  app.get('/api/circle/messages', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = req.user.userId;
+      
+      // Get user's following list
+      const following = await storage.getUserFollowing(userId);
+      const followingIds = following.map(f => f.id);
+      followingIds.push(userId); // Include user's own messages
+      
+      // Get Circle messages from followed users + user's own messages
+      const messages = await db
+        .select({
+          id: circleMessages.id,
+          content: circleMessages.content,
+          imageUrl: circleMessages.imageUrl,
+          videoUrl: circleMessages.videoUrl,
+          likesCount: circleMessages.likesCount,
+          commentsCount: circleMessages.commentsCount,
+          isPublic: circleMessages.isPublic,
+          createdAt: circleMessages.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar
+          }
+        })
+        .from(circleMessages)
+        .leftJoin(users, eq(circleMessages.userId, users.id))
+        .where(
+          and(
+            eq(circleMessages.isPublic, true),
+            inArray(circleMessages.userId, followingIds)
+          )
+        )
+        .orderBy(desc(circleMessages.createdAt))
+        .limit(50);
+
+      res.json(messages);
+    } catch (error) {
+      console.error('Error getting Circle messages:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Post a new Circle timeline message
+  app.post('/api/circle/messages', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { content, imageUrl, videoUrl, isPublic = true } = req.body;
+      const userId = req.user.userId;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: 'Message content is required' });
+      }
+
+      const [newMessage] = await db
+        .insert(circleMessages)
+        .values({
+          userId,
+          content: content.trim(),
+          imageUrl: imageUrl || null,
+          videoUrl: videoUrl || null,
+          isPublic
+        })
+        .returning();
+
+      // Get the message with user info for response
+      const messageWithUser = await db
+        .select({
+          id: circleMessages.id,
+          content: circleMessages.content,
+          imageUrl: circleMessages.imageUrl,
+          videoUrl: circleMessages.videoUrl,
+          likesCount: circleMessages.likesCount,
+          commentsCount: circleMessages.commentsCount,
+          isPublic: circleMessages.isPublic,
+          createdAt: circleMessages.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar
+          }
+        })
+        .from(circleMessages)
+        .leftJoin(users, eq(circleMessages.userId, users.id))
+        .where(eq(circleMessages.id, newMessage.id));
+
+      res.json(messageWithUser[0]);
+    } catch (error) {
+      console.error('Error creating Circle message:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Like/Unlike a Circle message
+  app.post('/api/circle/messages/:messageId/like', authenticateUser, async (req: any, res: any) => {
+    try {
+      const messageId = Number(req.params.messageId);
+      const userId = req.user.userId;
+
+      // Check if already liked
+      const existingLike = await db
+        .select()
+        .from(circleMessageLikes)
+        .where(
+          and(
+            eq(circleMessageLikes.messageId, messageId),
+            eq(circleMessageLikes.userId, userId)
+          )
+        );
+
+      if (existingLike.length > 0) {
+        // Unlike - remove like and decrement count
+        await db
+          .delete(circleMessageLikes)
+          .where(
+            and(
+              eq(circleMessageLikes.messageId, messageId),
+              eq(circleMessageLikes.userId, userId)
+            )
+          );
+
+        await db
+          .update(circleMessages)
+          .set({ 
+            likesCount: sql`${circleMessages.likesCount} - 1` 
+          })
+          .where(eq(circleMessages.id, messageId));
+
+        res.json({ liked: false });
+      } else {
+        // Like - add like and increment count
+        await db
+          .insert(circleMessageLikes)
+          .values({ messageId, userId });
+
+        await db
+          .update(circleMessages)
+          .set({ 
+            likesCount: sql`${circleMessages.likesCount} + 1` 
+          })
+          .where(eq(circleMessages.id, messageId));
+
+        res.json({ liked: true });
+      }
+    } catch (error) {
+      console.error('Error toggling Circle message like:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get comments for a Circle message
+  app.get('/api/circle/messages/:messageId/comments', authenticateUser, async (req: any, res: any) => {
+    try {
+      const messageId = Number(req.params.messageId);
+
+      const comments = await db
+        .select({
+          id: circleMessageComments.id,
+          content: circleMessageComments.content,
+          createdAt: circleMessageComments.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar
+          }
+        })
+        .from(circleMessageComments)
+        .leftJoin(users, eq(circleMessageComments.userId, users.id))
+        .where(eq(circleMessageComments.messageId, messageId))
+        .orderBy(circleMessageComments.createdAt);
+
+      res.json(comments);
+    } catch (error) {
+      console.error('Error getting Circle message comments:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Add a comment to a Circle message
+  app.post('/api/circle/messages/:messageId/comments', authenticateUser, async (req: any, res: any) => {
+    try {
+      const messageId = Number(req.params.messageId);
+      const { content } = req.body;
+      const userId = req.user.userId;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: 'Comment content is required' });
+      }
+
+      const [newComment] = await db
+        .insert(circleMessageComments)
+        .values({
+          messageId,
+          userId,
+          content: content.trim()
+        })
+        .returning();
+
+      // Increment comments count on the message
+      await db
+        .update(circleMessages)
+        .set({ 
+          commentsCount: sql`${circleMessages.commentsCount} + 1` 
+        })
+        .where(eq(circleMessages.id, messageId));
+
+      // Get the comment with user info for response
+      const commentWithUser = await db
+        .select({
+          id: circleMessageComments.id,
+          content: circleMessageComments.content,
+          createdAt: circleMessageComments.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar
+          }
+        })
+        .from(circleMessageComments)
+        .leftJoin(users, eq(circleMessageComments.userId, users.id))
+        .where(eq(circleMessageComments.id, newComment.id));
+
+      res.json(commentWithUser[0]);
+    } catch (error) {
+      console.error('Error creating Circle message comment:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

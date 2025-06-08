@@ -174,6 +174,36 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Circle timeline messages (completely separate from DM system)
+export const circleMessages = pgTable("circle_messages", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  likesCount: integer("likes_count").notNull().default(0),
+  commentsCount: integer("comments_count").notNull().default(0),
+  isPublic: boolean("is_public").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Comments on Circle messages
+export const circleMessageComments = pgTable("circle_message_comments", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").notNull().references(() => circleMessages.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Likes on Circle messages
+export const circleMessageLikes = pgTable("circle_message_likes", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").notNull().references(() => circleMessages.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -236,6 +266,20 @@ export const insertMessageRequestSchema = createInsertSchema(messageRequests).om
   fromUserId: true,
 });
 
+export const insertCircleMessageSchema = createInsertSchema(circleMessages).omit({
+  id: true,
+  createdAt: true,
+  userId: true,
+  likesCount: true,
+  commentsCount: true,
+});
+
+export const insertCircleMessageCommentSchema = createInsertSchema(circleMessageComments).omit({
+  id: true,
+  createdAt: true,
+  userId: true,
+});
+
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -261,6 +305,10 @@ export type Report = typeof reports.$inferSelect;
 export type InsertReport = z.infer<typeof insertReportSchema>;
 export type MessageRequest = typeof messageRequests.$inferSelect;
 export type InsertMessageRequest = z.infer<typeof insertMessageRequestSchema>;
+export type CircleMessage = typeof circleMessages.$inferSelect;
+export type InsertCircleMessage = z.infer<typeof insertCircleMessageSchema>;
+export type CircleMessageComment = typeof circleMessageComments.$inferSelect;
+export type InsertCircleMessageComment = z.infer<typeof insertCircleMessageCommentSchema>;
 export type Follow = typeof follows.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 
