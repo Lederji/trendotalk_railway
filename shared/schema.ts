@@ -127,6 +127,15 @@ export const chats = pgTable("chats", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const messageRequests = pgTable("message_requests", {
+  id: serial("id").primaryKey(),
+  fromUserId: integer("from_user_id").notNull().references(() => users.id),
+  toUserId: integer("to_user_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, rejected
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   chatId: integer("chat_id").notNull().references(() => chats.id),
@@ -221,6 +230,12 @@ export const insertReportSchema = createInsertSchema(reports).omit({
   reporterId: true,
 });
 
+export const insertMessageRequestSchema = createInsertSchema(messageRequests).omit({
+  id: true,
+  createdAt: true,
+  fromUserId: true,
+});
+
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -244,6 +259,8 @@ export type CV = typeof cvs.$inferSelect;
 export type InsertCV = z.infer<typeof insertCVSchema>;
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = z.infer<typeof insertReportSchema>;
+export type MessageRequest = typeof messageRequests.$inferSelect;
+export type InsertMessageRequest = z.infer<typeof insertMessageRequestSchema>;
 export type Follow = typeof follows.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 

@@ -45,6 +45,8 @@ export default function ProfilePage() {
     reason: '',
     message: ''
   });
+  const [showDMDialog, setShowDMDialog] = useState(false);
+  const [dmMessage, setDmMessage] = useState('');
 
   const profileUserId = userId ? parseInt(userId) : currentUser?.id;
   const isOwnProfile = profileUserId === currentUser?.id;

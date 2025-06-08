@@ -118,6 +118,19 @@ async function initializeDatabase() {
       );
     `);
 
+    // Create message_requests table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS message_requests (
+        id SERIAL PRIMARY KEY,
+        from_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        to_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        message TEXT NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(from_user_id, to_user_id)
+      );
+    `);
+
     // Create messages table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS messages (
