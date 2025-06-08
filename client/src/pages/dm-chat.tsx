@@ -19,6 +19,8 @@ export default function DMChatPage() {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  console.log('DMChatPage - Component rendered, chatId:', chatId, 'user:', user);
+
   // Fetch chat data
   const { data: chat, isLoading } = useQuery({
     queryKey: [`/api/dm/${chatId}`],

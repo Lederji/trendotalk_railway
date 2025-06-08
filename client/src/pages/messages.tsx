@@ -117,11 +117,14 @@ export function Messages() {
   ];
 
   const handleUserClick = (message: any) => {
+    console.log('Messages page - handleUserClick called with:', message);
     if (message.type === 'dm') {
       // Navigate to DM chat
+      console.log('Messages page - navigating to DM chat:', `/dm/${message.id}`);
       setLocation(`/dm/${message.id}`);
     } else {
       // Navigate to admin chat
+      console.log('Messages page - navigating to admin chat:', `/?tab=messages&chat=${message.id}`);
       setLocation(`/?tab=messages&chat=${message.id}`);
     }
   };
