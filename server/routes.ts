@@ -1572,20 +1572,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all DM chats for a user
-  app.get('/api/dm/chats', authenticateUser, async (req: any, res: any) => {
+  app.get('/api/dm/chats', async (req: any, res: any) => {
     try {
-      if (!req.user || !req.user.userId) {
-        return res.status(401).json({ message: 'User not authenticated' });
+      // Get session ID from Authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'No authorization token' });
       }
       
-      const userId = Number(req.user.userId);
+      const sessionId = authHeader.substring(7);
+      console.log('DM chats - sessionId:', sessionId);
+      
+      // Extract user ID from session ID (format: userId_randomString_timestamp)
+      const parts = sessionId.split('_');
+      if (parts.length < 3) {
+        return res.status(401).json({ message: 'Invalid session format' });
+      }
+      
+      const userId = parseInt(parts[0]);
+      console.log('DM chats - extracted userId:', userId);
       
       if (isNaN(userId)) {
-        return res.status(400).json({ message: 'Invalid user ID' });
+        return res.status(401).json({ message: 'Invalid user ID in session' });
       }
       
+      // Get all DM chats for this user
       const dmChatsResult = await db.execute(sql`
-        SELECT dc.*, 
+        SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
                u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
                u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name
         FROM dm_chats dc
@@ -1620,6 +1633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }) || [];
       
+      console.log('DM chats found:', chats.length);
       res.json(chats);
     } catch (error) {
       console.error('Error getting DM chats:', error);
