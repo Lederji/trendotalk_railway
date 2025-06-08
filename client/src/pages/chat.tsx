@@ -175,7 +175,13 @@ export default function ChatPage() {
 
   const handleSendMessage = () => {
     if (message.trim() || selectedFile) {
-      sendMessageMutation.mutate(message);
+      const messageToSend = message.trim();
+      if (messageToSend) {
+        sendMessageMutation.mutate(messageToSend);
+      }
+      if (selectedFile) {
+        uploadFileInstantly(selectedFile);
+      }
     }
   };
 
@@ -466,7 +472,21 @@ export default function ChatPage() {
         <div className="flex-1">
           <h1 className="font-semibold text-lg">{chat?.user?.username || 'User'}</h1>
           <p className="text-sm text-gray-500">
-            {otherUserTyping ? 'Typing...' : 'Active now'}
+            {otherUserTyping ? (
+              <span className="flex items-center">
+                <span className="animate-pulse mr-1">Typing</span>
+                <span className="flex space-x-1">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </span>
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                Active now
+              </span>
+            )}
           </p>
         </div>
         
