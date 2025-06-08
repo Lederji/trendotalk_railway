@@ -101,6 +101,7 @@ export function Header() {
                 variant="ghost"
                 size="sm"
                 className="p-2 hover:bg-gray-100 rounded-full relative"
+                onClick={() => setLocation("/messages")}
               >
                 <Mail className="h-5 w-5 text-gray-600" />
                 <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">

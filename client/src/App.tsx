@@ -18,6 +18,7 @@ import PostDetail from "@/pages/PostDetail";
 import NotFound from "@/pages/not-found";
 import AccountCenter from "@/pages/account-center";
 import CVPage from "@/pages/cv";
+import { Messages } from "@/pages/messages";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/circle/add-vibe" component={Circle} />
       <Route path="/chats" component={ChatNew} />
       <Route path="/chat/:chatId" component={ChatPage} />
+      <Route path="/messages" component={Messages} />
       <Route path="/profile/:userId?" component={Profile} />
       <Route path="/users/:userId" component={Profile} />
       <Route path="/post/:postId" component={PostDetail} />
