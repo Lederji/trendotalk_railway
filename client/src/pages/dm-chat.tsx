@@ -34,6 +34,12 @@ export default function DMChatPage() {
     refetchInterval: 2000,
   }) as { data: any[] };
 
+  // Check if this chat has any pending requests or message restrictions
+  const { data: chatStatus } = useQuery({
+    queryKey: [`/api/dm/chats/${chatId}/status`],
+    enabled: !!chatId,
+  });
+
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -59,7 +65,7 @@ export default function DMChatPage() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (message.trim()) {
+    if (message.trim() && !chatStatus?.isRestricted) {
       sendMessageMutation.mutate(message.trim());
     }
   };

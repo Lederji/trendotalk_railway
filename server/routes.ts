@@ -1492,6 +1492,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get DM chat status (check if messages are restricted)
+  app.get('/api/dm/chats/:chatId/status', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const userId = req.user.userId;
+      
+      // Check if user has access to this chat
+      const chatResult = await db.execute(sql`
+        SELECT * FROM dm_chats 
+        WHERE id = ${chatId} 
+        AND (user1_id = ${userId} OR user2_id = ${userId})
+      `);
+      
+      if (!chatResult.rows || chatResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      const chat = chatResult.rows[0] as any;
+      const otherUserId = chat.user1_id === userId ? chat.user2_id : chat.user1_id;
+      
+      // Check if there's a pending DM request between these users
+      const requestResult = await db.execute(sql`
+        SELECT * FROM dm_requests 
+        WHERE ((from_user_id = ${userId} AND to_user_id = ${otherUserId}) 
+               OR (from_user_id = ${otherUserId} AND to_user_id = ${userId}))
+        AND status = 'pending'
+      `);
+      
+      // Count messages sent by current user in this chat
+      const messageCountResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM dm_messages 
+        WHERE chat_id = ${chatId} AND sender_id = ${userId}
+      `);
+      
+      const messageCount = messageCountResult.rows?.[0]?.count || 0;
+      const hasPendingRequest = requestResult.rows && requestResult.rows.length > 0;
+      const pendingRequest = requestResult.rows?.[0];
+      
+      // If current user sent the request and has already sent 1+ messages, restrict further messages
+      const isRestricted = hasPendingRequest && 
+                          pendingRequest?.from_user_id === userId && 
+                          messageCount >= 1;
+      
+      res.json({
+        isRestricted,
+        messageCount,
+        hasPendingRequest,
+        pendingRequestFrom: pendingRequest?.from_user_id
+      });
+    } catch (error) {
+      console.error('Error getting DM chat status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get DM requests for current user
   app.get('/api/dm/requests', authenticateUser, async (req: any, res: any) => {
     try {
