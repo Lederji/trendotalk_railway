@@ -1306,8 +1306,9 @@ export class MemStorage implements IStorage {
   }
 
   async sendAdminMessage(userId: number, message: string, fromAdminId: number): Promise<boolean> {
-    // In memory implementation - would store in messages table in real app
-    return true;
+    // In memory implementation - redirect to database storage for admin messages
+    const dbStorage = new DatabaseStorage();
+    return await dbStorage.sendAdminMessage(userId, message, fromAdminId);
   }
 
   async sendBroadcastNotification(message: string, userIds?: number[]): Promise<boolean> {
