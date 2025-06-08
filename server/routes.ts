@@ -1545,6 +1545,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chat = chatResult.rows[0] as any;
       const otherUserId = chat.user1_id === userId ? chat.user2_id : chat.user1_id;
       
+      // Check if user is blocked (72-hour cooldown from dismiss action)
+      const blockResult = await db.execute(sql`
+        SELECT * FROM dm_blocks 
+        WHERE blocker_id = ${otherUserId} AND blocked_id = ${userId}
+        AND (block_type = 'permanent' OR (block_type = 'temporary' AND expires_at > NOW()))
+      `);
+      
+      const isBlocked = blockResult.rows && blockResult.rows.length > 0;
+      const blockInfo = blockResult.rows?.[0] as any;
+      
       // Check if there's a pending DM request between these users
       const requestResult = await db.execute(sql`
         SELECT * FROM dm_requests 
@@ -1569,7 +1579,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           messageCount >= 1;
       
       res.json({
-        isRestricted,
+        isRestricted: isRestricted || isBlocked,
+        isBlocked,
+        blockType: blockInfo?.block_type,
+        blockExpiresAt: blockInfo?.expires_at,
         messageCount,
         hasPendingRequest,
         pendingRequestFrom: pendingRequest?.from_user_id
@@ -1808,13 +1821,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           WHERE id = ${requestId}
         `);
         
+        // Create chat so sender can see it but cannot send more messages
+        const chatResult = await db.execute(sql`
+          INSERT INTO dm_chats (user1_id, user2_id) 
+          VALUES (${request.from_user_id}, ${req.user.userId}) 
+          RETURNING id
+        `);
+        
+        const chat = chatResult.rows[0] as any;
+        
+        // Add the original message to the chat
+        await db.execute(sql`
+          INSERT INTO dm_messages (chat_id, sender_id, content) 
+          VALUES (${chat.id}, ${request.from_user_id}, ${request.first_message})
+        `);
+        
+        // Add system message indicating dismissal
+        await db.execute(sql`
+          INSERT INTO dm_messages (chat_id, sender_id, content) 
+          VALUES (${chat.id}, ${req.user.userId}, 'Message request dismissed')
+        `);
+        
         // Add temporary block
         await db.execute(sql`
           INSERT INTO dm_blocks (blocker_id, blocked_id, block_type, expires_at) 
           VALUES (${req.user.userId}, ${request.from_user_id}, 'temporary', NOW() + INTERVAL '72 hours')
         `);
         
-        res.json({ success: true });
+        res.json({ success: true, chatId: chat.id });
       } else if (action === 'block') {
         // Permanent block
         await db.execute(sql`

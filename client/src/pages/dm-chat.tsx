@@ -55,6 +55,13 @@ export default function DMChatPage() {
       if (error.message?.includes('one message until')) {
         // This is the restriction error - don't show toast, the UI will handle it
         queryClient.invalidateQueries({ queryKey: [`/api/dm/chats/${chatId}/status`] });
+      } else if (error.message?.includes('72 hours') || error.message?.includes('dismissed')) {
+        // Handle 72-hour cooldown error
+        toast({
+          title: "Message Blocked",
+          description: "You cannot send messages for 72 hours after being dismissed",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Error",
@@ -292,6 +299,21 @@ export default function DMChatPage() {
               </p>
             </div>
           </div>
+        ) : (chatStatus as any)?.isBlocked ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center justify-center space-x-2 text-red-700">
+              <div className="w-5 h-5 rounded-full bg-red-500"></div>
+              <div className="text-center">
+                <p className="font-medium">Message Blocked</p>
+                <p className="text-sm text-red-600">
+                  {(chatStatus as any)?.blockType === 'temporary' 
+                    ? `You cannot send messages for 72 hours after being dismissed. Try again later.`
+                    : 'You cannot send messages to this user.'
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="flex items-center space-x-3">
             <div className="flex-1 relative">
@@ -301,11 +323,12 @@ export default function DMChatPage() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="pr-12 rounded-full border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                disabled={(chatStatus as any)?.isRestricted}
               />
             </div>
             <Button
               onClick={handleSendMessage}
-              disabled={!message.trim() || sendMessageMutation.isPending}
+              disabled={!message.trim() || sendMessageMutation.isPending || (chatStatus as any)?.isRestricted}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 rounded-full p-3"
             >
               <Send className="w-5 h-5" />
