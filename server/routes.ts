@@ -1343,11 +1343,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/chats/:chatId', authenticateUser, async (req: any, res: any) => {
     try {
       const chatId = Number(req.params.chatId);
+      const currentUser = await storage.getUser(req.user.userId);
       const userChats = await storage.getUserChats(req.user.userId);
       
       const chat = userChats.find(c => c.id === chatId);
       if (!chat) {
         return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      // Block non-admin users from accessing chats with admin users
+      const otherUser = await storage.getUser(chat.user.id);
+      if (!currentUser?.isAdmin && otherUser?.isAdmin) {
+        return res.status(403).json({ message: 'Access denied to this chat' });
       }
       
       res.json(chat);
@@ -1361,11 +1368,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/chats/:chatId/messages', authenticateUser, async (req: any, res: any) => {
     try {
       const chatId = Number(req.params.chatId);
+      const currentUser = await storage.getUser(req.user.userId);
       const userChats = await storage.getUserChats(req.user.userId);
       
       const chat = userChats.find(c => c.id === chatId);
       if (!chat) {
         return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      // Block non-admin users from accessing messages in chats with admin users
+      const otherUser = await storage.getUser(chat.user.id);
+      if (!currentUser?.isAdmin && otherUser?.isAdmin) {
+        return res.status(403).json({ message: 'Access denied to this chat' });
       }
       
       res.json(chat.messages || []);
