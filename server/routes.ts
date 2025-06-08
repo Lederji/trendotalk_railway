@@ -1526,7 +1526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE chat_id = ${chatId} AND sender_id = ${userId}
       `);
       
-      const messageCount = messageCountResult.rows?.[0]?.count || 0;
+      const messageCount = Number(messageCountResult.rows?.[0]?.count || 0);
       const hasPendingRequest = requestResult.rows && requestResult.rows.length > 0;
       const pendingRequest = requestResult.rows?.[0];
       
