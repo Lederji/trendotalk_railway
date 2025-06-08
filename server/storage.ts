@@ -97,6 +97,9 @@ export interface IStorage {
   getUserCV(userId: number): Promise<any>;
   saveUserCV(userId: number, cvData: any): Promise<any>;
   
+  // Report methods
+  createPostReport(report: any): Promise<any>;
+  
   // Performance analytics methods
   getUserPerformanceStats(userId: number): Promise<any>;
   
@@ -114,6 +117,7 @@ export class MemStorage implements IStorage {
   private follows: Map<number, Follow> = new Map();
   private friendRequests: Map<number, any> = new Map();
   private chats: Map<number, any> = new Map();
+  private postReports: Map<number, any> = new Map();
   
   private currentUserId = 1;
   private currentPostId = 1;
@@ -1383,6 +1387,24 @@ export class MemStorage implements IStorage {
     });
     
     return true;
+  }
+
+  async createPostReport(report: any): Promise<any> {
+    this.postReports.set(report.id, report);
+    
+    // Also create a notification for admin about the new report
+    const adminUsers = Array.from(this.users.values()).filter(user => user.isAdmin);
+    for (const admin of adminUsers) {
+      await this.createNotification(
+        admin.id,
+        'post_report',
+        `New post report: ${report.reason}`,
+        report.reporterId,
+        report.postId
+      );
+    }
+    
+    return report;
   }
 }
 
@@ -3798,6 +3820,29 @@ class HybridStorage extends DatabaseStorage {
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       return false;
+    }
+  }
+
+  async createPostReport(report: any): Promise<any> {
+    try {
+      // Store the report in memory for now (can be extended to database table later)
+      // For now, we'll create a notification for admins
+      const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true));
+      
+      for (const admin of adminUsers) {
+        await this.createNotification(
+          admin.id,
+          'post_report',
+          `New post report: ${report.reason}`,
+          report.reporterId,
+          report.postId
+        );
+      }
+      
+      return report;
+    } catch (error) {
+      console.error('Error creating post report:', error);
+      throw error;
     }
   }
 }
