@@ -17,6 +17,7 @@ export function Header() {
   const [showAccountCenter, setShowAccountCenter] = useState(false);
   const [showServiceRequest, setShowServiceRequest] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   // Fetch notifications count
@@ -260,50 +261,62 @@ export function Header() {
                                 </div>
                               )}
                               
-                              {notification.type === 'follow' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-xs px-3 py-1 h-8 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-none hover:from-blue-600 hover:to-purple-600"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    const username = notification.message.split(' ')[0];
-                                    
-                                    try {
-                                      const sessionId = localStorage.getItem('sessionId');
-                                      if (sessionId) {
-                                        const response = await fetch(`/api/users/${username}/follow-back`, {
-                                          method: 'POST',
-                                          headers: {
-                                            'Content-Type': 'application/json',
-                                            'Authorization': `Bearer ${sessionId}`
-                                          },
-                                          credentials: 'include'
-                                        });
-                                        
-                                        if (response.ok) {
-                                          toast({
-                                            title: "Success",
-                                            description: `You are now following ${username}`,
+                              {notification.type === 'follow' && (() => {
+                                const username = notification.message.split(' ')[0];
+                                const isFollowed = followedUsers.has(username);
+                                
+                                return (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className={isFollowed 
+                                      ? "text-xs px-3 py-1 h-8 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                      : "text-xs px-3 py-1 h-8 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-none hover:from-blue-600 hover:to-purple-600"
+                                    }
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      
+                                      if (isFollowed) return; // Prevent multiple clicks
+                                      
+                                      try {
+                                        const sessionId = localStorage.getItem('sessionId');
+                                        if (sessionId) {
+                                          const response = await fetch(`/api/users/${username}/follow-back`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              'Authorization': `Bearer ${sessionId}`
+                                            },
+                                            credentials: 'include'
                                           });
                                           
-                                          // Refresh notifications
-                                          queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-                                          queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+                                          if (response.ok) {
+                                            // Update local state immediately
+                                            setFollowedUsers(prev => new Set([...prev, username]));
+                                            
+                                            toast({
+                                              title: "Success",
+                                              description: `You are now following ${username}`,
+                                            });
+                                            
+                                            // Refresh notifications
+                                            queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+                                            queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+                                          }
                                         }
+                                      } catch (error) {
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to follow back",
+                                          variant: "destructive"
+                                        });
                                       }
-                                    } catch (error) {
-                                      toast({
-                                        title: "Error",
-                                        description: "Failed to follow back",
-                                        variant: "destructive"
-                                      });
-                                    }
-                                  }}
-                                >
-                                  Follow Back
-                                </Button>
-                              )}
+                                    }}
+                                  >
+                                    {isFollowed ? "Following" : "Follow Back"}
+                                  </Button>
+                                );
+                              })()}
                             </div>
                             
                             {!notification.isRead && (
