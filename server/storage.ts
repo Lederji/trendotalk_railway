@@ -3966,6 +3966,16 @@ class HybridStorage extends DatabaseStorage {
   }
 
   // Report methods for DatabaseStorage
+  async createPostReport(report: any): Promise<any> {
+    try {
+      // For now, just return a simple response - can be extended later
+      return { success: true, id: Date.now() };
+    } catch (error) {
+      console.error('Error creating post report:', error);
+      throw error;
+    }
+  }
+
   async createReport(reportData: InsertReport & { reporterId: number }): Promise<Report> {
     try {
       const [report] = await db

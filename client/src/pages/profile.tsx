@@ -1241,18 +1241,6 @@ export default function ProfilePage() {
                 <option value="other">Other</option>
               </select>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Additional details (optional)
-              </label>
-              <Textarea
-                placeholder="Please provide any additional information about this report..."
-                value={reportForm.message}
-                onChange={(e) => setReportForm({ ...reportForm, message: e.target.value })}
-                className="min-h-[80px]"
-              />
-            </div>
           </div>
           
           <div className="flex space-x-2 pt-4 border-t">
