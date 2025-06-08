@@ -397,6 +397,14 @@ export default function AdminDashboard() {
                   </span>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="reports" className="relative whitespace-nowrap px-3 py-1.5 text-sm">
+                Reports
+                {reports.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {reports.length}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="settings" className="whitespace-nowrap px-3 py-1.5 text-sm">Settings</TabsTrigger>
             </TabsList>
           </div>
@@ -820,6 +828,80 @@ export default function AdminDashboard() {
                   <Button variant="outline">Send to Selected Users</Button>
                   <Button variant="outline">Schedule for Later</Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Reports Tab */}
+          <TabsContent value="reports" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Flag className="h-5 w-5" />
+                  User Reports
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Reported User</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Reports Count</TableHead>
+                      <TableHead>Latest Report</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reports.map((report: any, index: number) => (
+                      <TableRow key={index}>
+                        <TableCell className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {report.reportedUsername.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium">{report.reportedUsername}</p>
+                            <p className="text-sm text-gray-500">ID: {report.reportedUserId}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {report.reason.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="destructive">
+                            {report.reportCount} reports
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-500">
+                            {new Date(report.latestReport).toLocaleDateString()}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4 mr-1" />
+                              Review
+                            </Button>
+                            <Button size="sm" variant="destructive">
+                              <Ban className="w-4 h-4 mr-1" />
+                              Suspend
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {reports.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                          No user reports found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
