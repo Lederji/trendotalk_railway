@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -93,6 +93,8 @@ export default function AdminDashboard() {
   const [banModalOpen, setBanModalOpen] = useState(false);
   const [adminMessage, setAdminMessage] = useState("");
   const [banReason, setBanReason] = useState("");
+  const [reportsViewed, setReportsViewed] = useState(false);
+  const [lastReportsCount, setLastReportsCount] = useState(0);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
@@ -390,7 +392,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="analytics" className="whitespace-nowrap px-3 py-1.5 text-sm">Analytics</TabsTrigger>
               <TabsTrigger value="moderation" className="whitespace-nowrap px-3 py-1.5 text-sm">Moderation</TabsTrigger>
               <TabsTrigger value="notifications" className="relative whitespace-nowrap px-3 py-1.5 text-sm">
-                Notifications
+                Post Reports
                 {notifications.filter((n: AdminNotification) => n.type === 'post_report').length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {notifications.filter((n: AdminNotification) => n.type === 'post_report').length}
@@ -398,7 +400,7 @@ export default function AdminDashboard() {
                 )}
               </TabsTrigger>
               <TabsTrigger value="reports" className="relative whitespace-nowrap px-3 py-1.5 text-sm">
-                Reports
+                User Reports
                 {reports.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {reports.length}
