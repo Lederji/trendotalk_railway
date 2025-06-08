@@ -1733,6 +1733,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     }
   });
 
+  // Get other user's CV data
+  app.get('/api/users/:userId/cv', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      const cvData = await storage.getUserCV(userId);
+      res.json(cvData);
+    } catch (error) {
+      console.error('Error getting user CV:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Save CV data
   app.post('/api/cv', authenticateUser, async (req: any, res: any) => {
     try {

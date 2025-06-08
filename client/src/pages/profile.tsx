@@ -445,7 +445,7 @@ export default function ProfilePage() {
                 <Button
                   variant="outline"
                   className="flex-1 text-xs px-1 py-2"
-                  onClick={() => setLocation('/cv')}
+                  onClick={() => setLocation(`/cv/${userId}`)}
                 >
                   <FileText className="w-3 h-3 mr-1" />
                   CV

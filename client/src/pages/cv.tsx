@@ -10,7 +10,7 @@ import { ArrowLeft, Save, Plus, X, FileText, User, Briefcase, GraduationCap, Awa
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { Link, useRoute } from "wouter";
 
 interface CVData {
   fullName: string;
@@ -54,6 +54,10 @@ export default function CVPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [match, params] = useRoute("/cv/:userId");
+  
+  const isViewingOtherUser = !!params?.userId;
+  const targetUserId = params?.userId || user?.id;
   
   const [cvData, setCvData] = useState<CVData>({
     fullName: '',
@@ -75,8 +79,17 @@ export default function CVPage() {
 
   // Fetch CV data
   const { data: savedCV, isLoading } = useQuery({
-    queryKey: ['/api/cv'],
-    enabled: !!user,
+    queryKey: isViewingOtherUser ? ['/api/cv', targetUserId] : ['/api/cv'],
+    queryFn: async () => {
+      if (isViewingOtherUser) {
+        const response = await apiRequest('GET', `/api/users/${targetUserId}/cv`);
+        return response.json();
+      } else {
+        const response = await apiRequest('GET', '/api/cv');
+        return response.json();
+      }
+    },
+    enabled: !!user && !!targetUserId,
   });
 
   // Save CV mutation

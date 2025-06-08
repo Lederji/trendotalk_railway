@@ -38,6 +38,7 @@ function Router() {
       <Route path="/search" component={SearchPage} />
       <Route path="/account-center" component={AccountCenter} />
       <Route path="/cv" component={CVPage} />
+      <Route path="/cv/:userId" component={CVPage} />
       <Route path="/auth" component={Auth} />
       <Route path="/login" component={Auth} />
       <Route path="/banned" component={BannedPage} />
