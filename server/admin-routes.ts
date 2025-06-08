@@ -20,7 +20,7 @@ function authenticateAdmin(req: any, res: any, next: any) {
     if (!user || !user.isAdmin) {
       return res.status(403).json({ message: 'Admin access required' });
     }
-    req.user = session;
+    req.user = { ...session, adminId: user.id };
     next();
   }).catch(() => {
     res.status(500).json({ message: 'Internal server error' });
@@ -193,7 +193,7 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
     try {
       const { userId, message } = req.body;
       
-      const success = await storage.sendAdminMessage(userId, message, req.user.userId);
+      const success = await storage.sendAdminMessage(userId, message, req.user.adminId);
       if (!success) {
         return res.status(404).json({ message: 'User not found' });
       }
