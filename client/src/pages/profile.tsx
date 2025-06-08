@@ -78,10 +78,15 @@ export default function ProfilePage() {
     enabled: !!profileUserId && showFollowingList,
   }) as { data: any[] };
 
-  // Fetch performance statistics (only for own profile)
+  // Fetch performance statistics
   const { data: performanceStats, isLoading: statsLoading } = useQuery({
-    queryKey: ['/api/performance-stats'],
-    enabled: isOwnProfile && showPerformanceStats,
+    queryKey: isOwnProfile ? ['/api/performance-stats'] : ['/api/users', profileUserId, 'performance-stats'],
+    queryFn: async () => {
+      const endpoint = isOwnProfile ? '/api/performance-stats' : `/api/users/${profileUserId}/performance-stats`;
+      const response = await apiRequest('GET', endpoint);
+      return response.json();
+    },
+    enabled: showPerformanceStats,
   });
 
   // Follow/Unfollow mutation
@@ -488,19 +493,19 @@ export default function ProfilePage() {
                   {/* Content Overview */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-pink-600">{performanceStats.totalPosts}</div>
+                      <div className="text-2xl font-bold text-pink-600">{performanceStats.totalPosts || 0}</div>
                       <div className="text-sm text-gray-600">Total Posts</div>
                     </div>
                     <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{performanceStats.videoCount}</div>
+                      <div className="text-2xl font-bold text-blue-600">{performanceStats.videoCount || 0}</div>
                       <div className="text-sm text-gray-600">Videos Uploaded</div>
                     </div>
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{performanceStats.imageCount}</div>
+                      <div className="text-2xl font-bold text-green-600">{performanceStats.imageCount || 0}</div>
                       <div className="text-sm text-gray-600">Images Uploaded</div>
                     </div>
                     <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">{performanceStats.totalViews}</div>
+                      <div className="text-2xl font-bold text-purple-600">{performanceStats.totalViews || 0}</div>
                       <div className="text-sm text-gray-600">Total Views</div>
                     </div>
                   </div>
@@ -508,11 +513,11 @@ export default function ProfilePage() {
                   {/* Engagement Metrics */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">{performanceStats.totalFollowers}</div>
+                      <div className="text-2xl font-bold text-orange-600">{performanceStats.totalFollowers || 0}</div>
                       <div className="text-sm text-gray-600">Total Followers</div>
                     </div>
                     <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-indigo-600">{performanceStats.engagementRate}%</div>
+                      <div className="text-2xl font-bold text-indigo-600">{performanceStats.engagementRate || 0}%</div>
                       <div className="text-sm text-gray-600">Engagement Rate</div>
                     </div>
                   </div>
@@ -522,11 +527,11 @@ export default function ProfilePage() {
                     <h3 className="font-semibold mb-3 text-gray-800">Reach Analytics</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-gradient-to-r from-teal-50 to-green-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-teal-600">{performanceStats.reach30Days}</div>
+                        <div className="text-2xl font-bold text-teal-600">{performanceStats.reach30Days || 0}</div>
                         <div className="text-sm text-gray-600">30-Day Reach</div>
                       </div>
                       <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-yellow-600">{performanceStats.reach24Hours}</div>
+                        <div className="text-2xl font-bold text-yellow-600">{performanceStats.reach24Hours || 0}</div>
                         <div className="text-sm text-gray-600">24-Hour Reach</div>
                       </div>
                     </div>
@@ -537,11 +542,11 @@ export default function ProfilePage() {
                     <h3 className="font-semibold mb-3 text-gray-800">Recent Activity</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-rose-600">{performanceStats.postsLast30Days}</div>
+                        <div className="text-2xl font-bold text-rose-600">{performanceStats.postsLast30Days || 0}</div>
                         <div className="text-sm text-gray-600">Posts (30 Days)</div>
                       </div>
                       <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-violet-600">{performanceStats.postsLast24Hours}</div>
+                        <div className="text-2xl font-bold text-violet-600">{performanceStats.postsLast24Hours || 0}</div>
                         <div className="text-sm text-gray-600">Posts (24 Hours)</div>
                       </div>
                     </div>
