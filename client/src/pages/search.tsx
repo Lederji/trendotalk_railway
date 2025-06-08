@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowLeft, Hash, Users, Image, Video, Bookmark } from "lucide-react";
+import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Navigation } from "@/components/layout/navigation";
@@ -131,80 +131,127 @@ export function SearchPage() {
       <div className="max-w-2xl mx-auto p-4">
         {/* Instagram-style Feed (when no query) */}
         {!searchQuery && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Videos</h2>
-              <div className="grid grid-cols-3 gap-1">
-                {Array.isArray(topPosts) && topPosts.filter((post: any) => post.videoUrl || post.video1Url).slice(0, 9).map((post: any) => (
-                  <div
-                    key={post.id}
-                    onClick={() => handlePostClick(post.id)}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer relative group"
-                  >
-                    {post.imageUrl ? (
-                      <img 
-                        src={post.imageUrl} 
-                        alt={post.caption || post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
-                        <Video className="h-8 w-8 text-purple-600" />
+          <div className="space-y-4 pb-20">
+            {Array.isArray(topPosts) && topPosts.length > 0 ? (
+              topPosts.map((post: any) => (
+                <div key={post.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  {/* Post Header */}
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border-2 border-gray-200">
+                        <AvatarImage src={post.user?.avatar} alt={post.user?.username} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-sm">
+                          {post.user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 text-sm">
+                          {post.user?.username || 'Unknown User'}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Recently'}
+                        </p>
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                      <Video className="h-6 w-6 text-white" />
                     </div>
-                    {post.likesCount && (
-                      <div className="absolute bottom-1 left-1">
-                        <Badge className="bg-black/50 text-white text-xs px-1">
-                          {post.likesCount}
-                        </Badge>
-                      </div>
-                    )}
+                    <Button variant="ghost" size="sm" className="text-gray-400 h-8 w-8 p-0">
+                      •••
+                    </Button>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Posts</h2>
-              <div className="grid grid-cols-3 gap-1">
-                {Array.isArray(topPosts) && topPosts.slice(0, 12).map((post: any) => (
-                  <div
-                    key={post.id}
-                    onClick={() => handlePostClick(post.id)}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer relative group"
-                  >
-                    {post.imageUrl ? (
-                      <img 
-                        src={post.imageUrl} 
-                        alt={post.caption || post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
-                        <Image className="h-8 w-8 text-purple-600" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      {post.videoUrl || post.video1Url ? (
-                        <Video className="h-6 w-6 text-white absolute top-2 right-2" />
-                      ) : null}
+                  {/* Post Image/Video */}
+                  {(post.imageUrl || post.video1Url || post.videoUrl) && (
+                    <div className="aspect-square bg-gray-100 relative">
+                      {post.imageUrl ? (
+                        <img 
+                          src={post.imageUrl} 
+                          alt={post.caption || post.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (post.video1Url || post.videoUrl) ? (
+                        <video 
+                          src={post.video1Url || post.videoUrl}
+                          className="w-full h-full object-cover"
+                          controls
+                          poster={post.imageUrl}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                          <Image className="h-12 w-12 text-purple-400" />
+                        </div>
+                      )}
                     </div>
-                    {(post.likesCount || post.votesCount) && (
-                      <div className="absolute bottom-1 left-1">
-                        <Badge className="bg-black/50 text-white text-xs px-1">
-                          {post.likesCount || post.votesCount || 0}
-                        </Badge>
+                  )}
+
+                  {/* Post Actions */}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-red-500">
+                          <Heart className="h-6 w-6" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-blue-500">
+                          <MessageCircle className="h-6 w-6" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-green-500">
+                          <Search className="h-6 w-6" />
+                        </Button>
+                      </div>
+                      <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-purple-500">
+                        <Bookmark className="h-6 w-6" />
+                      </Button>
+                    </div>
+
+                    {/* Likes Count */}
+                    <div className="mb-2">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {post.likesCount || post.votesCount || 0} likes
+                      </p>
+                    </div>
+
+                    {/* Post Caption */}
+                    {(post.caption || post.title) && (
+                      <div className="mb-2">
+                        <p className="text-sm text-gray-900">
+                          <span className="font-semibold mr-2">{post.user?.username}</span>
+                          {post.caption || post.title}
+                        </p>
                       </div>
                     )}
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {Array.isArray(topPosts) && topPosts.length === 0 && (
+                    {/* Comments Preview */}
+                    <div className="space-y-1">
+                      <Button variant="ghost" className="p-0 h-auto text-gray-500 text-sm hover:text-gray-700">
+                        View all {post.commentsCount || 0} comments
+                      </Button>
+                    </div>
+
+                    {/* Time stamp */}
+                    <p className="text-xs text-gray-400 mt-2 uppercase">
+                      {post.createdAt ? `${new Date(post.createdAt).toLocaleDateString()} • ${new Date(post.createdAt).toLocaleTimeString()}` : 'Recently posted'}
+                    </p>
+                  </div>
+
+                  {/* Add Comment Section */}
+                  <div className="border-t border-gray-100 p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="/default-avatar.png" />
+                        <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                          You
+                        </AvatarFallback>
+                      </Avatar>
+                      <Input 
+                        placeholder="Add a comment..."
+                        className="flex-1 border-none bg-transparent p-0 focus-visible:ring-0 text-sm"
+                      />
+                      <Button variant="ghost" size="sm" className="text-blue-500 font-semibold text-sm p-0">
+                        Post
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
               <div className="text-center py-12">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
                   <Image className="h-8 w-8 text-purple-400" />
