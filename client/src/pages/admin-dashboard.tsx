@@ -45,6 +45,16 @@ interface AdminStats {
   todaySignups: number;
 }
 
+interface AdminNotification {
+  id: number;
+  type: string;
+  message: string;
+  fromUsername?: string;
+  postId?: number;
+  createdAt: string;
+  isRead: boolean;
+}
+
 interface AdminUser {
   id: number;
   username: string;
@@ -125,6 +135,20 @@ export default function AdminDashboard() {
         }
       });
       if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
+    },
+  });
+
+  // Fetch notifications including reports
+  const { data: notifications = [] } = useQuery<AdminNotification[]>({
+    queryKey: ["/api/notifications"],
+    queryFn: async () => {
+      const response = await fetch("/api/notifications", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch notifications');
       return response.json();
     },
   });
@@ -506,6 +530,73 @@ export default function AdminDashboard() {
 
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="space-y-6">
+            {/* Reports Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Flag className="h-5 w-5" />
+                  Post Reports
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Reporter</TableHead>
+                      <TableHead>Post</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {notifications.filter((n: AdminNotification) => n.type === 'post_report').map((notification: AdminNotification) => (
+                      <TableRow key={notification.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                              <Flag className="h-4 w-4 text-red-600" />
+                            </div>
+                            <span>{notification.fromUsername || 'Anonymous'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-xs">
+                            <p className="text-sm text-gray-600">Post ID: {notification.postId}</p>
+                            <p className="text-xs text-gray-500 truncate">{notification.message}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="destructive">Inappropriate content</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(notification.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {notifications.filter((n: AdminNotification) => n.type === 'post_report').length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                          No reports to review
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Send Notifications Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
