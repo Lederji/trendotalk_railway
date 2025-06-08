@@ -77,7 +77,26 @@ export default function Trends() {
 
   const reportPostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      return apiRequest(`/api/posts/${postId}/report`, 'POST', { reason: 'Inappropriate content' });
+      try {
+        const response = await fetch(`/api/posts/${postId}/report`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+          },
+          body: JSON.stringify({ reason: 'Inappropriate content' })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          throw new Error(errorData.message || `HTTP ${response.status}`);
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Report post error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -85,10 +104,11 @@ export default function Trends() {
         description: "Thank you for your report. We'll review this content.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Report mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to report post. Please try again.",
+        description: error?.message || "Failed to report post. Please try again.",
         variant: "destructive",
       });
     }
