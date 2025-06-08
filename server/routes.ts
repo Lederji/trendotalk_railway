@@ -795,6 +795,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Follow back - specifically for notification interactions
+  app.post('/api/users/:username/follow-back', authenticateUser, async (req: any, res: any) => {
+    try {
+      const user = await storage.getUserByUsername(req.params.username);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      const success = await storage.followUser(req.user.userId, user.id);
+      if (!success) {
+        return res.status(400).json({ message: 'Cannot follow user' });
+      }
+      res.json({ message: 'Following back successfully' });
+    } catch (error) {
+      console.error('Error following back:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
 
 
   // Friend request routes

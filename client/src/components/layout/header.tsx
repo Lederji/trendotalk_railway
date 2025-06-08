@@ -200,8 +200,71 @@ export function Header() {
                                 {new Date(notification.createdAt).toLocaleDateString()}
                               </p>
                             </div>
+                            
+                            {/* Post preview for like/comment or Follow Back button */}
+                            <div className="flex-shrink-0 ml-2">
+                              {(notification.type === 'like' || notification.type === 'comment') && notification.postId && (
+                                <div 
+                                  className="w-12 h-12 bg-gray-100 rounded-lg border overflow-hidden cursor-pointer hover:opacity-80"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLocation(`/`);
+                                  }}
+                                >
+                                  {notification.postImage ? (
+                                    <img 
+                                      src={notification.postImage} 
+                                      alt="Post preview" 
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500">
+                                      <div className="w-4 h-4 bg-white rounded"></div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {notification.type === 'follow' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs px-3 py-1 h-8 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-none hover:from-blue-600 hover:to-purple-600"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const username = notification.message.split(' ')[0];
+                                    
+                                    try {
+                                      const response = await apiRequest(`/api/users/${username}/follow-back`, {
+                                        method: 'POST'
+                                      });
+                                      
+                                      if (response.ok) {
+                                        toast({
+                                          title: "Success",
+                                          description: `You are now following ${username}`,
+                                        });
+                                        
+                                        // Refresh notifications
+                                        queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+                                        queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
+                                      }
+                                    } catch (error) {
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to follow back",
+                                        variant: "destructive"
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Follow Back
+                                </Button>
+                              )}
+                            </div>
+                            
                             {!notification.isRead && (
-                              <div className="flex-shrink-0">
+                              <div className="flex-shrink-0 ml-2">
                                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                               </div>
                             )}

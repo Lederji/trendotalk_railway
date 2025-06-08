@@ -2856,10 +2856,12 @@ export class DatabaseStorage implements IStorage {
           isRead: notifications.isRead,
           createdAt: notifications.createdAt,
           fromUsername: users.username,
-          fromAvatar: users.avatar
+          fromAvatar: users.avatar,
+          postImage: posts.imageUrl
         })
         .from(notifications)
         .leftJoin(users, eq(notifications.fromUserId, users.id))
+        .leftJoin(posts, eq(notifications.postId, posts.id))
         .where(eq(notifications.userId, userId))
         .orderBy(desc(notifications.createdAt))
         .limit(20);
