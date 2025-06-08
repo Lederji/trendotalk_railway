@@ -1052,8 +1052,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         postAuthor: post.user?.username || 'Unknown'
       };
       
-      // Store the report (you can extend storage interface for this)
-      await storage.createPostReport(report);
+      // Store the report by creating notifications for admins
+      try {
+        const adminUsers = await storage.getUsers();
+        const admins = adminUsers.filter(user => user.isAdmin);
+        
+        for (const admin of admins) {
+          await storage.createNotification(
+            admin.id,
+            'post_report',
+            `New post report: ${report.reason}`,
+            report.reporterId,
+            report.postId
+          );
+        }
+      } catch (notificationError) {
+        console.error('Error creating admin notifications:', notificationError);
+      }
       
       res.json({ message: 'Post reported successfully' });
     } catch (error) {
