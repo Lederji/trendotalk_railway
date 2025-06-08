@@ -32,7 +32,7 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeTab, setActiveTab] = useState("home");
-  const { registerVideo, unregisterVideo, observePost, unobservePost } = useVideoAutoplay();
+
   const [location] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
