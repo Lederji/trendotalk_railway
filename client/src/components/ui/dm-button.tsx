@@ -42,7 +42,7 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
       size={size}
       onClick={() => createChatMutation.mutate()}
       disabled={createChatMutation.isPending}
-      className="flex items-center gap-2"
+      className="flex items-center gap-2 flex-1"
     >
       <MessageCircle className="w-4 h-4" />
       {children || "Message"}
