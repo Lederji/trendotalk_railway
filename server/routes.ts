@@ -1466,10 +1466,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatId = Number(req.params.chatId);
       
       if (!req.user || !req.user.userId) {
+        console.log('DM chat details - authentication failed, req.user:', req.user);
         return res.status(401).json({ message: 'User not authenticated' });
       }
       
+      console.log('DM chat details - req.user.userId:', req.user.userId, 'type:', typeof req.user.userId);
       const userId = Number(req.user.userId);
+      console.log('DM chat details - converted userId:', userId, 'isNaN:', isNaN(userId));
       
       const chatResult = await db.execute(sql`
         SELECT dc.*, 
@@ -1578,35 +1581,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all DM chats for a user
-  app.get('/api/dm/chats', async (req: any, res: any) => {
+  app.get('/api/dm/chats', authenticateUser, async (req: any, res: any) => {
     try {
-      // Get session ID from Authorization header
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'No authorization token' });
-      }
-      
-      const sessionId = authHeader.substring(7);
-      console.log('DM chats - sessionId:', sessionId);
-      
-      // Check if session exists in memory first
-      let userId;
-      if (sessions.has(sessionId)) {
-        const sessionData = sessions.get(sessionId);
-        userId = sessionData?.userId;
-        console.log('DM chats - userId from session store:', userId);
-      } else {
-        // Extract user ID from session ID (format: userId_randomString_timestamp)
-        const parts = sessionId.split('_');
-        if (parts.length >= 3) {
-          userId = parseInt(parts[0]);
-          console.log('DM chats - extracted userId from sessionId:', userId);
-        }
-      }
-      
-      if (isNaN(userId)) {
-        return res.status(401).json({ message: 'Invalid user ID in session' });
-      }
+      const userId = req.user.userId;
+      console.log('DM chats - authenticated userId:', userId);
       
       // Get all DM chats for this user
       const dmChatsResult = await db.execute(sql`
