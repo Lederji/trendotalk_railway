@@ -2048,6 +2048,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chat = chatResult.rows[0] as any;
       const otherUserId = chat.user1_id === req.user.userId ? chat.user2_id : chat.user1_id;
       
+      // Check if user is blocked (72-hour cooldown from dismiss action)
+      const blockResult = await db.execute(sql`
+        SELECT * FROM dm_blocks 
+        WHERE blocker_id = ${otherUserId} AND blocked_id = ${req.user.userId}
+        AND (block_type = 'permanent' OR (block_type = 'temporary' AND expires_at > NOW()))
+      `);
+      
+      if (blockResult.rows && blockResult.rows.length > 0) {
+        const block = blockResult.rows[0] as any;
+        if (block.block_type === 'temporary') {
+          return res.status(403).json({ 
+            message: 'You cannot send messages to this user for 72 hours after being dismissed',
+            isBlocked: true,
+            blockType: 'temporary',
+            expiresAt: block.expires_at
+          });
+        } else {
+          return res.status(403).json({ 
+            message: 'You cannot send messages to this user',
+            isBlocked: true,
+            blockType: 'permanent'
+          });
+        }
+      }
+      
       // Check if there's a pending DM request that restricts messaging
       const requestResult = await db.execute(sql`
         SELECT * FROM dm_requests 
