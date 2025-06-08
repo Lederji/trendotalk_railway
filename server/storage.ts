@@ -2709,7 +2709,7 @@ export class DatabaseStorage implements IStorage {
           eq(friendRequests.status, 'pending')
         ));
       
-      // Get user details for each request
+      // Get user details for each request and filter out invalid users
       const requestsWithUsers = [];
       for (const req of requests) {
         const fromUser = await db
@@ -2718,14 +2718,23 @@ export class DatabaseStorage implements IStorage {
           .where(eq(users.id, req.fromUserId))
           .limit(1);
         
-        requestsWithUsers.push({
-          id: req.id,
-          fromUserId: req.fromUserId,
-          toUserId: req.toUserId,
-          status: req.status,
-          createdAt: req.createdAt,
-          user: fromUser[0] || null,
-        });
+        // Only include requests from users that exist, have valid data, and are not admin users
+        if (fromUser[0] && fromUser[0].username && fromUser[0].displayName !== undefined && !fromUser[0].isAdmin) {
+          requestsWithUsers.push({
+            id: req.id,
+            fromUserId: req.fromUserId,
+            toUserId: req.toUserId,
+            status: req.status,
+            createdAt: req.createdAt,
+            user: fromUser[0],
+          });
+        } else {
+          // Clean up invalid or admin friend request
+          await db
+            .delete(friendRequests)
+            .where(eq(friendRequests.id, req.id));
+          console.log('Removed invalid or admin friend request from user:', req.fromUserId);
+        }
       }
       
       return requestsWithUsers;

@@ -34,7 +34,15 @@ export function Messages() {
         }
       });
       if (!response.ok) throw new Error('Failed to fetch friend requests');
-      return response.json();
+      const data = await response.json();
+      
+      // Filter out requests from users with invalid data or admin users
+      return data.filter((request: any) => 
+        request.user && 
+        request.user.username && 
+        request.user.displayName !== undefined &&
+        !request.user.isAdmin
+      );
     },
   });
 
