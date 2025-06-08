@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { CommentModal } from "@/components/post/comment-modal";
 import Auth from "@/pages/auth";
+import { useLocation } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +22,7 @@ export default function Trends() {
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [videoMuteStates, setVideoMuteStates] = useState<Map<number, boolean>>(new Map());
   const [followingUsers, setFollowingUsers] = useState(new Set<number>());
   const [commentModalOpen, setCommentModalOpen] = useState(false);

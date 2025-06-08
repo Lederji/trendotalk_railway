@@ -515,7 +515,7 @@ export function SearchPage() {
                       {typedSearchResults.slice(0, 3).map((user) => (
                         <div
                           key={user.id}
-                          onClick={() => handleUserClick(user.username)}
+                          onClick={() => handleUserClick(Number(user.id))}
                           className="bg-white/70 backdrop-blur-sm rounded-xl p-3 border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
@@ -623,7 +623,7 @@ export function SearchPage() {
                   typedSearchResults.map((user) => (
                     <div
                       key={user.id}
-                      onClick={() => handleUserClick(user.username)}
+                      onClick={() => handleUserClick(Number(user.id))}
                       className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
