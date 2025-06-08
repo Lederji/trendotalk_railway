@@ -1444,7 +1444,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `);
       
       if (blockResult.rows && blockResult.rows.length > 0) {
-        return res.status(403).json({ message: 'You cannot send messages to this user' });
+        const block = blockResult.rows[0] as any;
+        if (block.block_type === 'permanent') {
+          return res.status(403).json({ 
+            message: 'You are blocked for DM',
+            isBlocked: true,
+            blockType: 'permanent'
+          });
+        } else {
+          return res.status(403).json({ 
+            message: 'You cannot send messages to this user for 72 hours after being dismissed',
+            isBlocked: true,
+            blockType: 'temporary'
+          });
+        }
       }
       
       // Check if chat already exists (accepted request)
@@ -1471,6 +1484,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingRequestResult.rows && existingRequestResult.rows.length > 0) {
         const request = existingRequestResult.rows[0] as any;
         if (request.status === 'dismissed') {
+          // For dismissed users, redirect to existing chat room
+          const existingDismissedChatResult = await db.execute(sql`
+            SELECT id FROM dm_chats 
+            WHERE (user1_id = ${req.user.userId} AND user2_id = ${targetUserId})
+               OR (user1_id = ${targetUserId} AND user2_id = ${req.user.userId})
+            LIMIT 1
+          `);
+          
+          if (existingDismissedChatResult.rows && existingDismissedChatResult.rows.length > 0) {
+            const existingChat = existingDismissedChatResult.rows[0] as any;
+            return res.json({ chatId: existingChat.id, exists: true, wasDismissed: true });
+          }
+          
           return res.status(403).json({ message: 'You cannot send another request to this user yet' });
         }
         
@@ -1855,11 +1881,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.json({ success: true, chatId: chat.id });
       } else if (action === 'block') {
-        // Permanent block
+        // Permanent block - delete the chat completely
         await db.execute(sql`
           UPDATE dm_requests 
           SET status = 'blocked', updated_at = NOW() 
           WHERE id = ${requestId}
+        `);
+        
+        // Delete any existing chat between these users
+        await db.execute(sql`
+          DELETE FROM dm_messages 
+          WHERE chat_id IN (
+            SELECT id FROM dm_chats 
+            WHERE (user1_id = ${req.user.userId} AND user2_id = ${request.from_user_id})
+               OR (user1_id = ${request.from_user_id} AND user2_id = ${req.user.userId})
+          )
+        `);
+        
+        await db.execute(sql`
+          DELETE FROM dm_chats 
+          WHERE (user1_id = ${req.user.userId} AND user2_id = ${request.from_user_id})
+             OR (user1_id = ${request.from_user_id} AND user2_id = ${req.user.userId})
         `);
         
         // Add permanent block

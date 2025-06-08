@@ -43,11 +43,19 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
       }
     },
     onError: (error: any) => {
-      toast({
-        title: "Error", 
-        description: error.message || "Failed to send message",
-        variant: "destructive",
-      });
+      if (error.message === "You are blocked for DM") {
+        toast({
+          title: "Blocked", 
+          description: "You are blocked for DM",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error", 
+          description: error.message || "Failed to send message",
+          variant: "destructive",
+        });
+      }
     }
   });
 
