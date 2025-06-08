@@ -29,6 +29,10 @@ export default function Trends() {
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const tapTimeouts = useRef<Map<number, number>>(new Map());
 
+  // Get postId from URL parameters for direct navigation
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetPostId = urlParams.get('postId') ? Number(urlParams.get('postId')) : null;
+
   const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null);
   const [shareMenuOpen, setShareMenuOpen] = useState<number | null>(null);
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
@@ -439,6 +443,21 @@ export default function Trends() {
     });
   };
 
+  // Auto-scroll to specific post when postId is in URL
+  useEffect(() => {
+    if (targetPostId && posts.length > 0) {
+      const targetIndex = posts.findIndex(post => post.id === targetPostId);
+      if (targetIndex !== -1) {
+        const element = document.getElementById(`post-${targetPostId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Clear URL parameter after navigation
+          window.history.replaceState({}, '', '/trends');
+        }
+      }
+    }
+  }, [targetPostId, posts]);
+
   if (!isAuthenticated) {
     return <Auth />;
   }
@@ -466,7 +485,8 @@ export default function Trends() {
         ) : (
           posts.map((post: any, index: number) => (
             <div 
-              key={post.id} 
+              key={post.id}
+              id={`post-${post.id}`}
               className="relative h-[100vh] snap-start snap-always overflow-hidden"
               data-post-id={post.id}
               style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always' }}

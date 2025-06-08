@@ -617,22 +617,51 @@ export default function AdminDashboard() {
                               variant="outline"
                               onClick={() => {
                                 if (notification.postId) {
-                                  window.open(`/trends`, '_blank');
+                                  setLocation(`/trends?postId=${notification.postId}`);
                                 }
                               }}
-                              title="View post in trends"
+                              title="View specific post"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button 
                               size="sm" 
                               variant="destructive"
-                              onClick={() => {
+                              onClick={async () => {
                                 if (notification.postId && confirm('Are you sure you want to delete this reported post? This action cannot be undone.')) {
-                                  deletePostMutation.mutate(notification.postId);
+                                  try {
+                                    const response = await fetch(`/api/admin/posts/${notification.postId}`, {
+                                      method: 'DELETE',
+                                      headers: {
+                                        'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+                                      }
+                                    });
+                                    
+                                    if (response.ok) {
+                                      queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
+                                      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+                                      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+                                      toast({
+                                        title: "Success",
+                                        description: "Post deleted successfully",
+                                      });
+                                    } else {
+                                      const error = await response.json();
+                                      toast({
+                                        title: "Error", 
+                                        description: error.message || "Failed to delete post",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error", 
+                                      description: "Network error occurred",
+                                      variant: "destructive",
+                                    });
+                                  }
                                 }
                               }}
-                              disabled={deletePostMutation.isPending}
                               title="Delete reported post"
                             >
                               <Trash2 className="h-4 w-4" />
