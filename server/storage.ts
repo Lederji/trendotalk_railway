@@ -99,6 +99,8 @@ export interface IStorage {
   
   // Report methods
   createPostReport(report: any): Promise<any>;
+  createReport(reportData: InsertReport & { reporterId: number }): Promise<Report>;
+  getReportsSummary(): Promise<any[]>;
   
   // Performance analytics methods
   getUserPerformanceStats(userId: number): Promise<any>;
@@ -1455,7 +1457,26 @@ export class MemStorage implements IStorage {
     return true;
   }
 
+  // Report methods for MemStorage
+  async createReport(reportData: InsertReport & { reporterId: number }): Promise<Report> {
+    const report: Report = {
+      id: Date.now(),
+      reporterId: reportData.reporterId,
+      reportedUserId: reportData.reportedUserId,
+      reportedUsername: reportData.reportedUsername,
+      reason: reportData.reason,
+      message: reportData.message,
+      status: reportData.status || 'pending',
+      createdAt: new Date()
+    };
+    
+    return report;
+  }
 
+  async getReportsSummary(): Promise<any[]> {
+    // Stub implementation for MemStorage
+    return [];
+  }
 }
 
 
