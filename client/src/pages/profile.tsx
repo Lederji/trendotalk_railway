@@ -78,6 +78,27 @@ export default function ProfilePage() {
     enabled: !!profileUserId && showFollowingList,
   }) as { data: any[] };
 
+  // Fetch CV data to check if user has meaningful CV content
+  const { data: cvData } = useQuery({
+    queryKey: isOwnProfile ? ['/api/cv'] : ['/api/users', profileUserId, 'cv'],
+    queryFn: async () => {
+      const endpoint = isOwnProfile ? '/api/cv' : `/api/users/${profileUserId}/cv`;
+      const response = await apiRequest('GET', endpoint);
+      return response.json();
+    },
+    enabled: !isOwnProfile, // Only check for other users
+  });
+
+  // Check if CV has meaningful content (more than just basic info)
+  const hasMeaningfulCV = cvData && (
+    (cvData.experience && cvData.experience.length > 0) ||
+    (cvData.education && cvData.education.length > 0) ||
+    (cvData.skills && cvData.skills.length > 0) ||
+    (cvData.projects && cvData.projects.length > 0) ||
+    (cvData.achievements && cvData.achievements.length > 0) ||
+    (cvData.summary && cvData.summary.trim().length > 0)
+  );
+
   // Fetch performance statistics
   const { data: performanceStats, isLoading: statsLoading } = useQuery({
     queryKey: isOwnProfile ? ['/api/performance-stats'] : ['/api/users', profileUserId, 'performance-stats'],
@@ -446,23 +467,24 @@ export default function ProfilePage() {
                 <Users className="w-4 h-4 mr-2" />
                 DM
               </Button>
-              <div className="flex-1 flex gap-1">
+              <Button
+                variant="outline"
+                className="flex-1 text-sm px-2 py-2"
+                onClick={() => setShowPerformanceStats(!showPerformanceStats)}
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Performance
+              </Button>
+              {hasMeaningfulCV && (
                 <Button
                   variant="outline"
-                  className="flex-1 text-xs px-1 py-2"
+                  className="flex-1 text-sm px-2 py-2"
                   onClick={() => setLocation(`/cv/${userId}`)}
                 >
-                  <FileText className="w-3 h-3 mr-1" />
+                  <FileText className="w-4 h-4 mr-2" />
                   CV
                 </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 text-xs px-1 py-2"
-                  onClick={() => setShowPerformanceStats(!showPerformanceStats)}
-                >
-                  <TrendingUp className="w-3 h-3" />
-                </Button>
-              </div>
+              )}
             </>
           )}
         </div>
