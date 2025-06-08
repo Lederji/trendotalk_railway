@@ -6,7 +6,7 @@ import {
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { eq, and, desc, sql, notInArray, or, ilike, gt, inArray, not } from "drizzle-orm";
+import { eq, and, desc, sql, notInArray, or, ilike, gt, inArray, not, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -416,6 +416,11 @@ export class MemStorage implements IStorage {
   async getPosts(isAdminOnly?: boolean): Promise<PostWithUser[]> {
     let filteredPosts = Array.from(this.posts.values());
     
+    // Filter out posts without media content (videos or photos)
+    filteredPosts = filteredPosts.filter(post => 
+      post.imageUrl || post.videoUrl || post.video1Url || post.video2Url || post.video3Url
+    );
+    
     if (isAdminOnly !== undefined) {
       filteredPosts = filteredPosts.filter(post => post.isAdminPost === isAdminOnly);
     }
@@ -443,7 +448,12 @@ export class MemStorage implements IStorage {
   }
 
   async getUserPosts(userId: number): Promise<PostWithUser[]> {
-    const userPosts = Array.from(this.posts.values()).filter(post => post.userId === userId);
+    const userPosts = Array.from(this.posts.values())
+      .filter(post => post.userId === userId)
+      // Filter out posts without media content (videos or photos)
+      .filter(post => 
+        post.imageUrl || post.videoUrl || post.video1Url || post.video2Url || post.video3Url
+      );
     const user = await this.getUser(userId);
     
     if (!user) return [];
@@ -1102,8 +1112,10 @@ export class MemStorage implements IStorage {
   async searchPosts(query: string): Promise<PostWithUser[]> {
     const posts = Array.from(this.posts.values());
     const filteredPosts = posts.filter(post => 
-      post.title?.toLowerCase().includes(query.toLowerCase()) ||
-      post.caption?.toLowerCase().includes(query.toLowerCase())
+      // Filter out posts without media content
+      (post.imageUrl || post.videoUrl || post.video1Url || post.video2Url || post.video3Url) &&
+      (post.title?.toLowerCase().includes(query.toLowerCase()) ||
+      post.caption?.toLowerCase().includes(query.toLowerCase()))
     );
     
     const postsWithUsers = await Promise.all(
@@ -2848,7 +2860,19 @@ export class DatabaseStorage implements IStorage {
         })
         .from(posts)
         .innerJoin(users, eq(posts.userId, users.id))
-        .where(ilike(posts.caption, `%${query}%`))
+        .where(
+          and(
+            ilike(posts.caption, `%${query}%`),
+            // Filter out posts without media content
+            or(
+              isNotNull(posts.imageUrl),
+              isNotNull(posts.videoUrl),
+              isNotNull(posts.video1Url),
+              isNotNull(posts.video2Url),
+              isNotNull(posts.video3Url)
+            )
+          )
+        )
         .orderBy(desc(posts.createdAt))
         .limit(20);
 
