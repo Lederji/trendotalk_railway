@@ -1026,6 +1026,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Report post
+  app.post('/api/posts/:postId/report', authenticateUser, async (req: any, res: any) => {
+    try {
+      const postId = Number(req.params.postId);
+      const { reason } = req.body;
+      const reporterId = req.user.userId;
+      
+      // Check if post exists
+      const post = await storage.getPostById(postId);
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+      
+      // Create report record for admin panel
+      const report = {
+        id: Date.now(),
+        postId,
+        reporterId,
+        reason: reason || 'Inappropriate content',
+        status: 'pending',
+        createdAt: new Date(),
+        reporterUsername: req.user.username,
+        postContent: post.caption || 'Media post',
+        postAuthor: post.user?.username || 'Unknown'
+      };
+      
+      // Store the report (you can extend storage interface for this)
+      await storage.createPostReport(report);
+      
+      res.json({ message: 'Post reported successfully' });
+    } catch (error) {
+      console.error('Error reporting post:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Follow user
   app.post('/api/users/:userId/follow', authenticateUser, async (req: any, res: any) => {
     try {

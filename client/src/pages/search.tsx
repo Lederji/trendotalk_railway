@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle, VolumeX, Volume2, Send } from "lucide-react";
+import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle, VolumeX, Volume2, Send, MoreHorizontal, Flag } from "lucide-react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigation } from "@/components/layout/navigation";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Custom hook for video intersection observer
 function useVideoInView(videoRef: React.RefObject<HTMLVideoElement>) {
@@ -92,6 +95,28 @@ export function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [mutedVideos, setMutedVideos] = useState<Set<number>>(new Set());
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Report post mutation
+  const reportPostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      return apiRequest(`/api/posts/${postId}/report`, 'POST', { reason: 'Inappropriate content' });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Post reported",
+        description: "Thank you for your report. We'll review this content.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to report post. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Search for users when typing in search bar
   const { data: searchResults = [] } = useQuery({
@@ -283,9 +308,22 @@ export function SearchPage() {
                         </h3>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-gray-400 h-8 w-8 p-0">
-                      •••
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-gray-400 h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => reportPostMutation.mutate(post.id)}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          <Flag className="h-4 w-4 mr-2" />
+                          Report this post
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
                   {/* Post Image/Video */}
