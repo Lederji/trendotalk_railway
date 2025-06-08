@@ -1,8 +1,8 @@
 import { 
-  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications, vibes, cvs,
+  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications, vibes, cvs, reports,
   type User, type InsertUser, type Post, type InsertPost, 
   type Comment, type InsertComment, type Like, type Dislike, type Vote, type Story, 
-  type InsertStory, type Vibe, type InsertVibe, type CV, type Follow, type PostWithUser, type StoryWithUser, type VibeWithUser, type UserProfile 
+  type InsertStory, type Vibe, type InsertVibe, type CV, type Report, type InsertReport, type Follow, type PostWithUser, type StoryWithUser, type VibeWithUser, type UserProfile 
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
@@ -3940,6 +3940,39 @@ class HybridStorage extends DatabaseStorage {
       };
     } catch (error) {
       console.error('Error getting performance stats:', error);
+      throw error;
+    }
+  }
+
+  // Report methods for DatabaseStorage
+  async createReport(reportData: InsertReport & { reporterId: number }): Promise<Report> {
+    try {
+      const [report] = await db
+        .insert(reports)
+        .values(reportData)
+        .returning();
+      return report;
+    } catch (error) {
+      console.error('Error creating report:', error);
+      throw error;
+    }
+  }
+
+  async getReportsSummary(): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          reportedUsername: reports.reportedUsername,
+          reportCount: sql<number>`count(*)`,
+          latestReport: sql<Date>`max(${reports.createdAt})`
+        })
+        .from(reports)
+        .groupBy(reports.reportedUsername)
+        .orderBy(sql<number>`count(*) DESC`);
+      
+      return result;
+    } catch (error) {
+      console.error('Error getting reports summary:', error);
       throw error;
     }
   }

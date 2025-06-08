@@ -1596,6 +1596,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Report user
+  app.post('/api/users/:userId/report', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { userId } = req.params;
+      const { reason, message } = req.body;
+      
+      if (!reason) {
+        return res.status(400).json({ message: 'Reason is required' });
+      }
+      
+      // Get reported user info
+      const reportedUser = await storage.getUser(parseInt(userId));
+      if (!reportedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Create report
+      const reportData = {
+        reporterId: req.user.userId,
+        reportedUserId: parseInt(userId),
+        reportedUsername: reportedUser.username,
+        reason,
+        message: message || null,
+        status: 'pending'
+      };
+      
+      await storage.createReport(reportData);
+      
+      res.json({ message: 'Report submitted successfully' });
+    } catch (error) {
+      console.error('Error creating report:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get reports summary (admin only)
+  app.get('/api/admin/reports', authenticateUser, async (req: any, res: any) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      const reports = await storage.getReportsSummary();
+      res.json(reports);
+    } catch (error) {
+      console.error('Error getting reports:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Send email OTP
   app.post('/api/account/send-email-otp', authenticateUser, async (req: any, res: any) => {
     try {

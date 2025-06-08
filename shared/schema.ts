@@ -154,6 +154,17 @@ export const cvs = pgTable("cvs", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  reporterId: integer("reporter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reportedUserId: integer("reported_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reportedUsername: text("reported_username").notNull(),
+  reason: text("reason").notNull(),
+  message: text("message"),
+  status: text("status").default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -204,6 +215,12 @@ export const insertCVSchema = createInsertSchema(cvs).omit({
   userId: true,
 });
 
+export const insertReportSchema = createInsertSchema(reports).omit({
+  id: true,
+  createdAt: true,
+  reporterId: true,
+});
+
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -225,6 +242,8 @@ export type Vibe = typeof vibes.$inferSelect;
 export type InsertVibe = z.infer<typeof insertVibeSchema>;
 export type CV = typeof cvs.$inferSelect;
 export type InsertCV = z.infer<typeof insertCVSchema>;
+export type Report = typeof reports.$inferSelect;
+export type InsertReport = z.infer<typeof insertReportSchema>;
 export type Follow = typeof follows.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 
