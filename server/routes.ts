@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { users } from "@shared/schema";
+import { users, reports } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema, insertVibeSchema } from "@shared/schema";
 import { z } from "zod";
@@ -1622,7 +1622,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'pending'
       };
       
-      await (storage as any).createReport(reportData);
+      // Direct database insertion for reports
+      await db.insert(reports).values(reportData);
       
       res.json({ message: 'Report submitted successfully' });
     } catch (error) {
