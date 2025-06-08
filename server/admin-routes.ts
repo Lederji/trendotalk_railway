@@ -137,7 +137,8 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
       
       // Send unban message to user
       const unbanMessage = `Good news! Your account suspension has been lifted. You can now use TrendoTalk normally. Please follow our community guidelines to avoid future issues.`;
-      await storage.sendAdminMessage(userId, unbanMessage, (req as any).user.id);
+      console.log('Sending unban message from admin ID:', (req as any).user.adminId, 'to user ID:', userId);
+      await storage.sendAdminMessage(userId, unbanMessage, (req as any).user.adminId);
       
       res.json({ message: 'User unbanned successfully' });
     } catch (error) {
