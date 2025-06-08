@@ -2853,6 +2853,8 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
+      console.log(`Found ${validChats.length} valid chats:`, validChats.map(c => `Chat ${c.id}`));
+      
       // Get the other user details and messages for each valid chat
       const formattedChats = [];
       for (const chat of validChats) {
@@ -2876,6 +2878,7 @@ export class DatabaseStorage implements IStorage {
           .orderBy(messages.createdAt);
         
         if (otherUser) {
+          console.log(`Formatting chat ${chat.id} with user ${otherUser.username} (admin: ${otherUser.isAdmin}), messages: ${chatMessages.length}`);
           formattedChats.push({
             id: chat.id,
             user: {
@@ -2887,9 +2890,12 @@ export class DatabaseStorage implements IStorage {
             lastMessage: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].content : null,
             lastMessageTime: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].createdAt : chat.createdAt
           });
+        } else {
+          console.log(`No user found for chat ${chat.id} with otherUserId ${otherUserId}`);
         }
       }
       
+      console.log(`Returning ${formattedChats.length} formatted chats for user ${userId}`);
       return formattedChats;
     } catch (error) {
       console.error('Error getting user chats:', error);
