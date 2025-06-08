@@ -2,13 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Phone, Video, Info } from "lucide-react";
+import { ArrowLeft, Phone, Video, Info, Check, X, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export function Messages() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch admin messages
   const { data: adminMessages = [] } = useQuery({
@@ -24,26 +28,46 @@ export function Messages() {
     },
   });
 
-  // Fetch friend requests
-  const { data: requests = [] } = useQuery({
-    queryKey: ["/api/friend-requests"],
+  // Fetch message requests
+  const { data: messageRequests = [] } = useQuery({
+    queryKey: ["/api/message-requests"],
     queryFn: async () => {
-      const response = await fetch("/api/friend-requests", {
+      const response = await fetch("/api/message-requests", {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
         }
       });
-      if (!response.ok) throw new Error('Failed to fetch friend requests');
-      const data = await response.json();
-      
-      // Filter out requests from users with invalid data or admin users
-      return data.filter((request: any) => 
-        request.user && 
-        request.user.username && 
-        request.user.displayName !== undefined &&
-        !request.user.isAdmin
-      );
+      if (!response.ok) throw new Error('Failed to fetch message requests');
+      return response.json();
     },
+  });
+
+  // Handle message request response
+  const handleMessageRequest = useMutation({
+    mutationFn: async ({ requestId, action }: { requestId: number; action: 'accept' | 'reject' }) => {
+      return apiRequest(`/api/message-requests/${requestId}`, {
+        method: 'PATCH',
+        body: { action }
+      });
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: variables.action === 'accept' ? "Message request accepted" : "Message request rejected",
+        description: variables.action === 'accept' ? "You can now chat with this user." : "Message request has been dismissed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/message-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
+      if (variables.action === 'accept' && data.chatId) {
+        setLocation(`/chat/${data.chatId}`);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Format admin messages for display
@@ -105,9 +129,9 @@ export function Messages() {
               className="rounded-lg font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
             >
               Requests
-              {requests.length > 0 && (
+              {messageRequests.length > 0 && (
                 <Badge className="ml-2 bg-red-500 text-white h-5 w-5 p-0 text-xs">
-                  {requests.length}
+                  {messageRequests.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -222,6 +246,69 @@ export function Messages() {
                       >
                         Decline
                       </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </TabsContent>
+
+          {/* Requests Tab */}
+          <TabsContent value="requests" className="space-y-3">
+            {messageRequests.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+                  <MessageCircle className="h-8 w-8 text-purple-400" />
+                </div>
+                <p className="text-gray-500">No message requests</p>
+              </div>
+            ) : (
+              messageRequests.map((request: any) => (
+                <div
+                  key={request.id}
+                  className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100"
+                >
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                      <AvatarImage src={request.fromUser?.avatar} alt={request.fromUser?.displayName || request.fromUser?.username} />
+                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                        {request.fromUser?.displayName ? request.fromUser.displayName.split(' ').map((n: string) => n[0]).join('') : request.fromUser?.username?.substring(0, 2).toUpperCase() || '??'}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-gray-900">
+                          {request.fromUser?.displayName || request.fromUser?.username}
+                        </h3>
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(request.createdAt), 'MMM d, h:mm a')}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {request.message}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleMessageRequest.mutate({ requestId: request.id, action: 'accept' })}
+                          disabled={handleMessageRequest.isPending}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Accept
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleMessageRequest.mutate({ requestId: request.id, action: 'reject' })}
+                          disabled={handleMessageRequest.isPending}
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Dismiss
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

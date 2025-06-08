@@ -251,10 +251,10 @@ export default function ProfilePage() {
     mutationFn: async (message: string) => {
       return apiRequest('/api/message-requests', {
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           toUserId: profileUserId,
           message: message
-        })
+        }
       });
     },
     onSuccess: () => {
