@@ -3,9 +3,9 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { users, reports } from "@shared/schema";
-import { eq } from "drizzle-orm";
-import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema, insertVibeSchema } from "@shared/schema";
+import { users, reports, messageRequests, chats, messages } from "@shared/schema";
+import { eq, and, or } from "drizzle-orm";
+import { insertUserSchema, loginSchema, insertPostSchema, insertCommentSchema, insertStorySchema, insertVibeSchema, insertMessageRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import path from "path";
@@ -1240,6 +1240,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(friends);
     } catch (error) {
       console.error('Error getting friends status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Send message request
+  app.post('/api/message-requests', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { toUserId, message } = req.body;
+      const fromUserId = req.user.userId;
+
+      if (!toUserId || !message || message.trim().length === 0) {
+        return res.status(400).json({ message: 'Recipient and message are required' });
+      }
+
+      if (fromUserId === toUserId) {
+        return res.status(400).json({ message: 'Cannot send message to yourself' });
+      }
+
+      // Check if target user exists
+      const targetUser = await storage.getUser(toUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if there's already a pending request
+      const existingRequest = await db
+        .select()
+        .from(messageRequests)
+        .where(
+          and(
+            eq(messageRequests.fromUserId, fromUserId),
+            eq(messageRequests.toUserId, toUserId),
+            eq(messageRequests.status, 'pending')
+          )
+        );
+
+      if (existingRequest.length > 0) {
+        return res.status(400).json({ message: 'Message request already sent' });
+      }
+
+      // Check if they already have an active chat
+      const existingChat = await db
+        .select()
+        .from(chats)
+        .where(
+          or(
+            and(eq(chats.user1Id, fromUserId), eq(chats.user2Id, toUserId)),
+            and(eq(chats.user1Id, toUserId), eq(chats.user2Id, fromUserId))
+          )
+        );
+
+      if (existingChat.length > 0) {
+        return res.status(400).json({ message: 'Chat already exists' });
+      }
+
+      // Create message request
+      const [newRequest] = await db
+        .insert(messageRequests)
+        .values({
+          fromUserId,
+          toUserId,
+          message: message.trim(),
+          status: 'pending'
+        })
+        .returning();
+
+      res.json({ message: 'Message request sent successfully', request: newRequest });
+    } catch (error) {
+      console.error('Error sending message request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get incoming message requests
+  app.get('/api/message-requests', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = req.user.userId;
+
+      const requests = await db
+        .select({
+          id: messageRequests.id,
+          fromUserId: messageRequests.fromUserId,
+          message: messageRequests.message,
+          status: messageRequests.status,
+          createdAt: messageRequests.createdAt,
+          fromUser: {
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar
+          }
+        })
+        .from(messageRequests)
+        .leftJoin(users, eq(messageRequests.fromUserId, users.id))
+        .where(
+          and(
+            eq(messageRequests.toUserId, userId),
+            eq(messageRequests.status, 'pending')
+          )
+        )
+        .orderBy(messageRequests.createdAt);
+
+      res.json(requests);
+    } catch (error) {
+      console.error('Error getting message requests:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Accept or reject message request
+  app.patch('/api/message-requests/:requestId', authenticateUser, async (req: any, res: any) => {
+    try {
+      const requestId = Number(req.params.requestId);
+      const { action } = req.body; // 'accept' or 'reject'
+      const userId = req.user.userId;
+
+      if (!['accept', 'reject'].includes(action)) {
+        return res.status(400).json({ message: 'Invalid action' });
+      }
+
+      // Get the request and verify ownership
+      const [request] = await db
+        .select()
+        .from(messageRequests)
+        .where(
+          and(
+            eq(messageRequests.id, requestId),
+            eq(messageRequests.toUserId, userId),
+            eq(messageRequests.status, 'pending')
+          )
+        );
+
+      if (!request) {
+        return res.status(404).json({ message: 'Message request not found' });
+      }
+
+      if (action === 'accept') {
+        // Create a new chat between the two users
+        const [newChat] = await db
+          .insert(chats)
+          .values({
+            user1Id: Math.min(request.fromUserId, request.toUserId),
+            user2Id: Math.max(request.fromUserId, request.toUserId)
+          })
+          .returning();
+
+        // Send the initial message to the new chat
+        await db
+          .insert(messages)
+          .values({
+            chatId: newChat.id,
+            senderId: request.fromUserId,
+            content: request.message
+          });
+
+        // Update request status to accepted
+        await db
+          .update(messageRequests)
+          .set({ status: 'accepted' })
+          .where(eq(messageRequests.id, requestId));
+
+        res.json({ message: 'Message request accepted', chatId: newChat.id });
+      } else {
+        // Update request status to rejected
+        await db
+          .update(messageRequests)
+          .set({ status: 'rejected' })
+          .where(eq(messageRequests.id, requestId));
+
+        res.json({ message: 'Message request rejected' });
+      }
+    } catch (error) {
+      console.error('Error handling message request:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

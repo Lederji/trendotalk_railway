@@ -247,6 +247,33 @@ export default function ProfilePage() {
     }
   });
 
+  const sendDMMutation = useMutation({
+    mutationFn: async (message: string) => {
+      return apiRequest('/api/message-requests', {
+        method: 'POST',
+        body: JSON.stringify({
+          toUserId: profileUserId,
+          message: message
+        })
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message request sent",
+        description: "Your message request has been sent.",
+      });
+      setShowDMDialog(false);
+      setDmMessage('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send message",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -546,10 +573,9 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 className="flex-1 text-sm px-2 py-2"
-                onClick={() => friendRequestMutation.mutate()}
-                disabled={friendRequestMutation.isPending}
+                onClick={() => setShowDMDialog(true)}
               >
-                <Users className="w-4 h-4 mr-2" />
+                <MessageCircle className="w-4 h-4 mr-2" />
                 DM
               </Button>
               <Button
@@ -1223,6 +1249,53 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* DM Dialog */}
+      <Dialog open={showDMDialog} onOpenChange={setShowDMDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Message Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Message to {displayProfile?.displayName || displayProfile?.username}
+              </label>
+              <Textarea
+                placeholder="Write your message..."
+                value={dmMessage}
+                onChange={(e) => setDmMessage(e.target.value)}
+                className="min-h-[100px]"
+                maxLength={500}
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                {dmMessage.length}/500 characters
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex space-x-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setShowDMDialog(false);
+                setDmMessage('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600"
+              onClick={() => sendDMMutation.mutate(dmMessage)}
+              disabled={sendDMMutation.isPending || !dmMessage.trim()}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {sendDMMutation.isPending ? "Sending..." : "Send Request"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
