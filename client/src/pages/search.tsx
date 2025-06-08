@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle, VolumeX, Volume2 } from "lucide-react";
+import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle, VolumeX, Volume2, Send } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Navigation } from "@/components/layout/navigation";
@@ -248,9 +248,6 @@ export function SearchPage() {
                         <h3 className="font-semibold text-gray-900 text-sm">
                           {post.user?.username || 'Unknown User'}
                         </h3>
-                        <p className="text-xs text-gray-500">
-                          {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Recently'}
-                        </p>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="text-gray-400 h-8 w-8 p-0">
@@ -292,6 +289,9 @@ export function SearchPage() {
                         <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-blue-500">
                           <MessageCircle className="h-6 w-6" />
                         </Button>
+                        <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-purple-500">
+                          <Send className="h-6 w-6" />
+                        </Button>
 
                       </div>
                       <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-700 hover:text-purple-500">
@@ -310,18 +310,10 @@ export function SearchPage() {
                     {(post.caption || post.title) && (
                       <div className="mb-2">
                         <p className="text-sm text-gray-900">
-                          <span className="font-semibold mr-2">{post.user?.username}</span>
                           {post.caption || post.title}
                         </p>
                       </div>
                     )}
-
-                    {/* Comments Preview */}
-                    <div className="space-y-1">
-                      <Button variant="ghost" className="p-0 h-auto text-gray-500 text-sm hover:text-gray-700">
-                        View all {post.commentsCount || 0} comments
-                      </Button>
-                    </div>
 
 
                   </div>
