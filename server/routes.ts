@@ -1496,20 +1496,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const newChatForExistingRequest = newChatForExistingRequestResult.rows[0] as any;
         
-        // Add the first message to the chat if it doesn't exist
-        const messageExists = await db.execute(sql`
-          SELECT id FROM dm_messages 
-          WHERE chat_id = ${newChatForExistingRequest.id} 
-          AND content = ${request.first_message}
-          LIMIT 1
+        // Add the first message to the chat
+        await db.execute(sql`
+          INSERT INTO dm_messages (chat_id, sender_id, content) 
+          VALUES (${newChatForExistingRequest.id}, ${req.user.userId}, ${request.first_message})
         `);
-        
-        if (!messageExists.rows || messageExists.rows.length === 0) {
-          await db.execute(sql`
-            INSERT INTO dm_messages (chat_id, sender_id, content) 
-            VALUES (${newChatForExistingRequest.id}, ${req.user.userId}, ${request.first_message})
-          `);
-        }
         
         return res.json({ requestId: request.id, chatId: newChatForExistingRequest.id, exists: true });
       }
