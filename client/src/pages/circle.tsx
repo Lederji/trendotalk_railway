@@ -3,28 +3,36 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Search, MessageCircle, UserPlus, Plus } from "lucide-react";
+import { Search, MessageCircle, UserPlus, Plus, Send, Heart, MoreHorizontal } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { Navigation } from "@/components/layout/navigation";
 import { VibeUpload } from "@/components/vibe/vibe-upload";
+import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function Circle() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showVibeUpload, setShowVibeUpload] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [selectedTab, setSelectedTab] = useState("chats");
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Circle messages for timeline (different from regular chats)
+  const { data: circleMessages = [] } = useQuery({
+    queryKey: ["/api/circle/messages"],
+    refetchInterval: 3000,
+  });
 
   const { data: friendRequests = [] } = useQuery({
     queryKey: ["/api/friend-requests"],
     refetchInterval: 5000,
   });
 
-  // Vibes (Stories) for close friends only - like WhatsApp Status
   const { data: vibes = [] } = useQuery({
     queryKey: ["/api/vibes"],
     refetchInterval: 5000,
@@ -52,6 +60,28 @@ export default function Circle() {
   const { data: chats = [] } = useQuery({
     queryKey: ["/api/chats"],
     refetchInterval: 5000,
+  });
+
+  // Post Circle message to timeline
+  const postCircleMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return apiRequest("POST", "/api/circle/messages", { content });
+    },
+    onSuccess: () => {
+      setNewMessage("");
+      queryClient.invalidateQueries({ queryKey: ["/api/circle/messages"] });
+      toast({
+        title: "Message posted",
+        description: "Your message has been shared in your circle.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to post message",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    }
   });
 
   const sendFriendRequestMutation = useMutation({
@@ -97,239 +127,329 @@ export default function Circle() {
     },
   });
 
-  const sendMessageRequestMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      return apiRequest("POST", "/api/message-requests", { userId });
+  const toggleLikeMutation = useMutation({
+    mutationFn: async (messageId: number) => {
+      return apiRequest("POST", `/api/circle/messages/${messageId}/like`);
     },
     onSuccess: () => {
-      toast({
-        title: "Message request sent",
-        description: "Your message request has been sent for business contact.",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/circle/messages"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to send request",
+        title: "Action failed",
         description: error.message || "Something went wrong.",
         variant: "destructive",
       });
-    },
+    }
   });
 
+  const handlePostMessage = () => {
+    if (newMessage.trim()) {
+      postCircleMessageMutation.mutate(newMessage.trim());
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <div className="max-w-4xl mx-auto p-4 pt-20">
+      <div className="max-w-md mx-auto bg-white min-h-screen pt-16">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-            Circle
-          </h1>
-          <p className="text-gray-600">Share private moments with close friends and family</p>
+        <div className="p-4 border-b bg-white">
+          <h1 className="text-2xl font-bold text-pink-600 mb-1">Your Circle</h1>
+          <p className="text-gray-600 text-sm">Connect with friends and share your moments</p>
         </div>
 
         {/* Search */}
-        <div className="mb-6">
+        <div className="p-4 bg-white border-b">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Search for friends..."
+              placeholder="Search users by username..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/70 backdrop-blur-sm border-gray-200"
+              className="pl-10 bg-gray-100 border-0 rounded-full"
             />
           </div>
         </div>
 
         {/* Search Results */}
         {searchQuery.length >= 2 && (
-          <div className="mb-6 bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-            <h3 className="text-lg font-semibold mb-3">Search Results</h3>
-            {isSearching ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto"></div>
-              </div>
-            ) : searchResults.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No users found</p>
-            ) : (
-              <div className="space-y-3">
-                {searchResults.map((searchUser: any) => (
-                  <div key={searchUser.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarImage src={searchUser.avatar} alt={searchUser.username} />
-                        <AvatarFallback>{searchUser.username?.[0]?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-medium">{searchUser.username}</h4>
-                        <p className="text-sm text-gray-500">{searchUser.displayName}</p>
+          <div className="bg-white border-b">
+            <div className="p-4">
+              <h3 className="font-semibold mb-3">Search Results</h3>
+              {isSearching ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500 mx-auto"></div>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No users found</p>
+              ) : (
+                <div className="space-y-3">
+                  {searchResults.map((searchUser: any) => (
+                    <div key={searchUser.id} className="flex items-center justify-between p-2">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={searchUser.avatar} alt={searchUser.username} />
+                          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                            {searchUser.username?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h4 className="font-medium text-sm">{searchUser.username}</h4>
+                          <p className="text-xs text-gray-500">{searchUser.displayName}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex space-x-2">
                       <Button
                         size="sm"
                         onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
                         disabled={sendFriendRequestMutation.isPending}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
+                        className="bg-gradient-to-r from-pink-500 to-purple-500 hover:opacity-90 text-xs px-3 py-1 h-8"
                       >
-                        <UserPlus className="w-4 h-4 mr-1" />
-                        Add Friend
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => sendMessageRequestMutation.mutate(searchUser.id)}
-                        disabled={sendMessageRequestMutation.isPending}
-                      >
-                        <MessageCircle className="w-4 h-4 mr-1" />
-                        Message
+                        <UserPlus className="w-3 h-3 mr-1" />
+                        Add
                       </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Friend Requests */}
-        {friendRequests.length > 0 && (
-          <div className="mb-6 bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-            <h3 className="text-lg font-semibold mb-3">Friend Requests</h3>
-            <div className="space-y-3">
-              {friendRequests.map((request: any) => (
-                <div key={request.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarImage src={request.requester.avatar} alt={request.requester.username} />
-                      <AvatarFallback>{request.requester.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-medium">{request.requester.username}</h4>
-                      <p className="text-sm text-gray-500">Wants to be friends</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      onClick={() => respondToFriendRequestMutation.mutate({ requestId: request.id, action: "accept" })}
-                      disabled={respondToFriendRequestMutation.isPending}
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90"
-                    >
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => respondToFriendRequestMutation.mutate({ requestId: request.id, action: "reject" })}
-                      disabled={respondToFriendRequestMutation.isPending}
-                    >
-                      Decline
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}
 
-        {/* Stories/Vibes Section */}
-        <div className="mb-6 bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+        {/* Circle's Vibe Section */}
+        <div className="p-4 bg-white border-b">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Stories</h3>
+            <h3 className="font-semibold text-lg">Circle's Vibe</h3>
             <Button
               onClick={() => setShowVibeUpload(true)}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
               size="sm"
+              className="bg-gradient-to-r from-pink-500 to-purple-500 hover:opacity-90 rounded-full w-8 h-8 p-0"
             >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Story
+              <Plus className="w-4 h-4" />
             </Button>
           </div>
           
           <div className="flex space-x-4 overflow-x-auto pb-2">
-            {/* My Story */}
+            {/* My Vibe */}
             <div className="flex-shrink-0 text-center">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 p-0.5">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                    <Avatar className="w-14 h-14">
-                      <AvatarImage src={user?.avatar} alt={user?.username} />
-                      <AvatarFallback>{user?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </div>
-                </div>
+                <Avatar className="w-16 h-16 ring-2 ring-pink-500 ring-offset-2">
+                  <AvatarImage src={user?.avatar} alt={user?.username} />
+                  <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-lg">
+                    {user?.username?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
                   <Plus className="w-3 h-3 text-white" />
                 </div>
               </div>
-              <p className="text-xs mt-1 font-medium">Your Story</p>
+              <p className="text-xs mt-2 font-medium">Your vibe</p>
             </div>
 
-            {/* Friends' Stories */}
+            {/* Friends' Vibes */}
             {vibes.map((vibe: any) => (
               <div key={vibe.id} className="flex-shrink-0 text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 p-0.5">
-                  <div className="w-full h-full rounded-full bg-white overflow-hidden">
-                    {vibe.imageUrl ? (
-                      <img src={vibe.imageUrl} alt="Story" className="w-full h-full object-cover" />
-                    ) : (
-                      <Avatar className="w-14 h-14">
-                        <AvatarImage src={vibe.user?.avatar} alt={vibe.user?.username} />
-                        <AvatarFallback>{vibe.user?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                </div>
-                <p className="text-xs mt-1 truncate w-16">{vibe.user?.username}</p>
+                <Avatar className="w-16 h-16 ring-2 ring-pink-500 ring-offset-2">
+                  {vibe.imageUrl ? (
+                    <AvatarImage src={vibe.imageUrl} alt="Vibe" />
+                  ) : (
+                    <AvatarImage src={vibe.user?.avatar} alt={vibe.user?.username} />
+                  )}
+                  <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                    {vibe.user?.username?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-xs mt-2 truncate w-16">{vibe.user?.username}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Friends List */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">Friends</h3>
-          {chats.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No friends yet</p>
-              <p className="text-sm text-gray-400">Search and add friends to start sharing private moments!</p>
+        {/* Timeline Messages Section */}
+        <div className="flex-1 bg-white">
+          <div className="p-4 border-b">
+            <div className="flex items-center space-x-2 mb-3">
+              <Input
+                placeholder="Share your thoughts..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="flex-1 bg-gray-100 border-0 rounded-full"
+                onKeyPress={(e) => e.key === 'Enter' && handlePostMessage()}
+              />
+              <Button
+                onClick={handlePostMessage}
+                disabled={!newMessage.trim() || postCircleMessageMutation.isPending}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:opacity-90 rounded-full w-10 h-10 p-0"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {chats.map((chat: any) => (
-                <Link key={chat.id} href={`/chat/${chat.id}`}>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarImage src={chat.user?.avatar} alt={chat.user?.username} />
-                        <AvatarFallback>{chat.user?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-medium">{chat.user?.username}</h4>
-                        <p className="text-sm text-gray-500">Click to chat privately</p>
+          </div>
+
+          {/* Circle Messages Timeline */}
+          <div className="space-y-4 p-4">
+            {circleMessages.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-2">No messages yet</p>
+                <p className="text-sm text-gray-400">Share your first thought with your circle!</p>
+              </div>
+            ) : (
+              circleMessages.map((message: any) => (
+                <div key={message.id} className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-start space-x-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={message.user?.avatar} alt={message.user?.username} />
+                      <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                        {message.user?.username?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h4 className="font-medium text-sm">{message.user?.username}</h4>
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(message.createdAt), 'HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-2">{message.content}</p>
+                      <div className="flex items-center space-x-4">
+                        <button
+                          onClick={() => toggleLikeMutation.mutate(message.id)}
+                          className="flex items-center space-x-1 text-gray-500 hover:text-pink-500 transition-colors"
+                        >
+                          <Heart className={`w-4 h-4 ${message.isLiked ? 'fill-pink-500 text-pink-500' : ''}`} />
+                          <span className="text-xs">{message.likesCount || 0}</span>
+                        </button>
+                        <button className="text-gray-400 hover:text-gray-600">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <MessageCircle className="w-5 h-5 text-gray-400" />
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Tabs */}
+        <div className="bg-white border-t p-4">
+          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100">
+              <TabsTrigger value="chats" className="flex items-center space-x-2">
+                <MessageCircle className="w-4 h-4" />
+                <span>Chats</span>
+                <span className="bg-pink-500 text-white rounded-full text-xs px-2 py-0.5 ml-1">
+                  {chats.length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="requests" className="flex items-center space-x-2">
+                <UserPlus className="w-4 h-4" />
+                <span>Requests</span>
+                {friendRequests.length > 0 && (
+                  <span className="bg-red-500 text-white rounded-full text-xs px-2 py-0.5 ml-1">
+                    {friendRequests.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="chats" className="mt-4">
+              {chats.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-2">No chats yet</p>
+                  <p className="text-sm text-gray-400">Add friends to start chatting!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {chats.map((chat: any) => (
+                    <Link key={chat.id} href={`/chat/${chat.id}`}>
+                      <div className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={chat.user?.avatar} alt={chat.user?.username} />
+                          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                            {chat.user?.username?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{chat.user?.username}</h4>
+                          <p className="text-sm text-gray-500">{chat.lastMessage || "Start chatting"}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-400">
+                            {chat.lastMessageTime ? format(new Date(chat.lastMessageTime), 'dd/MM/yyyy') : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="requests" className="mt-4">
+              {friendRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-2">No friend requests</p>
+                  <p className="text-sm text-gray-400">People you add will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {friendRequests.map((request: any) => (
+                    <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={request.requester.avatar} alt={request.requester.username} />
+                          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                            {request.requester.username?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h4 className="font-medium">{request.requester.username}</h4>
+                          <p className="text-sm text-gray-500">Wants to be friends</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={() => respondToFriendRequestMutation.mutate({ requestId: request.id, action: "accept" })}
+                          disabled={respondToFriendRequestMutation.isPending}
+                          className="bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90 text-xs px-3 py-1 h-8"
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => respondToFriendRequestMutation.mutate({ requestId: request.id, action: "reject" })}
+                          disabled={respondToFriendRequestMutation.isPending}
+                          className="text-xs px-3 py-1 h-8"
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
       {/* Vibe Upload Modal */}
       {showVibeUpload && (
-        <VibeUpload
-          isOpen={showVibeUpload}
-          onClose={() => setShowVibeUpload(false)}
-          onSuccess={() => {
-            setShowVibeUpload(false);
-            queryClient.invalidateQueries({ queryKey: ["/api/vibes"] });
-          }}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <VibeUpload
+              onClose={() => setShowVibeUpload(false)}
+              onSuccess={() => {
+                setShowVibeUpload(false);
+                queryClient.invalidateQueries({ queryKey: ["/api/vibes"] });
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
