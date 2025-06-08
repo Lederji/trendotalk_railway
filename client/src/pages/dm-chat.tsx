@@ -214,39 +214,7 @@ export default function DMChatPage() {
                 </div>
               </div>
               
-              {/* Show action buttons for the first received message if there's a pending request */}
-              {msg.sender_id !== user?.id && index === 0 && chatStatus?.hasPendingRequest && chatStatus?.pendingRequestFrom !== user?.id && (
-                <div className="mt-3 flex justify-start">
-                  <div className="bg-gray-50 rounded-lg p-3 max-w-xs">
-                    <p className="text-sm text-gray-700 mb-3">Message Request</p>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        className="bg-green-500 text-white hover:bg-green-600 px-3 py-1 text-xs"
-                        onClick={() => handleDMRequestAction('allow')}
-                      >
-                        Allow
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="text-gray-600 hover:bg-gray-50 px-3 py-1 text-xs"
-                        onClick={() => handleDMRequestAction('dismiss')}
-                      >
-                        Dismiss
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="text-red-600 hover:bg-red-50 hover:text-red-700 px-3 py-1 text-xs"
-                        onClick={() => handleDMRequestAction('block')}
-                      >
-                        Block
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+
             </div>
           ))
         )}

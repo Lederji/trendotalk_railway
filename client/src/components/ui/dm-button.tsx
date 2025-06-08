@@ -53,7 +53,7 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
 
   const handleDirectDM = async () => {
     try {
-      // Check if chat already exists
+      // Check if chat already exists or create request
       const response = await fetch('/api/dm/create', {
         method: 'POST',
         headers: {
@@ -66,13 +66,20 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
       if (response.ok) {
         const data = await response.json();
         if (data.chatId) {
+          // Chat already exists (approved)
           setLocation(`/dm/${data.chatId}`);
+        } else if (data.requestId) {
+          // Request sent successfully
+          toast({
+            title: "Message Request Sent",
+            description: "Your message request has been sent",
+          });
         }
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to open chat",
+        description: "Failed to send message request",
         variant: "destructive",
       });
     }

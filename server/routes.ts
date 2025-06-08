@@ -1505,16 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ requestId: request.id, chatId: newChatForExistingRequest.id, exists: true });
       }
       
-      // Create new DM chat immediately (even for pending requests)
-      const newChatResult = await db.execute(sql`
-        INSERT INTO dm_chats (user1_id, user2_id) 
-        VALUES (${req.user.userId}, ${targetUserId}) 
-        RETURNING id
-      `);
-      
-      const newChat = newChatResult.rows[0] as any;
-      
-      // Create DM request
+      // Create only DM request - no chat until approved
       const newRequestResult = await db.execute(sql`
         INSERT INTO dm_requests (from_user_id, to_user_id, first_message) 
         VALUES (${req.user.userId}, ${targetUserId}, ${message.trim()}) 
@@ -1523,16 +1514,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const newRequest = newRequestResult.rows[0] as any;
       
-      // Add the first message to the chat
-      await db.execute(sql`
-        INSERT INTO dm_messages (chat_id, sender_id, content) 
-        VALUES (${newChat.id}, ${req.user.userId}, ${message.trim()})
-      `);
-      
       res.json({ 
-        requestId: newRequest.id, 
-        chatId: newChat.id,
-        exists: false 
+        requestId: newRequest.id,
+        exists: false,
+        message: 'Request sent successfully'
       });
     } catch (error) {
       console.error('Error creating DM request:', error);
@@ -1645,6 +1630,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const request = requestResult.rows[0] as any;
       
+      // Create the chat now that it's approved
+      const chatResult = await db.execute(sql`
+        INSERT INTO dm_chats (user1_id, user2_id) 
+        VALUES (${request.from_user_id}, ${req.user.userId}) 
+        RETURNING id
+      `);
+      
+      const chat = chatResult.rows[0] as any;
+      
+      // Add the first message to the chat
+      await db.execute(sql`
+        INSERT INTO dm_messages (chat_id, sender_id, content) 
+        VALUES (${chat.id}, ${request.from_user_id}, ${request.first_message})
+      `);
+      
       // Update request status to accepted
       await db.execute(sql`
         UPDATE dm_requests 
@@ -1652,7 +1652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE id = ${requestId}
       `);
       
-      res.json({ success: true, message: 'Request accepted' });
+      res.json({ success: true, message: 'Request accepted', chatId: chat.id });
     } catch (error) {
       console.error('Error accepting DM request:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -1821,7 +1821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.userId;
       console.log('DM chats - authenticated userId:', userId, 'type:', typeof userId);
       
-      // Get all DM chats for this user
+      // Get all DM chats for this user - only show approved chats
       const dmChatsResult = await db.execute(sql`
         SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
                u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
@@ -1829,7 +1829,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         FROM dm_chats dc
         JOIN users u1 ON dc.user1_id = u1.id
         JOIN users u2 ON dc.user2_id = u2.id
-        WHERE dc.user1_id = ${userId} OR dc.user2_id = ${userId}
+        WHERE (dc.user1_id = ${userId} OR dc.user2_id = ${userId})
+        AND NOT EXISTS (
+          SELECT 1 FROM dm_requests dr 
+          WHERE ((dr.from_user_id = dc.user1_id AND dr.to_user_id = dc.user2_id) 
+                 OR (dr.from_user_id = dc.user2_id AND dr.to_user_id = dc.user1_id))
+          AND dr.status = 'pending'
+        )
         ORDER BY dc.updated_at DESC
       `);
       
