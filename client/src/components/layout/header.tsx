@@ -173,8 +173,20 @@ export function Header() {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className={`text-sm ${notification.isRead ? 'text-gray-600' : 'text-gray-900 font-medium'}`}>
-                                {notification.message}
+                              <p className={`text-sm ${notification.isRead ? 'text-gray-600' : 'text-gray-900'}`}>
+                                {(() => {
+                                  const message = notification.message;
+                                  const parts = message.split(' ');
+                                  const username = parts[0];
+                                  const restOfMessage = parts.slice(1).join(' ');
+                                  
+                                  return (
+                                    <>
+                                      <span className="font-bold">{username}</span>
+                                      <span className="font-normal"> {restOfMessage}</span>
+                                    </>
+                                  );
+                                })()}
                               </p>
                               <p className="text-xs text-gray-400 mt-1">
                                 {new Date(notification.createdAt).toLocaleDateString()}
