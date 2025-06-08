@@ -118,6 +118,7 @@ export class MemStorage implements IStorage {
   private friendRequests: Map<number, any> = new Map();
   private chats: Map<number, any> = new Map();
   private postReports: Map<number, any> = new Map();
+  private notifications: Map<number, any> = new Map();
   
   private currentUserId = 1;
   private currentPostId = 1;
@@ -869,6 +870,34 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async createPostReport(report: any): Promise<any> {
+    const reportId = Date.now();
+    this.postReports.set(reportId, {
+      id: reportId,
+      ...report,
+      createdAt: new Date()
+    });
+    
+    // Create notification for admins
+    Array.from(this.users.values())
+      .filter(user => user.isAdmin)
+      .forEach(admin => {
+        const notificationId = Date.now() + Math.random();
+        this.notifications.set(notificationId, {
+          id: notificationId,
+          userId: admin.id,
+          type: 'post_report',
+          message: `New post report: ${report.reason}`,
+          fromUserId: report.reporterId,
+          postId: report.postId,
+          isRead: false,
+          createdAt: new Date()
+        });
+      });
+    
+    return { id: reportId, ...report };
+  }
+
   async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
     try {
       console.log('Sending friend request from', fromUserId, 'to', toUserId);
@@ -1417,23 +1446,7 @@ export class MemStorage implements IStorage {
     return true;
   }
 
-  async createPostReport(report: any): Promise<any> {
-    this.postReports.set(report.id, report);
-    
-    // Also create a notification for admin about the new report
-    const adminUsers = Array.from(this.users.values()).filter(user => user.isAdmin);
-    for (const admin of adminUsers) {
-      await this.createNotification(
-        admin.id,
-        'post_report',
-        `New post report: ${report.reason}`,
-        report.reporterId,
-        report.postId
-      );
-    }
-    
-    return report;
-  }
+
 }
 
 
@@ -3875,7 +3888,7 @@ class HybridStorage extends DatabaseStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
 export const videoCleanup = new VideoCleanupService();
 
 // Schedule cleanup to run every 24 hours
