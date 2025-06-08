@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, ArrowLeft, Hash, Users, Image, Video, Bookmark } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { Navigation } from "@/components/layout/navigation";
 
 export function SearchPage() {
   const [, setLocation] = useLocation();
@@ -448,6 +449,9 @@ export function SearchPage() {
           </div>
         )}
       </div>
+
+      {/* Bottom Navigation */}
+      <Navigation />
     </div>
   );
 }
