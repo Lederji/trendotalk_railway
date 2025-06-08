@@ -1460,10 +1460,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all DM chats for a user (must be before parameterized route)
+  app.get('/api/dm/chats', authenticateUser, async (req: any, res: any) => {
+    try {
+      console.log('DM chats endpoint called - req.user:', req.user);
+      const userId = req.user.userId;
+      console.log('DM chats - authenticated userId:', userId, 'type:', typeof userId);
+      
+      // Get all DM chats for this user
+      const dmChatsResult = await db.execute(sql`
+        SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
+               u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
+               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name
+        FROM dm_chats dc
+        JOIN users u1 ON dc.user1_id = u1.id
+        JOIN users u2 ON dc.user2_id = u2.id
+        WHERE dc.user1_id = ${userId} OR dc.user2_id = ${userId}
+        ORDER BY dc.updated_at DESC
+      `);
+      
+      const chats = dmChatsResult.rows?.map((chat: any) => {
+        const otherUser = chat.user1_id === userId ? 
+          { 
+            id: chat.user2_id, 
+            username: chat.user2_username, 
+            avatar: chat.user2_avatar,
+            displayName: chat.user2_display_name 
+          } :
+          { 
+            id: chat.user1_id, 
+            username: chat.user1_username, 
+            avatar: chat.user1_avatar,
+            displayName: chat.user1_display_name 
+          };
+        
+        return {
+          id: chat.id,
+          user: otherUser,
+          lastMessage: null,
+          lastMessageTime: null,
+          createdAt: chat.created_at,
+          updatedAt: chat.updated_at
+        };
+      }) || [];
+      
+      console.log('DM chats found:', chats.length);
+      res.json(chats);
+    } catch (error) {
+      console.error('Error getting DM chats:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get DM chat details
   app.get('/api/dm/:chatId', authenticateUser, async (req: any, res: any) => {
     try {
+      console.log('DM chat details - req.params.chatId:', req.params.chatId, 'type:', typeof req.params.chatId);
       const chatId = Number(req.params.chatId);
+      console.log('DM chat details - converted chatId:', chatId, 'isNaN:', isNaN(chatId));
       
       if (!req.user || !req.user.userId) {
         console.log('DM chat details - authentication failed, req.user:', req.user);
@@ -1583,8 +1637,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all DM chats for a user
   app.get('/api/dm/chats', authenticateUser, async (req: any, res: any) => {
     try {
+      console.log('DM chats endpoint called - req.user:', req.user);
       const userId = req.user.userId;
-      console.log('DM chats - authenticated userId:', userId);
+      console.log('DM chats - authenticated userId:', userId, 'type:', typeof userId);
       
       // Get all DM chats for this user
       const dmChatsResult = await db.execute(sql`
