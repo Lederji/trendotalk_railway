@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +8,84 @@ import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle, Volu
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Navigation } from "@/components/layout/navigation";
+
+// Custom hook for video intersection observer
+function useVideoInView(videoRef: React.RefObject<HTMLVideoElement>) {
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+      },
+      {
+        threshold: 0.5, // Video starts playing when 50% visible
+      }
+    );
+
+    observer.observe(video);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [videoRef]);
+
+  return isInView;
+}
+
+// Video component with lazy loading
+function LazyVideo({ post, isMuted, onToggleMute, onVideoClick }: {
+  post: any;
+  isMuted: boolean;
+  onToggleMute: (e: React.MouseEvent) => void;
+  onVideoClick: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const isInView = useVideoInView(videoRef);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isInView) {
+      video.play().catch(console.error);
+      console.log(`Instagram-style autoplay: video ${post.id} (${isMuted ? 'muted' : 'unmuted'})`);
+    } else {
+      video.pause();
+    }
+  }, [isInView, post.id, isMuted]);
+
+  return (
+    <div 
+      onClick={onVideoClick}
+      className="w-full h-full relative cursor-pointer"
+    >
+      <video 
+        ref={videoRef}
+        src={post.video1Url || post.videoUrl}
+        className="w-full h-full object-cover"
+        loop
+        muted={isMuted}
+        poster={post.imageUrl}
+        playsInline
+      />
+      {/* Mute/Unmute Button */}
+      <button
+        onClick={onToggleMute}
+        className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+      >
+        {isMuted ? (
+          <VolumeX className="h-4 w-4" />
+        ) : (
+          <Volume2 className="h-4 w-4" />
+        )}
+      </button>
+    </div>
+  );
+}
 
 export function SearchPage() {
   const [, setLocation] = useLocation();
@@ -190,30 +268,12 @@ export function SearchPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (post.video1Url || post.videoUrl) ? (
-                        <div 
-                          onClick={() => handleVideoClick(post.id)}
-                          className="w-full h-full relative cursor-pointer"
-                        >
-                          <video 
-                            src={post.video1Url || post.videoUrl}
-                            className="w-full h-full object-cover"
-                            autoPlay
-                            loop
-                            muted={mutedVideos.has(post.id)}
-                            poster={post.imageUrl}
-                          />
-                          {/* Mute/Unmute Button */}
-                          <button
-                            onClick={(e) => toggleMute(post.id, e)}
-                            className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
-                          >
-                            {mutedVideos.has(post.id) ? (
-                              <VolumeX className="h-4 w-4" />
-                            ) : (
-                              <Volume2 className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
+                        <LazyVideo
+                          post={post}
+                          isMuted={mutedVideos.has(post.id)}
+                          onToggleMute={(e) => toggleMute(post.id, e)}
+                          onVideoClick={() => handleVideoClick(post.id)}
+                        />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                           <Image className="h-12 w-12 text-purple-400" />
