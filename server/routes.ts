@@ -1821,21 +1821,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.userId;
       
-      // Get DM chats with 3 or fewer messages (new conversations)
+      // Get new DM chats (3 or fewer messages) for Requests tab
       const newChatsResult = await db.execute(sql`
         SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
                u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
-               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name,
-               COUNT(dm.id) as message_count
+               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name
         FROM dm_chats dc
         JOIN users u1 ON dc.user1_id = u1.id
         JOIN users u2 ON dc.user2_id = u2.id
-        LEFT JOIN dm_messages dm ON dc.id = dm.chat_id
         WHERE (dc.user1_id = ${userId} OR dc.user2_id = ${userId})
-        GROUP BY dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
-                 u1.username, u1.avatar, u1.display_name,
-                 u2.username, u2.avatar, u2.display_name
-        HAVING COUNT(dm.id) <= 3
+        AND (
+          SELECT COUNT(*) FROM dm_messages dm WHERE dm.chat_id = dc.id
+        ) <= 3
         ORDER BY dc.updated_at DESC
       `);
       

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Phone, Video, Info, Check, X, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -317,57 +317,123 @@ export function Messages() {
             )}
           </TabsContent>
 
-          {/* Requests Tab */}
+          {/* Requests Tab - Smart Categorization */}
           <TabsContent value="requests" className="space-y-3">
-            {messageRequests.length === 0 ? (
+            {/* New DM Chats (3 or fewer messages) */}
+            {newDmChats.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700 px-2">New Conversations</h4>
+                {newDmChats.map((chat: any) => (
+                  <div
+                    key={`new-chat-${chat.id}`}
+                    onClick={() => setLocation(`/dm/${chat.id}`)}
+                    className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                        <AvatarImage src={chat.user?.avatar} alt={chat.user?.displayName || chat.user?.username} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                          {chat.user?.displayName ? chat.user.displayName.split(' ').map((n: string) => n[0]).join('') : chat.user?.username?.substring(0, 2).toUpperCase() || '??'}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900">
+                          {chat.user?.displayName || chat.user?.username}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          @{chat.user?.username} • New conversation
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {chat.messageCount} message{chat.messageCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      
+                      <div className="text-right">
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                          New
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Traditional DM Requests */}
+            {dmRequests.length > 0 && (
+              <div className="space-y-3">
+                {newDmChats.length > 0 && <div className="border-t border-gray-200 pt-3" />}
+                <h4 className="text-sm font-medium text-gray-700 px-2">Message Requests</h4>
+                {dmRequests.map((request: any) => (
+                  <div
+                    key={`dm-request-${request.id}`}
+                    className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                        <AvatarImage src={request.fromUser?.avatar} alt={request.fromUser?.displayName || request.fromUser?.username} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                          {request.fromUser?.displayName ? request.fromUser.displayName.split(' ').map((n: string) => n[0]).join('') : request.fromUser?.username?.substring(0, 2).toUpperCase() || '??'}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900">
+                            {request.fromUser?.displayName || request.fromUser?.username}
+                          </h3>
+                          <span className="text-xs text-gray-500">
+                            {format(new Date(request.createdAt), 'MMM d, h:mm a')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          @{request.fromUser?.username}
+                        </p>
+                        <p className="text-sm text-gray-800 bg-gray-50 p-2 rounded">
+                          "{request.firstMessage}"
+                        </p>
+                        
+                        <div className="flex gap-2 mt-3">
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleDMRequest.mutate({ requestId: request.id, action: 'allow' })}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none hover:from-purple-600 hover:to-pink-600 px-4"
+                          >
+                            Allow
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleDMRequest(request.id, 'dismiss')}
+                            variant="outline"
+                            className="text-gray-600 hover:bg-gray-50 px-4"
+                          >
+                            Dismiss
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleDMRequest(request.id, 'block')}
+                            variant="outline"
+                            className="text-red-600 hover:bg-red-50 px-4"
+                          >
+                            Block
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {newDmChats.length === 0 && dmRequests.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
                   <MessageCircle className="h-8 w-8 text-purple-400" />
                 </div>
-                <p className="text-gray-500">No message requests</p>
+                <p className="text-gray-500">No requests or new conversations</p>
               </div>
-            ) : (
-              messageRequests.map((request: any) => (
-                <div
-                  key={request.id}
-                  className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:bg-white/90 transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                      <AvatarImage src={request.avatar} alt={request.displayName} />
-                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                        {request.displayName ? request.displayName.split(' ').map(n => n[0]).join('') : request.username?.substring(0, 2).toUpperCase() || '??'}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900">
-                        {request.displayName || request.username}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        @{request.username} • {request.mutualFriends} mutual friends
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">{request.timestamp}</p>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none hover:from-purple-600 hover:to-pink-600 px-4"
-                      >
-                        Accept
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="text-gray-600 hover:bg-gray-50 px-4"
-                      >
-                        Decline
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
             )}
           </TabsContent>
 
