@@ -106,6 +106,7 @@ export interface IStorage {
   // Notification methods
   getUnreadNotificationCount(userId: number): Promise<number>;
   markAllNotificationsAsRead(userId: number): Promise<boolean>;
+  dismissNotification(notificationId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -1444,6 +1445,11 @@ export class MemStorage implements IStorage {
       this.notifications.set(notif.id, notif);
     });
     
+    return true;
+  }
+
+  async dismissNotification(notificationId: number): Promise<boolean> {
+    this.notifications.delete(notificationId);
     return true;
   }
 
@@ -3045,6 +3051,19 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+      return false;
+    }
+  }
+
+  async dismissNotification(notificationId: number): Promise<boolean> {
+    try {
+      await db
+        .delete(notifications)
+        .where(eq(notifications.id, notificationId));
+      
+      return true;
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
       return false;
     }
   }

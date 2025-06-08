@@ -215,6 +215,29 @@ export default function AdminDashboard() {
     }
   });
 
+  // Dismiss notification mutation
+  const dismissNotificationMutation = useMutation({
+    mutationFn: async (notificationId: number) => {
+      const response = await apiRequest("DELETE", `/api/admin/notifications/${notificationId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Success",
+        description: "Report dismissed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to dismiss report",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
@@ -695,6 +718,15 @@ export default function AdminDashboard() {
                               title="View specific post"
                             >
                               <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => dismissNotificationMutation.mutate(notification.id)}
+                              disabled={dismissNotificationMutation.isPending}
+                              title="Dismiss this report"
+                            >
+                              <CheckCircle className="h-4 w-4" />
                             </Button>
                             <Button 
                               size="sm" 

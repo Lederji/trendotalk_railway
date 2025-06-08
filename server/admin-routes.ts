@@ -299,6 +299,23 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
     }
   });
 
+  // Dismiss Notification
+  app.delete('/api/admin/notifications/:id', authenticateAdmin, async (req, res) => {
+    try {
+      const notificationId = Number(req.params.id);
+      
+      const success = await storage.dismissNotification(notificationId);
+      if (!success) {
+        return res.status(404).json({ message: 'Notification not found' });
+      }
+      
+      res.json({ message: 'Notification dismissed successfully' });
+    } catch (error) {
+      console.error('Dismiss notification error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get Reported Content
   app.get('/api/admin/reports', authenticateAdmin, async (req, res) => {
     try {
