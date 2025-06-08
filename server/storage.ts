@@ -2865,11 +2865,11 @@ export class DatabaseStorage implements IStorage {
             ilike(posts.caption, `%${query}%`),
             // Filter out posts without media content
             or(
-              isNotNull(posts.imageUrl),
-              isNotNull(posts.videoUrl),
-              isNotNull(posts.video1Url),
-              isNotNull(posts.video2Url),
-              isNotNull(posts.video3Url)
+              not(eq(posts.imageUrl, null)),
+              not(eq(posts.videoUrl, null)),
+              not(eq(posts.video1Url, null)),
+              not(eq(posts.video2Url, null)),
+              not(eq(posts.video3Url, null))
             )
           )
         )
