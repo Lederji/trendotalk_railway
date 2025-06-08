@@ -1417,6 +1417,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create or get existing DM chat (separate from Circle messaging)
+  app.post('/api/dm/create', authenticateUser, async (req: any, res: any) => {
+    try {
+      const { userId } = req.body;
+      const targetUserId = Number(userId);
+      
+      if (!targetUserId || targetUserId === req.user.userId) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Check if DM chat already exists between these users
+      const existingChat = await db
+        .select()
+        .from(dmChats)
+        .where(
+          or(
+            and(eq(dmChats.user1Id, req.user.userId), eq(dmChats.user2Id, targetUserId)),
+            and(eq(dmChats.user1Id, targetUserId), eq(dmChats.user2Id, req.user.userId))
+          )
+        );
+      
+      if (existingChat.length > 0) {
+        return res.json({ chatId: existingChat[0].id, exists: true });
+      }
+      
+      // Create new DM chat
+      const [newChat] = await db
+        .insert(dmChats)
+        .values({
+          user1Id: req.user.userId,
+          user2Id: targetUserId,
+        })
+        .returning();
+      
+      res.json({ chatId: newChat.id, exists: false });
+    } catch (error) {
+      console.error('Error creating DM chat:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Create or get existing chat with a user (Instagram-style direct messaging)
   app.post('/api/chats/create', authenticateUser, async (req: any, res: any) => {
     try {

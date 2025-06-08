@@ -204,6 +204,26 @@ export const circleMessageLikes = pgTable("circle_message_likes", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// DM (Direct Message) System - Completely separate from Circle messaging
+export const dmChats = pgTable("dm_chats", {
+  id: serial("id").primaryKey(),
+  user1Id: integer("user1_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  user2Id: integer("user2_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const dmMessages = pgTable("dm_messages", {
+  id: serial("id").primaryKey(),
+  chatId: integer("chat_id").notNull().references(() => dmChats.id, { onDelete: "cascade" }),
+  senderId: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  messageType: text("message_type").notNull().default("text"), // text, image, video, file
+  fileUrl: text("file_url"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -245,6 +265,17 @@ export const insertVibeSchema = createInsertSchema(vibes).omit({
   createdAt: true,
   expiresAt: true,
   userId: true,
+});
+
+export const insertDMChatSchema = createInsertSchema(dmChats).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDMMessageSchema = createInsertSchema(dmMessages).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertCVSchema = createInsertSchema(cvs).omit({
