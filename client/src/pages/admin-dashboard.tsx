@@ -51,6 +51,8 @@ interface AdminNotification {
   message: string;
   fromUsername?: string;
   postId?: number;
+  postImage?: string;
+  postVideo?: string;
   createdAt: string;
   isRead: boolean;
 }
@@ -184,6 +186,19 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to delete post",
+        variant: "destructive",
+      });
     }
   });
 
@@ -563,7 +578,22 @@ export default function AdminDashboard() {
                         <TableCell>
                           <div className="max-w-xs">
                             <p className="text-sm text-gray-600">Post ID: {notification.postId}</p>
-                            <p className="text-xs text-gray-500 truncate">{notification.message}</p>
+                            {notification.postVideo && (
+                              <video 
+                                src={notification.postVideo} 
+                                className="w-16 h-16 object-cover rounded mt-1"
+                                muted
+                                playsInline
+                              />
+                            )}
+                            {notification.postImage && !notification.postVideo && (
+                              <img 
+                                src={notification.postImage} 
+                                alt="Reported post" 
+                                className="w-16 h-16 object-cover rounded mt-1"
+                              />
+                            )}
+                            <p className="text-xs text-gray-500 truncate mt-1">{notification.message}</p>
                           </div>
                         </TableCell>
                         <TableCell>
