@@ -3197,9 +3197,6 @@ export class DatabaseStorage implements IStorage {
         senderId: fromAdminId,
         content: `[ADMIN MESSAGE] ${message}`
       });
-
-      // Also create a notification for the user
-      await this.createNotification(userId, 'admin_message', `Admin sent you a message: ${message}`, fromAdminId);
       
       return true;
     } catch (error) {
