@@ -49,13 +49,19 @@ export default function DMChatPage() {
     onSuccess: () => {
       setMessage("");
       queryClient.invalidateQueries({ queryKey: [`/api/dm/${chatId}/messages`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/dm/chats/${chatId}/status`] });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message",
-        variant: "destructive",
-      });
+      if (error.message?.includes('one message until')) {
+        // This is the restriction error - don't show toast, the UI will handle it
+        queryClient.invalidateQueries({ queryKey: [`/api/dm/chats/${chatId}/status`] });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to send message",
+          variant: "destructive",
+        });
+      }
     }
   });
 

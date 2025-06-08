@@ -1862,6 +1862,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!chatResult.rows || chatResult.rows.length === 0) {
         return res.status(404).json({ message: 'Chat not found' });
       }
+
+      const chat = chatResult.rows[0] as any;
+      const otherUserId = chat.user1_id === req.user.userId ? chat.user2_id : chat.user1_id;
+      
+      // Check if there's a pending DM request that restricts messaging
+      const requestResult = await db.execute(sql`
+        SELECT * FROM dm_requests 
+        WHERE from_user_id = ${req.user.userId} AND to_user_id = ${otherUserId}
+        AND status = 'pending'
+      `);
+      
+      // Count messages sent by current user in this chat
+      const messageCountResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM dm_messages 
+        WHERE chat_id = ${chatId} AND sender_id = ${req.user.userId}
+      `);
+      
+      const messageCount = Number(messageCountResult.rows?.[0]?.count || 0);
+      const hasPendingRequest = requestResult.rows && requestResult.rows.length > 0;
+      
+      // If user sent the request and has already sent 1+ messages, restrict further messages
+      if (hasPendingRequest && messageCount >= 1) {
+        return res.status(403).json({ 
+          message: 'You can only send one message until the recipient accepts your request',
+          isRestricted: true 
+        });
+      }
       
       // Insert message
       const messageResult = await db.execute(sql`
