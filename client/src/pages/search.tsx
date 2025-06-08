@@ -262,7 +262,11 @@ export function SearchPage() {
         {!searchQuery && (
           <div className="space-y-4 pb-20">
             {Array.isArray(topPosts) && topPosts.length > 0 ? (
-              topPosts.map((post: any) => (
+              topPosts
+                .filter((post: any) => 
+                  post.imageUrl || post.videoUrl || post.video1Url || post.video2Url || post.video3Url
+                )
+                .map((post: any) => (
                 <div key={post.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                   {/* Post Header */}
                   <div className="flex items-center justify-between p-4">
