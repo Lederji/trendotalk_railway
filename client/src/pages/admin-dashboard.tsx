@@ -167,6 +167,18 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       setBanModalOpen(false);
+      setBanReason("");
+      toast({
+        title: "Success",
+        description: "User banned successfully and notification sent",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to ban user",
+        variant: "destructive",
+      });
     }
   });
 
@@ -827,11 +839,28 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div>
                 <Label>Reason for Ban</Label>
-                <Textarea placeholder="Enter reason for banning this user..." />
+                <Textarea 
+                  placeholder="Enter reason for banning this user..." 
+                  value={banReason}
+                  onChange={(e) => setBanReason(e.target.value)}
+                />
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setBanModalOpen(false)}>Cancel</Button>
-                <Button variant="destructive">Ban User</Button>
+                <Button variant="outline" onClick={() => {
+                  setBanModalOpen(false);
+                  setBanReason("");
+                }}>Cancel</Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => {
+                    if (selectedUser && banReason.trim()) {
+                      banUserMutation.mutate({ userId: selectedUser.id, reason: banReason });
+                    }
+                  }}
+                  disabled={!banReason.trim() || banUserMutation.isPending}
+                >
+                  {banUserMutation.isPending ? "Banning..." : "Ban User"}
+                </Button>
               </div>
             </div>
           </DialogContent>
