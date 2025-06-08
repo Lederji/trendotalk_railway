@@ -91,6 +91,8 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [messageModalOpen, setMessageModalOpen] = useState(false);
   const [banModalOpen, setBanModalOpen] = useState(false);
+  const [adminMessage, setAdminMessage] = useState("");
+  const [banReason, setBanReason] = useState("");
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
@@ -203,12 +205,36 @@ export default function AdminDashboard() {
     }
   });
 
-  // Send notification mutation
-  const sendNotificationMutation = useMutation({
-    mutationFn: async ({ message, userIds }: { message: string; userIds?: number[] }) => {
-      const response = await apiRequest("POST", "/api/admin/notifications", { message, userIds });
+  // Send admin message mutation
+  const sendAdminMessageMutation = useMutation({
+    mutationFn: async ({ userId, message }: { userId: number; message: string }) => {
+      const response = await fetch(`/api/admin/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        },
+        body: JSON.stringify({ userId, message })
+      });
+      if (!response.ok) throw new Error('Failed to send message');
       return response.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setMessageModalOpen(false);
+      setAdminMessage("");
+      toast({
+        title: "Success",
+        description: "Message sent successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to send message",
+        variant: "destructive",
+      });
+    }
   });
 
   const filteredUsers = users.filter(user => 
@@ -763,11 +789,30 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div>
                 <Label>Message</Label>
-                <Textarea placeholder="Enter your message..." />
+                <Textarea 
+                  placeholder="Enter your message..." 
+                  value={adminMessage}
+                  onChange={(e) => setAdminMessage(e.target.value)}
+                />
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setMessageModalOpen(false)}>Cancel</Button>
-                <Button>Send Message</Button>
+                <Button variant="outline" onClick={() => {
+                  setMessageModalOpen(false);
+                  setAdminMessage("");
+                }}>Cancel</Button>
+                <Button 
+                  onClick={() => {
+                    if (selectedUser && adminMessage.trim()) {
+                      sendAdminMessageMutation.mutate({
+                        userId: selectedUser.id,
+                        message: adminMessage
+                      });
+                    }
+                  }}
+                  disabled={sendAdminMessageMutation.isPending || !adminMessage.trim()}
+                >
+                  {sendAdminMessageMutation.isPending ? "Sending..." : "Send Message"}
+                </Button>
               </div>
             </div>
           </DialogContent>

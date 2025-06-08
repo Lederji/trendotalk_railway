@@ -3153,7 +3153,43 @@ export class DatabaseStorage implements IStorage {
 
   async sendAdminMessage(userId: number, message: string, fromAdminId: number): Promise<boolean> {
     try {
-      await this.createNotification(userId, 'admin_message', message, fromAdminId);
+      // Create or get existing chat between admin and user
+      let chat = await db
+        .select()
+        .from(chats)
+        .where(
+          or(
+            and(eq(chats.user1Id, fromAdminId), eq(chats.user2Id, userId)),
+            and(eq(chats.user1Id, userId), eq(chats.user2Id, fromAdminId))
+          )
+        )
+        .limit(1);
+
+      let chatId: number;
+      if (chat.length === 0) {
+        // Create new chat
+        const [newChat] = await db
+          .insert(chats)
+          .values({
+            user1Id: fromAdminId,
+            user2Id: userId
+          })
+          .returning();
+        chatId = newChat.id;
+      } else {
+        chatId = chat[0].id;
+      }
+
+      // Create the message in the chat
+      await db.insert(messages).values({
+        chatId: chatId,
+        senderId: fromAdminId,
+        content: `[ADMIN MESSAGE] ${message}`
+      });
+
+      // Also create a notification for the user
+      await this.createNotification(userId, 'admin_message', `Admin sent you a message: ${message}`, fromAdminId);
+      
       return true;
     } catch (error) {
       console.error('Error sending admin message:', error);

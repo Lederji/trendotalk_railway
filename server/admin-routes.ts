@@ -189,10 +189,9 @@ export function registerAdminRoutes(app: Express, sessions: Map<string, any>) {
   });
 
   // Send Admin Message to User
-  app.post('/api/admin/users/:id/message', authenticateAdmin, async (req, res) => {
+  app.post('/api/admin/messages', authenticateAdmin, async (req, res) => {
     try {
-      const { message } = req.body;
-      const userId = Number(req.params.id);
+      const { userId, message } = req.body;
       
       const success = await storage.sendAdminMessage(userId, message, req.user.userId);
       if (!success) {
