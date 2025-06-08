@@ -1476,7 +1476,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ requestId: request.id, exists: true });
       }
       
-      // Create new DM request
+      // Create new DM chat immediately (even for pending requests)
+      const newChatResult = await db.execute(sql`
+        INSERT INTO dm_chats (user1_id, user2_id) 
+        VALUES (${req.user.userId}, ${targetUserId}) 
+        RETURNING id
+      `);
+      
+      const newChat = newChatResult.rows[0] as any;
+      
+      // Create DM request
       const newRequestResult = await db.execute(sql`
         INSERT INTO dm_requests (from_user_id, to_user_id, first_message) 
         VALUES (${req.user.userId}, ${targetUserId}, ${message.trim()}) 
@@ -1485,7 +1494,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const newRequest = newRequestResult.rows[0] as any;
       
-      res.json({ requestId: newRequest.id, exists: false });
+      // Add the first message to the chat
+      await db.execute(sql`
+        INSERT INTO dm_messages (chat_id, sender_id, content) 
+        VALUES (${newChat.id}, ${req.user.userId}, ${message.trim()})
+      `);
+      
+      res.json({ 
+        requestId: newRequest.id, 
+        chatId: newChat.id,
+        exists: false 
+      });
     } catch (error) {
       console.error('Error creating DM request:', error);
       res.status(500).json({ message: 'Internal server error' });
