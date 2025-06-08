@@ -51,6 +51,33 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
     }
   });
 
+  const handleDirectDM = async () => {
+    try {
+      // Check if chat already exists
+      const response = await fetch('/api/dm/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        },
+        body: JSON.stringify({ userId, message: "Hello!" })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.chatId) {
+          setLocation(`/dm/${data.chatId}`);
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to open chat",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSendMessage = () => {
     if (!message.trim()) return;
     createRequestMutation.mutate(message.trim());
@@ -58,15 +85,17 @@ export function DMButton({ userId, size = "sm", variant = "outline", children }:
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant={variant}
+        size={size}
+        className="flex items-center gap-2 flex-1"
+        onClick={handleDirectDM}
+      >
+        <MessageCircle className="w-4 h-4" />
+        {children || "Message"}
+      </Button>
       <DialogTrigger asChild>
-        <Button
-          variant={variant}
-          size={size}
-          className="flex items-center gap-2 flex-1"
-        >
-          <MessageCircle className="w-4 h-4" />
-          {children || "Message"}
-        </Button>
+        <div style={{ display: 'none' }} />
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
