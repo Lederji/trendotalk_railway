@@ -8,7 +8,7 @@ import { useLocation } from "wouter";
 
 interface DMButtonProps {
   userId: number;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "lg" | "default" | "icon";
   variant?: "default" | "outline" | "ghost";
   children?: React.ReactNode;
 }

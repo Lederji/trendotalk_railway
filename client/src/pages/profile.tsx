@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Navigation } from "@/components/layout/navigation";
 import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp, User, Clock, HelpCircle, Info, LogOut, MessageSquare, CheckCircle, AtSign, Megaphone, Send, MoreHorizontal, Flag, UserX } from "lucide-react";
+import { DMButton } from "@/components/ui/dm-button";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
@@ -579,19 +580,13 @@ export default function ProfilePage() {
                   </>
                 )}
               </Button>
-              <Button
-                variant="outline"
-                className="flex-1 text-sm px-2 py-2"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowDMDialog(true);
-                }}
-                type="button"
+              <DMButton 
+                userId={Number(userId)} 
+                variant="outline" 
+                size="sm"
               >
-                <MessageCircle className="w-4 h-4 mr-2" />
                 DM
-              </Button>
+              </DMButton>
               <Button
                 variant="outline"
                 className="flex-1 text-sm px-2 py-2"

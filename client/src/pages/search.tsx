@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle, VolumeX, Volume2, Send, MoreHorizontal, Flag } from "lucide-react";
+import { DMButton } from "@/components/ui/dm-button";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigation } from "@/components/layout/navigation";
