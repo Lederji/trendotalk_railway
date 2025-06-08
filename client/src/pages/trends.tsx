@@ -772,7 +772,12 @@ export default function Trends() {
                       {post.user.username[3]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-white font-bold text-base">{post.user.username}</span>
+                  <button 
+                    className="text-white font-bold text-base hover:text-purple-300 transition-colors text-left"
+                    onClick={() => setLocation(`/profile/${post.user.id}`)}
+                  >
+                    {post.user.username}
+                  </button>
                   <Button 
                     className={`px-3 py-1 text-xs font-semibold rounded-md border transition-colors ${
                       followingUsers.has(post.user.id) 
