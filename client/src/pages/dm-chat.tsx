@@ -373,10 +373,7 @@ export default function DMChatPage() {
     );
   }
 
-  const otherUser = messages.length > 0 ? 
-    messages.find(msg => msg.senderId !== user?.id)?.sender || 
-    messages.find(msg => msg.senderId === user?.id)?.recipient 
-    : null;
+  const otherUser = chat?.user;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
