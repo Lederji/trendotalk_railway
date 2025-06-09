@@ -23,14 +23,14 @@ if (!fs.existsSync(uploadDir)) {
 const upload = multer({ 
   storage: multer.memoryStorage(), // Use memory storage for Cloudinary
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|webm/;
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|webm|pdf|doc|docx|txt|xlsx|ppt|pptx/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const mimetype = /image\/|video\/|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument|text\/plain/.test(file.mimetype);
     
     if (extname && mimetype) {
       return cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images and videos are allowed.'));
+      cb(new Error('Invalid file type. Only images, videos, and documents are allowed.'));
     }
   }
 });
@@ -783,6 +783,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Avatar upload error:', error);
       res.status(500).json({ message: 'Avatar upload failed' });
+    }
+  });
+
+  // General file upload endpoint
+  app.post('/api/upload', authenticateUser, upload.single('file'), async (req: any, res: any) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const cloudinaryUrl = await uploadToCloudinary(req.file);
+      
+      res.json({ url: cloudinaryUrl });
+    } catch (error) {
+      console.error('File upload error:', error);
+      res.status(500).json({ message: 'File upload failed' });
     }
   });
 

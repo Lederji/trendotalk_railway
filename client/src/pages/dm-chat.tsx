@@ -79,9 +79,70 @@ export default function DMChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (message.trim() && !(chatStatus as any)?.isRestricted) {
-      sendMessageMutation.mutate(message.trim());
+  const handleSendMessage = async () => {
+    if (!(chatStatus as any)?.isRestricted) {
+      if (selectedFile) {
+        // Upload file first, then send message with file info
+        await handleFileUploadAndSend();
+      } else if (message.trim()) {
+        // Send text message
+        sendMessageMutation.mutate(message.trim());
+        setMessage("");
+      }
+    }
+  };
+
+  const handleFileUploadAndSend = async () => {
+    if (!selectedFile) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const fileUrl = result.url;
+        
+        // Create message content with file info
+        let fileMessage = '';
+        if (selectedFile.type.startsWith('image/')) {
+          fileMessage = `📷 ${selectedFile.name}\n${fileUrl}`;
+        } else if (selectedFile.type.startsWith('video/')) {
+          fileMessage = `🎥 ${selectedFile.name}\n${fileUrl}`;
+        } else {
+          fileMessage = `📄 ${selectedFile.name}\n${fileUrl}`;
+        }
+
+        // Add text message if provided
+        const finalMessage = message.trim() ? `${message.trim()}\n${fileMessage}` : fileMessage;
+        
+        // Send the message with file
+        sendMessageMutation.mutate(finalMessage);
+        
+        // Clear file selection and message
+        setSelectedFile(null);
+        setMessage("");
+      } else {
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload file",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Upload error",
+        description: "An error occurred while uploading the file",
+        variant: "destructive",
+      });
     }
   };
 
@@ -383,7 +444,7 @@ export default function DMChatPage() {
               </div>
               <Button
                 onClick={handleSendMessage}
-                disabled={!message.trim() || sendMessageMutation.isPending || (chatStatus as any)?.isRestricted}
+                disabled={(!message.trim() && !selectedFile) || sendMessageMutation.isPending || (chatStatus as any)?.isRestricted}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 rounded-full p-3"
               >
                 <Send className="w-5 h-5" />
