@@ -2248,7 +2248,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Block user from DM chat header
+  app.post('/api/dm/chats/:chatId/block', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      
+      // Verify user has access to this chat
+      const chatResult = await db.execute(sql`
+        SELECT * FROM dm_chats 
+        WHERE id = ${chatId} 
+        AND (user1_id = ${req.user.userId} OR user2_id = ${req.user.userId})
+      `);
+      
+      if (!chatResult.rows || chatResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Chat not found' });
+      }
 
+      const chat = chatResult.rows[0] as any;
+      const otherUserId = chat.user1_id === req.user.userId ? chat.user2_id : chat.user1_id;
+      
+      // Add permanent block
+      await db.execute(sql`
+        INSERT INTO dm_blocks (blocker_id, blocked_id, block_type) 
+        VALUES (${req.user.userId}, ${otherUserId}, 'permanent')
+        ON CONFLICT (blocker_id, blocked_id) DO UPDATE SET block_type = 'permanent', expires_at = NULL
+      `);
+
+      res.json({ success: true, message: 'User blocked permanently' });
+    } catch (error) {
+      console.error('Error blocking user from chat:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 
   // Create or get existing chat with a user (Instagram-style direct messaging)
   app.post('/api/chats/create', authenticateUser, async (req: any, res: any) => {
