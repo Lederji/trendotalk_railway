@@ -1981,7 +1981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.userId;
       
-      // Get unread count from ongoing chats (Messages tab)
+      // Get unread count from ongoing chats (Messages tab) - count chats with unread messages
       const ongoingChatsResult = await db.execute(sql`
         SELECT dc.id, dc.user1_id, dc.user1_last_read, dc.user2_last_read
         FROM dm_chats dc
@@ -1993,27 +1993,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const chat of ongoingChatsResult.rows || []) {
         const userLastRead = chat.user1_id === userId ? chat.user1_last_read : chat.user2_last_read;
         
+        let hasUnreadMessages = false;
         if (userLastRead) {
-          // Only count messages after the last read timestamp
+          // Check if there are messages after the last read timestamp
           const unreadResult = await db.execute(sql`
             SELECT COUNT(*) as count FROM dm_messages 
             WHERE chat_id = ${chat.id} 
             AND sender_id != ${userId}
             AND created_at > ${userLastRead}
           `);
-          ongoingUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+          hasUnreadMessages = Number(unreadResult.rows?.[0]?.count || 0) > 0;
         } else {
-          // If never read, count all messages from others
+          // If never read, check if there are any messages from others
           const unreadResult = await db.execute(sql`
             SELECT COUNT(*) as count FROM dm_messages 
             WHERE chat_id = ${chat.id} 
             AND sender_id != ${userId}
           `);
-          ongoingUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+          hasUnreadMessages = Number(unreadResult.rows?.[0]?.count || 0) > 0;
+        }
+        
+        if (hasUnreadMessages) {
+          ongoingUnreadCount += 1; // Count 1 per chat with unread messages
         }
       }
       
-      // Get unread count from new chats (Requests tab)
+      // Get unread count from new chats (Requests tab) - count chats with unread messages
       const newChatsResult = await db.execute(sql`
         SELECT dc.id, dc.user1_id, dc.user1_last_read, dc.user2_last_read
         FROM dm_chats dc
@@ -2025,23 +2030,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const chat of newChatsResult.rows || []) {
         const userLastRead = chat.user1_id === userId ? chat.user1_last_read : chat.user2_last_read;
         
+        let hasUnreadMessages = false;
         if (userLastRead) {
-          // Only count messages after the last read timestamp
+          // Check if there are messages after the last read timestamp
           const unreadResult = await db.execute(sql`
             SELECT COUNT(*) as count FROM dm_messages 
             WHERE chat_id = ${chat.id} 
             AND sender_id != ${userId}
             AND created_at > ${userLastRead}
           `);
-          newChatsUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+          hasUnreadMessages = Number(unreadResult.rows?.[0]?.count || 0) > 0;
         } else {
-          // If never read, count all messages from others
+          // If never read, check if there are any messages from others
           const unreadResult = await db.execute(sql`
             SELECT COUNT(*) as count FROM dm_messages 
             WHERE chat_id = ${chat.id} 
             AND sender_id != ${userId}
           `);
-          newChatsUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+          hasUnreadMessages = Number(unreadResult.rows?.[0]?.count || 0) > 0;
+        }
+        
+        if (hasUnreadMessages) {
+          newChatsUnreadCount += 1; // Count 1 per chat with unread messages
         }
       }
       
@@ -2060,6 +2070,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messageRequestsCount = Number(messageRequestsResult.rows?.[0]?.count || 0);
       
       const totalUnreadCount = ongoingUnreadCount + newChatsUnreadCount + dmRequestsCount + messageRequestsCount;
+      
+      console.log('Unread count breakdown:', {
+        ongoingUnreadCount,
+        newChatsUnreadCount,
+        dmRequestsCount,
+        messageRequestsCount,
+        totalUnreadCount
+      });
       
       res.json({ 
         totalUnreadCount,
