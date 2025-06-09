@@ -155,12 +155,12 @@ export default function Circle() {
       
       <div className="max-w-md mx-auto bg-white min-h-screen pt-16">
         {/* Header */}
-        <div className="px-4 py-2 border-b bg-white relative">
+        <div className="px-4 py-1 bg-white relative">
           <div className="flex items-center">
             <div className="w-8 h-0.5 bg-gradient-to-r from-pink-500 to-purple-500 mr-3"></div>
-            <h1 className="text-xl font-bold text-pink-600">Your Circle</h1>
+            <h1 className="text-lg font-bold text-pink-600">Your Circle</h1>
           </div>
-          <p className="text-gray-600 text-xs mt-1 ml-11">Connect with friends and share your moments</p>
+          <p className="text-gray-600 text-xs mt-0.5 ml-11">Connect with friends and share your moments</p>
         </div>
 
         {/* Search */}
