@@ -276,12 +276,9 @@ export function Messages() {
                       <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
                         <AvatarImage src={message.avatar} alt={message.displayName} />
                         <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                          {message.displayName ? message.displayName.split(' ').map(n => n[0]).join('') : message.username?.substring(0, 2).toUpperCase() || '??'}
+                          {message.displayName ? message.displayName.split(' ').map((n: string) => n[0]).join('') : message.username?.substring(0, 2).toUpperCase() || '??'}
                         </AvatarFallback>
                       </Avatar>
-                      {message.isOnline && (
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
