@@ -209,6 +209,8 @@ export const dmChats = pgTable("dm_chats", {
   id: serial("id").primaryKey(),
   user1Id: integer("user1_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   user2Id: integer("user2_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  user1LastRead: timestamp("user1_last_read"),
+  user2LastRead: timestamp("user2_last_read"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

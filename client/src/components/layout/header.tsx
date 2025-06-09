@@ -27,6 +27,13 @@ export function Header() {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
+  // Fetch unread messages count
+  const { data: unreadMessagesCount = { totalUnreadCount: 0 } } = useQuery({
+    queryKey: ['/api/dm/unread-count'],
+    enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
   // Fetch notifications list
   const { data: notifications = [] } = useQuery({
     queryKey: ['/api/notifications'],
@@ -104,9 +111,11 @@ export function Header() {
                 onClick={() => setLocation("/messages")}
               >
                 <Mail className="h-5 w-5 text-gray-600" />
-                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
-                  3
-                </Badge>
+                {unreadMessagesCount.totalUnreadCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600">
+                    {unreadMessagesCount.totalUnreadCount > 99 ? '99+' : unreadMessagesCount.totalUnreadCount}
+                  </Badge>
+                )}
               </Button>
               
               <DropdownMenu open={showNotifications} onOpenChange={async (isOpen) => {

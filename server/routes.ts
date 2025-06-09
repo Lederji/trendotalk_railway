@@ -1976,6 +1976,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get total unread DM count for home page messages icon
+  app.get('/api/dm/unread-count', authenticateUser, async (req: any, res: any) => {
+    try {
+      const userId = req.user.userId;
+      
+      // Get unread count from ongoing chats (Messages tab)
+      const ongoingChatsResult = await db.execute(sql`
+        SELECT dc.id, dc.user1_id, dc.user1_last_read, dc.user2_last_read
+        FROM dm_chats dc
+        WHERE (dc.user1_id = ${userId} OR dc.user2_id = ${userId})
+        AND (SELECT COUNT(*) FROM dm_messages dm WHERE dm.chat_id = dc.id) > 3
+      `);
+      
+      let ongoingUnreadCount = 0;
+      for (const chat of ongoingChatsResult.rows || []) {
+        const userLastRead = chat.user1_id === userId ? chat.user1_last_read : chat.user2_last_read;
+        const unreadResult = await db.execute(sql`
+          SELECT COUNT(*) as count FROM dm_messages 
+          WHERE chat_id = ${chat.id} 
+          AND sender_id != ${userId}
+          AND created_at > COALESCE(${userLastRead}, '1970-01-01'::timestamp)
+        `);
+        ongoingUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+      }
+      
+      // Get unread count from new chats (Requests tab)
+      const newChatsResult = await db.execute(sql`
+        SELECT dc.id, dc.user1_id, dc.user1_last_read, dc.user2_last_read
+        FROM dm_chats dc
+        WHERE (dc.user1_id = ${userId} OR dc.user2_id = ${userId})
+        AND (SELECT COUNT(*) FROM dm_messages dm WHERE dm.chat_id = dc.id) <= 3
+      `);
+      
+      let newChatsUnreadCount = 0;
+      for (const chat of newChatsResult.rows || []) {
+        const userLastRead = chat.user1_id === userId ? chat.user1_last_read : chat.user2_last_read;
+        const unreadResult = await db.execute(sql`
+          SELECT COUNT(*) as count FROM dm_messages 
+          WHERE chat_id = ${chat.id} 
+          AND sender_id != ${userId}
+          AND created_at > COALESCE(${userLastRead}, '1970-01-01'::timestamp)
+        `);
+        newChatsUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+      }
+      
+      // Get pending DM requests count
+      const dmRequestsResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM dm_requests 
+        WHERE to_user_id = ${userId} AND status = 'pending'
+      `);
+      const dmRequestsCount = Number(dmRequestsResult.rows?.[0]?.count || 0);
+      
+      // Get pending message requests count
+      const messageRequestsResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM message_requests 
+        WHERE to_user_id = ${userId} AND status = 'pending'
+      `);
+      const messageRequestsCount = Number(messageRequestsResult.rows?.[0]?.count || 0);
+      
+      const totalUnreadCount = ongoingUnreadCount + newChatsUnreadCount + dmRequestsCount + messageRequestsCount;
+      
+      res.json({ 
+        totalUnreadCount,
+        messagesTabCount: ongoingUnreadCount,
+        requestsTabCount: newChatsUnreadCount + dmRequestsCount + messageRequestsCount
+      });
+    } catch (error) {
+      console.error('Error getting unread DM count:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get new/short DM conversations for Requests tab 
   app.get('/api/dm-new-chats', authenticateUser, async (req: any, res: any) => {
     try {
