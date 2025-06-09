@@ -111,14 +111,15 @@ export default function DMChatPage() {
         const result = await response.json();
         const fileUrl = result.url;
         
-        // Create message content with file info
+        // Create message content with file info using original filename
+        const originalFileName = selectedFile.name;
         let fileMessage = '';
         if (selectedFile.type.startsWith('image/')) {
-          fileMessage = `📷 ${selectedFile.name}\n${fileUrl}`;
+          fileMessage = `📷 ${originalFileName}\n${fileUrl}`;
         } else if (selectedFile.type.startsWith('video/')) {
-          fileMessage = `🎥 ${selectedFile.name}\n${fileUrl}`;
+          fileMessage = `🎥 ${originalFileName}\n${fileUrl}`;
         } else {
-          fileMessage = `📄 ${selectedFile.name}\n${fileUrl}`;
+          fileMessage = `📄 ${originalFileName}\n${fileUrl}`;
         }
 
         // Add text message if provided
@@ -164,6 +165,33 @@ export default function DMChatPage() {
     fileInputRef.current?.click();
   };
 
+  // Function to get a user-friendly filename
+  const getUserFriendlyFilename = (filename: string, url: string) => {
+    // If filename looks like a cloudinary generated name (starts with file_ and numbers)
+    if (filename.match(/^file_\d+/) || filename.length < 5) {
+      // Extract file extension from URL or filename
+      const urlExtension = url.split('.').pop()?.split('?')[0];
+      const filenameExtension = filename.split('.').pop();
+      const extension = urlExtension || filenameExtension || '';
+      
+      // Return a generic but descriptive name
+      if (extension.match(/jpg|jpeg|png|gif|webp/i)) {
+        return `Image.${extension}`;
+      } else if (extension.match(/mp4|mov|avi|webm|mkv/i)) {
+        return `Video.${extension}`;
+      } else if (extension.match(/pdf/i)) {
+        return `Document.pdf`;
+      } else if (extension.match(/doc|docx/i)) {
+        return `Document.${extension}`;
+      } else if (extension.match(/txt/i)) {
+        return `Text.txt`;
+      } else {
+        return `File.${extension}`;
+      }
+    }
+    return filename;
+  };
+
   // Function to parse and render message content
   const renderMessageContent = (content: string) => {
     // Check if the message contains file information
@@ -183,6 +211,10 @@ export default function DMChatPage() {
     const url = urlLineIndex !== -1 ? lines[urlLineIndex] : '';
     const textLines = lines.filter((line, index) => index !== fileLineIndex && index !== urlLineIndex && line.trim());
     
+    // Extract filename and make it user-friendly
+    const rawFilename = fileLine.replace(/📷 |🎥 |📄 /, '');
+    const friendlyFilename = getUserFriendlyFilename(rawFilename, url);
+    
     return (
       <div className="space-y-2">
         {/* Render text content */}
@@ -195,7 +227,7 @@ export default function DMChatPage() {
           <div className="space-y-1">
             <img 
               src={url} 
-              alt={fileLine.replace('📷 ', '')}
+              alt={friendlyFilename}
               className="max-w-full h-auto rounded-lg cursor-pointer"
               style={{ maxHeight: '200px' }}
               onClick={() => window.open(url, '_blank')}
@@ -204,7 +236,7 @@ export default function DMChatPage() {
                 e.currentTarget.style.display = 'none';
               }}
             />
-            <p className="text-xs opacity-75">{fileLine.replace('📷 ', '')}</p>
+            <p className="text-xs opacity-75">{friendlyFilename}</p>
           </div>
         )}
         
@@ -221,7 +253,7 @@ export default function DMChatPage() {
             >
               Your browser does not support the video tag.
             </video>
-            <p className="text-xs opacity-75">{fileLine.replace('🎥 ', '')}</p>
+            <p className="text-xs opacity-75">{friendlyFilename}</p>
           </div>
         )}
         
@@ -234,7 +266,7 @@ export default function DMChatPage() {
               <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
                 <Paperclip className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm">{fileLine.replace('📄 ', '')}</span>
+              <span className="text-sm">{friendlyFilename}</span>
             </div>
           </div>
         )}
