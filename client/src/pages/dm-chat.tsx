@@ -280,7 +280,7 @@ export default function DMChatPage() {
   const handleBlockUser = async () => {
     try {
       console.log('Block user clicked for chatId:', chatId);
-      const response = await apiRequest(`/api/dm/chats/${chatId}/block`, 'POST');
+      const response = await apiRequest('POST', `/api/dm/chats/${chatId}/block`);
       console.log('Block user response:', response);
 
       toast({
