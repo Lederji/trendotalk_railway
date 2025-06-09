@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Phone, Video, Info, Check, X, MessageCircle } from "lucide-react";
+import { ArrowLeft, Info, Check, X, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -302,14 +302,6 @@ export function Messages() {
                           {message.unreadCount}
                         </Badge>
                       )}
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="p-1 h-8 w-8">
-                          <Phone className="h-4 w-4 text-gray-400" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="p-1 h-8 w-8">
-                          <Video className="h-4 w-4 text-gray-400" />
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 </div>
