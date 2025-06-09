@@ -1992,13 +1992,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let ongoingUnreadCount = 0;
       for (const chat of ongoingChatsResult.rows || []) {
         const userLastRead = chat.user1_id === userId ? chat.user1_last_read : chat.user2_last_read;
-        const unreadResult = await db.execute(sql`
-          SELECT COUNT(*) as count FROM dm_messages 
-          WHERE chat_id = ${chat.id} 
-          AND sender_id != ${userId}
-          AND created_at > COALESCE(${userLastRead}, '1970-01-01'::timestamp)
-        `);
-        ongoingUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+        
+        if (userLastRead) {
+          // Only count messages after the last read timestamp
+          const unreadResult = await db.execute(sql`
+            SELECT COUNT(*) as count FROM dm_messages 
+            WHERE chat_id = ${chat.id} 
+            AND sender_id != ${userId}
+            AND created_at > ${userLastRead}
+          `);
+          ongoingUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+        } else {
+          // If never read, count all messages from others
+          const unreadResult = await db.execute(sql`
+            SELECT COUNT(*) as count FROM dm_messages 
+            WHERE chat_id = ${chat.id} 
+            AND sender_id != ${userId}
+          `);
+          ongoingUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+        }
       }
       
       // Get unread count from new chats (Requests tab)
@@ -2012,13 +2024,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let newChatsUnreadCount = 0;
       for (const chat of newChatsResult.rows || []) {
         const userLastRead = chat.user1_id === userId ? chat.user1_last_read : chat.user2_last_read;
-        const unreadResult = await db.execute(sql`
-          SELECT COUNT(*) as count FROM dm_messages 
-          WHERE chat_id = ${chat.id} 
-          AND sender_id != ${userId}
-          AND created_at > COALESCE(${userLastRead}, '1970-01-01'::timestamp)
-        `);
-        newChatsUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+        
+        if (userLastRead) {
+          // Only count messages after the last read timestamp
+          const unreadResult = await db.execute(sql`
+            SELECT COUNT(*) as count FROM dm_messages 
+            WHERE chat_id = ${chat.id} 
+            AND sender_id != ${userId}
+            AND created_at > ${userLastRead}
+          `);
+          newChatsUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+        } else {
+          // If never read, count all messages from others
+          const unreadResult = await db.execute(sql`
+            SELECT COUNT(*) as count FROM dm_messages 
+            WHERE chat_id = ${chat.id} 
+            AND sender_id != ${userId}
+          `);
+          newChatsUnreadCount += Number(unreadResult.rows?.[0]?.count || 0);
+        }
       }
       
       // Get pending DM requests count
