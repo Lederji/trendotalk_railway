@@ -2267,12 +2267,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chat = chatResult.rows[0] as any;
       const otherUserId = chat.user1_id === req.user.userId ? chat.user2_id : chat.user1_id;
       
-      // Add permanent block
-      await db.execute(sql`
-        INSERT INTO dm_blocks (blocker_id, blocked_id, block_type) 
-        VALUES (${req.user.userId}, ${otherUserId}, 'permanent')
-        ON CONFLICT (blocker_id, blocked_id) DO UPDATE SET block_type = 'permanent', expires_at = NULL
+      // Check if block already exists
+      const existingBlockResult = await db.execute(sql`
+        SELECT * FROM dm_blocks 
+        WHERE blocker_id = ${req.user.userId} AND blocked_id = ${otherUserId}
       `);
+
+      if (existingBlockResult.rows && existingBlockResult.rows.length > 0) {
+        // Update existing block to permanent
+        await db.execute(sql`
+          UPDATE dm_blocks 
+          SET block_type = 'permanent', expires_at = NULL 
+          WHERE blocker_id = ${req.user.userId} AND blocked_id = ${otherUserId}
+        `);
+      } else {
+        // Add new permanent block
+        await db.execute(sql`
+          INSERT INTO dm_blocks (blocker_id, blocked_id, block_type) 
+          VALUES (${req.user.userId}, ${otherUserId}, 'permanent')
+        `);
+      }
 
       res.json({ success: true, message: 'User blocked permanently' });
     } catch (error) {
