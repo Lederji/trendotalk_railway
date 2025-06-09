@@ -164,6 +164,84 @@ export default function DMChatPage() {
     fileInputRef.current?.click();
   };
 
+  // Function to parse and render message content
+  const renderMessageContent = (content: string) => {
+    // Check if the message contains file information
+    const lines = content.split('\n').filter(line => line.trim());
+    const fileEmojis = ['📷', '🎥', '📄'];
+    
+    // Find file lines and URLs
+    const fileLineIndex = lines.findIndex(line => fileEmojis.some(emoji => line.startsWith(emoji)));
+    const urlLineIndex = lines.findIndex(line => line.startsWith('http'));
+    
+    // If no file found, render as regular text
+    if (fileLineIndex === -1) {
+      return <p className="text-sm whitespace-pre-wrap">{content}</p>;
+    }
+    
+    const fileLine = lines[fileLineIndex];
+    const url = urlLineIndex !== -1 ? lines[urlLineIndex] : '';
+    const textLines = lines.filter((line, index) => index !== fileLineIndex && index !== urlLineIndex && line.trim());
+    
+    return (
+      <div className="space-y-2">
+        {/* Render text content */}
+        {textLines.length > 0 && (
+          <p className="text-sm whitespace-pre-wrap">{textLines.join('\n')}</p>
+        )}
+        
+        {/* Render files */}
+        {fileLine.startsWith('📷') && (
+          <div className="space-y-1">
+            <img 
+              src={url} 
+              alt={fileLine.replace('📷 ', '')}
+              className="max-w-full h-auto rounded-lg cursor-pointer"
+              style={{ maxHeight: '200px' }}
+              onClick={() => window.open(url, '_blank')}
+              onError={(e) => {
+                console.error('Image failed to load:', url);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <p className="text-xs opacity-75">{fileLine.replace('📷 ', '')}</p>
+          </div>
+        )}
+        
+        {fileLine.startsWith('🎥') && (
+          <div className="space-y-1">
+            <video 
+              src={url} 
+              controls
+              className="max-w-full h-auto rounded-lg"
+              style={{ maxHeight: '200px' }}
+              onError={(e) => {
+                console.error('Video failed to load:', url);
+              }}
+            >
+              Your browser does not support the video tag.
+            </video>
+            <p className="text-xs opacity-75">{fileLine.replace('🎥 ', '')}</p>
+          </div>
+        )}
+        
+        {fileLine.startsWith('📄') && (
+          <div className="space-y-1">
+            <div 
+              className="flex items-center space-x-2 p-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200"
+              onClick={() => window.open(url, '_blank')}
+            >
+              <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                <Paperclip className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm">{fileLine.replace('📄 ', '')}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Handle DM request actions
   const handleDMRequestAction = async (action: 'allow' | 'dismiss' | 'block') => {
     try {
@@ -307,7 +385,7 @@ export default function DMChatPage() {
                       : 'bg-white border border-gray-200 text-gray-900'
                   }`}
                 >
-                  <p className="text-sm">{msg.content}</p>
+                  {renderMessageContent(msg.content)}
                   <p className={`text-xs mt-1 ${
                     msg.sender_id === user?.id ? 'text-purple-100' : 'text-gray-500'
                   }`}>
