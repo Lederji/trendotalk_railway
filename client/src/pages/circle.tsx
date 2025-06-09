@@ -153,9 +153,9 @@ export default function Circle() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <div className="max-w-md mx-auto bg-white min-h-screen pt-16">
+      <div className="max-w-md mx-auto bg-white min-h-screen">
         {/* Header */}
-        <div className="px-4 py-1 bg-white relative">
+        <div className="px-4 pt-16 pb-2 bg-white relative">
           <div className="flex items-center">
             <div className="w-8 h-0.5 bg-gradient-to-r from-pink-500 to-purple-500 mr-3"></div>
             <h1 className="text-lg font-bold text-pink-600">Your Circle</h1>
