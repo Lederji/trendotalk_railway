@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, MoreVertical } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -17,7 +17,9 @@ export default function DMChatPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   console.log('DMChatPage - Component rendered, chatId:', chatId, 'user:', user);
 
@@ -88,6 +90,17 @@ export default function DMChatPage() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleFileUpload = () => {
+    fileInputRef.current?.click();
   };
 
   // Handle DM request actions
@@ -282,6 +295,15 @@ export default function DMChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+      />
+
       {/* Message Input */}
       <div className="bg-white border-t border-gray-200 p-4">
         {(chatStatus as any)?.isRestricted && !(chatStatus as any)?.isBlocked ? (
@@ -314,24 +336,59 @@ export default function DMChatPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center space-x-3">
-            <div className="flex-1 relative">
-              <Input
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="pr-12 rounded-full border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                disabled={(chatStatus as any)?.isRestricted}
-              />
+          <div className="space-y-3">
+            {/* File preview */}
+            {selectedFile && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                    <Paperclip className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm text-gray-600">{selectedFile.name}</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedFile(null)}
+                  className="text-gray-500"
+                >
+                  ×
+                </Button>
+              </div>
+            )}
+
+            <div className="flex items-center space-x-3">
+              <div className="flex-1 relative">
+                <div className="flex items-center bg-gray-100 rounded-2xl">
+                  {/* File upload button inside input */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full w-8 h-8 ml-2 text-gray-500"
+                    onClick={handleFileUpload}
+                    disabled={(chatStatus as any)?.isRestricted}
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </Button>
+                  
+                  <Input
+                    placeholder="Type a message..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="border-0 bg-transparent focus:ring-0 focus:border-0 rounded-2xl px-3"
+                    disabled={(chatStatus as any)?.isRestricted}
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={handleSendMessage}
+                disabled={!message.trim() || sendMessageMutation.isPending || (chatStatus as any)?.isRestricted}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 rounded-full p-3"
+              >
+                <Send className="w-5 h-5" />
+              </Button>
             </div>
-            <Button
-              onClick={handleSendMessage}
-              disabled={!message.trim() || sendMessageMutation.isPending || (chatStatus as any)?.isRestricted}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 rounded-full p-3"
-            >
-              <Send className="w-5 h-5" />
-            </Button>
           </div>
         )}
       </div>
