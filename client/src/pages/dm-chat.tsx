@@ -6,7 +6,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, MoreVertical, Paperclip } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Send, MoreVertical, Paperclip, UserX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -18,6 +19,7 @@ export default function DMChatPage() {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -274,6 +276,25 @@ export default function DMChatPage() {
     );
   };
 
+  // Handle blocking user from chat header
+  const handleBlockUser = async () => {
+    try {
+      await apiRequest(`/api/dm/chats/${chatId}/block`, 'POST');
+
+      toast({
+        title: "User Blocked",
+        description: "This user has been permanently blocked",
+      });
+      setLocation('/messages');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to block user",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Handle DM request actions
   const handleDMRequestAction = async (action: 'allow' | 'dismiss' | 'block') => {
     try {
@@ -387,9 +408,22 @@ export default function DMChatPage() {
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" className="p-2">
-              <MoreVertical className="w-5 h-5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="p-2">
+                  <MoreVertical className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  onClick={handleBlockUser}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <UserX className="w-4 h-4 mr-2" />
+                  Block User
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
