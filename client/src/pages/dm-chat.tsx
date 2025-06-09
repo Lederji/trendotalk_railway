@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, Phone, Video, MoreVertical } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -203,12 +203,6 @@ export default function DMChatPage() {
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" className="p-2">
-              <Phone className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="sm" className="p-2">
-              <Video className="w-5 h-5" />
-            </Button>
             <Button variant="ghost" size="sm" className="p-2">
               <MoreVertical className="w-5 h-5" />
             </Button>
