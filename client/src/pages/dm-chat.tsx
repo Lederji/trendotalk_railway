@@ -381,7 +381,7 @@ export default function DMChatPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Button
@@ -441,7 +441,7 @@ export default function DMChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-24">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
@@ -522,7 +522,7 @@ export default function DMChatPage() {
       />
 
       {/* Message Input */}
-      <div className="bg-white border-t border-gray-200 p-4">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4">
         {(chatStatus as any)?.isRestricted && !(chatStatus as any)?.isBlocked ? (
           <div className="text-center py-4">
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-3">
