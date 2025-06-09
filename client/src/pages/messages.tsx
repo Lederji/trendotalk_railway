@@ -330,7 +330,7 @@ export function Messages() {
                       </Avatar>
                       
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className={`${chat.hasUnreadMessages ? 'font-bold' : 'font-normal'} text-gray-900`}>
                           {chat.user?.displayName || chat.user?.username}
                         </h3>
                         <p className="text-sm text-gray-600">

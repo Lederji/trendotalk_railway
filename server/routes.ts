@@ -2090,8 +2090,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get new DM chats (3 or fewer messages) for Requests tab
       const newChatsResult = await db.execute(sql`
         SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
+               dc.user1_last_read, dc.user2_last_read,
                u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
-               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name
+               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name,
+               (SELECT COUNT(*) FROM dm_messages dm WHERE dm.chat_id = dc.id) as message_count
         FROM dm_chats dc
         JOIN users u1 ON dc.user1_id = u1.id
         JOIN users u2 ON dc.user2_id = u2.id
@@ -2102,7 +2104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY dc.updated_at DESC
       `);
       
-      const newChats = newChatsResult.rows?.map((chat: any) => {
+      const newChats = await Promise.all(newChatsResult.rows?.map(async (chat: any) => {
         const otherUser = chat.user1_id === userId ? 
           { 
             id: chat.user2_id, 
@@ -2116,17 +2118,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             avatar: chat.user1_avatar,
             displayName: chat.user1_display_name 
           };
+
+        // Calculate unread messages for this chat
+        const userLastRead = chat.user1_id === userId ? chat.user1_last_read : chat.user2_last_read;
+        let hasUnreadMessages = false;
+        
+        if (userLastRead) {
+          const unreadResult = await db.execute(sql`
+            SELECT COUNT(*) as count FROM dm_messages 
+            WHERE chat_id = ${chat.id} 
+            AND sender_id != ${userId}
+            AND created_at > ${userLastRead}
+          `);
+          hasUnreadMessages = Number(unreadResult.rows?.[0]?.count || 0) > 0;
+        } else {
+          const unreadResult = await db.execute(sql`
+            SELECT COUNT(*) as count FROM dm_messages 
+            WHERE chat_id = ${chat.id} 
+            AND sender_id != ${userId}
+          `);
+          hasUnreadMessages = Number(unreadResult.rows?.[0]?.count || 0) > 0;
+        }
         
         return {
           id: chat.id,
           user: otherUser,
           messageCount: Number(chat.message_count || 0),
+          hasUnreadMessages,
           lastMessage: null,
           lastMessageTime: null,
           createdAt: chat.created_at,
           updatedAt: chat.updated_at
         };
-      }) || [];
+      }) || []);
       
       res.json(newChats);
     } catch (error) {
