@@ -405,7 +405,7 @@ export default function DMChatPage() {
                 <h2 className="font-semibold text-gray-900">
                   {otherUser?.displayName || otherUser?.username || 'User'}
                 </h2>
-                <p className="text-sm text-gray-500">Active now</p>
+                <p className="text-sm text-gray-500">@{otherUser?.username || 'username'}</p>
               </div>
             </div>
           </div>
