@@ -279,7 +279,9 @@ export default function DMChatPage() {
   // Handle blocking user from chat header
   const handleBlockUser = async () => {
     try {
-      await apiRequest(`/api/dm/chats/${chatId}/block`, 'POST');
+      console.log('Block user clicked for chatId:', chatId);
+      const response = await apiRequest(`/api/dm/chats/${chatId}/block`, 'POST');
+      console.log('Block user response:', response);
 
       toast({
         title: "User Blocked",
@@ -287,6 +289,7 @@ export default function DMChatPage() {
       });
       setLocation('/messages');
     } catch (error) {
+      console.error('Block user error:', error);
       toast({
         title: "Error",
         description: "Failed to block user",
@@ -410,14 +413,23 @@ export default function DMChatPage() {
           <div className="flex items-center space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="p-2">
-                  <MoreVertical className="w-5 h-5" />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-2 hover:bg-gray-100"
+                  onClick={() => console.log('Dropdown trigger clicked')}
+                >
+                  <MoreVertical className="w-5 h-5 text-gray-600" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem 
-                  onClick={handleBlockUser}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log('Block user menu item clicked');
+                    handleBlockUser();
+                  }}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
                 >
                   <UserX className="w-4 h-4 mr-2" />
                   Block User
