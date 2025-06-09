@@ -29,7 +29,7 @@ export default function DMChatPage() {
   const { data: chat, isLoading } = useQuery({
     queryKey: [`/api/dm/${chatId}`],
     enabled: !!chatId,
-  });
+  }) as { data: any, isLoading: boolean };
 
   // Fetch messages
   const { data: messages = [] } = useQuery({
@@ -373,7 +373,7 @@ export default function DMChatPage() {
     );
   }
 
-  const otherUser = chat?.user;
+  const otherUser = (chat as any)?.user;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -402,7 +402,12 @@ export default function DMChatPage() {
                 <h2 className="font-semibold text-gray-900">
                   {otherUser?.displayName || otherUser?.username || 'User'}
                 </h2>
-                <p className="text-sm text-gray-500">@{otherUser?.username || 'username'}</p>
+                <p 
+                  className="text-sm text-purple-600 hover:text-purple-800 cursor-pointer hover:underline"
+                  onClick={() => setLocation(`/profile/${otherUser?.username}`)}
+                >
+                  {otherUser?.username || 'username'}
+                </p>
               </div>
             </div>
           </div>

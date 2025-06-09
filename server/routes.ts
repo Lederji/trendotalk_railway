@@ -2060,8 +2060,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const chatResult = await db.execute(sql`
         SELECT dc.*, 
-               u1.username as user1_username, u1.avatar as user1_avatar,
-               u2.username as user2_username, u2.avatar as user2_avatar
+               u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
+               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name
         FROM dm_chats dc
         JOIN users u1 ON dc.user1_id = u1.id
         JOIN users u2 ON dc.user2_id = u2.id
@@ -2075,8 +2075,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const chat = chatResult.rows[0] as any;
       const otherUser = chat.user1_id === req.user.userId ? 
-        { id: chat.user2_id, username: chat.user2_username, avatar: chat.user2_avatar } :
-        { id: chat.user1_id, username: chat.user1_username, avatar: chat.user1_avatar };
+        { id: chat.user2_id, username: chat.user2_username, avatar: chat.user2_avatar, displayName: chat.user2_display_name } :
+        { id: chat.user1_id, username: chat.user1_username, avatar: chat.user1_avatar, displayName: chat.user1_display_name };
       
       res.json({
         id: chat.id,
