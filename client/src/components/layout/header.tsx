@@ -31,7 +31,7 @@ export function Header() {
   const { data: unreadMessagesCount = { totalUnreadCount: 0 } } = useQuery<{ totalUnreadCount: number; messagesTabCount: number; requestsTabCount: number }>({
     queryKey: ['/api/dm/unread-count'],
     enabled: !!user,
-    refetchInterval: 5000, // Refetch every 5 seconds for testing
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Fetch notifications list

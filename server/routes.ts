@@ -2071,14 +2071,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const totalUnreadCount = ongoingUnreadCount + newChatsUnreadCount + dmRequestsCount + messageRequestsCount;
       
-      console.log('Unread count breakdown:', {
-        ongoingUnreadCount,
-        newChatsUnreadCount,
-        dmRequestsCount,
-        messageRequestsCount,
-        totalUnreadCount
-      });
-      
       res.json({ 
         totalUnreadCount,
         messagesTabCount: ongoingUnreadCount,
