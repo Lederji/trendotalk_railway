@@ -404,7 +404,7 @@ export default function DMChatPage() {
                 </h2>
                 <p 
                   className="text-sm text-purple-600 hover:text-purple-800 cursor-pointer hover:underline"
-                  onClick={() => setLocation(`/profile/${otherUser?.username}`)}
+                  onClick={() => setLocation(`/profile/${otherUser?.id}`)}
                 >
                   {otherUser?.username || 'username'}
                 </p>
