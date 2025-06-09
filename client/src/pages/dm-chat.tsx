@@ -54,6 +54,9 @@ export default function DMChatPage() {
       setMessage("");
       queryClient.invalidateQueries({ queryKey: [`/api/dm/${chatId}/messages`] });
       queryClient.invalidateQueries({ queryKey: [`/api/dm/chats/${chatId}/status`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dm/chats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dm-new-chats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dm/unread-count'] });
     },
     onError: (error: any) => {
       if (error.message?.includes('one message until')) {
@@ -90,6 +93,7 @@ export default function DMChatPage() {
           // Invalidate messages queries to update unread counts
           queryClient.invalidateQueries({ queryKey: ['/api/dm/chats'] });
           queryClient.invalidateQueries({ queryKey: ['/api/dm-new-chats'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/dm/unread-count'] });
         } catch (error) {
           // Silent fail - not critical
         }
