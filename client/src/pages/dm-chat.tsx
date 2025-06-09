@@ -81,6 +81,23 @@ export default function DMChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Mark messages as read when chat opens
+  useEffect(() => {
+    if (chatId && user) {
+      const markAsRead = async () => {
+        try {
+          await apiRequest('POST', `/api/dm/${chatId}/mark-read`);
+          // Invalidate messages queries to update unread counts
+          queryClient.invalidateQueries({ queryKey: ['/api/dm/chats'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/dm-new-chats'] });
+        } catch (error) {
+          // Silent fail - not critical
+        }
+      };
+      markAsRead();
+    }
+  }, [chatId, user, queryClient]);
+
   const handleSendMessage = async () => {
     if (!(chatStatus as any)?.isRestricted) {
       if (selectedFile) {

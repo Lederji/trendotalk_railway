@@ -283,7 +283,7 @@ export function Messages() {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900 truncate">
+                        <h3 className={`${message.unreadCount > 0 ? 'font-bold' : 'font-normal'} text-gray-900 truncate`}>
                           {message.displayName || message.username}
                         </h3>
                         <span className="text-xs text-gray-500">{message.timestamp}</span>

@@ -1567,6 +1567,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark DM messages as read
+  app.post('/api/dm/:chatId/mark-read', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      const userId = req.user.userId;
+      
+      // Verify user has access to this chat
+      const chatResult = await db.execute(sql`
+        SELECT * FROM dm_chats 
+        WHERE id = ${chatId} 
+        AND (user1_id = ${userId} OR user2_id = ${userId})
+      `);
+      
+      if (!chatResult.rows || chatResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Chat not found' });
+      }
+      
+      // Mark all messages in this chat as read for this user
+      // We'll use a simple approach - update chat's last_read timestamp for user
+      const chat = chatResult.rows[0] as any;
+      
+      if (chat.user1_id === userId) {
+        await db.execute(sql`
+          UPDATE dm_chats 
+          SET user1_last_read = NOW() 
+          WHERE id = ${chatId}
+        `);
+      } else {
+        await db.execute(sql`
+          UPDATE dm_chats 
+          SET user2_last_read = NOW() 
+          WHERE id = ${chatId}
+        `);
+      }
+      
+      res.json({ message: 'Messages marked as read' });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get DM chat status (check if messages are restricted)
   app.get('/api/dm/chats/:chatId/status', authenticateUser, async (req: any, res: any) => {
     try {
@@ -1997,8 +2039,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get ongoing DM chats (more than 3 messages) for Messages tab
       const dmChatsResult = await db.execute(sql`
         SELECT dc.id, dc.user1_id, dc.user2_id, dc.created_at, dc.updated_at,
+               dc.user1_last_read, dc.user2_last_read,
                u1.username as user1_username, u1.avatar as user1_avatar, u1.display_name as user1_display_name,
-               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name
+               u2.username as user2_username, u2.avatar as user2_avatar, u2.display_name as user2_display_name,
+               (SELECT COUNT(*) FROM dm_messages dm WHERE dm.chat_id = dc.id) as total_messages
         FROM dm_chats dc
         JOIN users u1 ON dc.user1_id = u1.id
         JOIN users u2 ON dc.user2_id = u2.id
@@ -2009,7 +2053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY dc.updated_at DESC
       `);
       
-      const chats = dmChatsResult.rows?.map((chat: any) => {
+      const chats = await Promise.all(dmChatsResult.rows?.map(async (chat: any) => {
         const otherUser = chat.user1_id === userId ? 
           { 
             id: chat.user2_id, 
@@ -2023,16 +2067,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             avatar: chat.user1_avatar,
             displayName: chat.user1_display_name 
           };
+
+        // Calculate unread count - messages received after user's last read time
+        const userLastRead = chat.user1_id === userId ? chat.user1_last_read : chat.user2_last_read;
+        const unreadCountResult = await db.execute(sql`
+          SELECT COUNT(*) as count FROM dm_messages 
+          WHERE chat_id = ${chat.id} 
+          AND sender_id != ${userId}
+          AND created_at > COALESCE(${userLastRead}, '1970-01-01'::timestamp)
+        `);
+        const unreadCount = Number(unreadCountResult.rows?.[0]?.count || 0);
         
         return {
           id: chat.id,
           user: otherUser,
-          lastMessage: null,
+          lastMessage: "Start a conversation",
           lastMessageTime: null,
+          unreadCount: unreadCount,
           createdAt: chat.created_at,
           updatedAt: chat.updated_at
         };
-      }) || [];
+      }) || []);
       
       console.log('DM chats found:', chats.length);
       res.json(chats);
