@@ -155,12 +155,12 @@ export default function Circle() {
       
       <div className="max-w-md mx-auto bg-white min-h-screen">
         {/* Your Circle Heading */}
-        <div className="pt-16 px-4 pb-2 bg-white">
-          <h1 className="text-xl font-bold text-pink-600 mb-3">Your Circle</h1>
+        <div className="pt-16 px-4 bg-white">
+          <h1 className="text-xl font-bold text-pink-600">Your Circle</h1>
         </div>
         
         {/* Search */}
-        <div className="px-4 pb-4 bg-white border-b">
+        <div className="px-4 py-3 bg-white border-b">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input

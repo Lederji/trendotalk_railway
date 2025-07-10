@@ -3105,41 +3105,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   app.get('/api/circle/messages', authenticateUser, async (req: any, res: any) => {
     try {
       const userId = req.user.userId;
-      
-      // Get user's following list
-      const following = await storage.getUserFollowing(userId);
-      const followingIds = following.map(f => f.id);
-      followingIds.push(userId); // Include user's own messages
-      
-      // Get Circle messages from followed users + user's own messages
-      const messages = await db
-        .select({
-          id: circleMessages.id,
-          content: circleMessages.content,
-          imageUrl: circleMessages.imageUrl,
-          videoUrl: circleMessages.videoUrl,
-          likesCount: circleMessages.likesCount,
-          commentsCount: circleMessages.commentsCount,
-          isPublic: circleMessages.isPublic,
-          createdAt: circleMessages.createdAt,
-          user: {
-            id: users.id,
-            username: users.username,
-            displayName: users.displayName,
-            avatar: users.avatar
-          }
-        })
-        .from(circleMessages)
-        .leftJoin(users, eq(circleMessages.userId, users.id))
-        .where(
-          and(
-            eq(circleMessages.isPublic, true),
-            inArray(circleMessages.userId, followingIds)
-          )
-        )
-        .orderBy(desc(circleMessages.createdAt))
-        .limit(50);
-
+      const messages = await storage.getCircleMessages(userId);
       res.json(messages);
     } catch (error) {
       console.error('Error getting Circle messages:', error);
@@ -3150,47 +3116,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   // Post a new Circle timeline message
   app.post('/api/circle/messages', authenticateUser, async (req: any, res: any) => {
     try {
-      const { content, imageUrl, videoUrl, isPublic = true } = req.body;
+      const { content, imageUrl, videoUrl } = req.body;
       const userId = req.user.userId;
 
       if (!content || content.trim().length === 0) {
         return res.status(400).json({ message: 'Message content is required' });
       }
 
-      const [newMessage] = await db
-        .insert(circleMessages)
-        .values({
-          userId,
-          content: content.trim(),
-          imageUrl: imageUrl || null,
-          videoUrl: videoUrl || null,
-          isPublic
-        })
-        .returning();
-
-      // Get the message with user info for response
-      const messageWithUser = await db
-        .select({
-          id: circleMessages.id,
-          content: circleMessages.content,
-          imageUrl: circleMessages.imageUrl,
-          videoUrl: circleMessages.videoUrl,
-          likesCount: circleMessages.likesCount,
-          commentsCount: circleMessages.commentsCount,
-          isPublic: circleMessages.isPublic,
-          createdAt: circleMessages.createdAt,
-          user: {
-            id: users.id,
-            username: users.username,
-            displayName: users.displayName,
-            avatar: users.avatar
-          }
-        })
-        .from(circleMessages)
-        .leftJoin(users, eq(circleMessages.userId, users.id))
-        .where(eq(circleMessages.id, newMessage.id));
-
-      res.json(messageWithUser[0]);
+      const newMessage = await storage.createCircleMessage(userId, content, imageUrl, videoUrl);
+      res.json(newMessage);
     } catch (error) {
       console.error('Error creating Circle message:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -3203,51 +3137,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
       const messageId = Number(req.params.messageId);
       const userId = req.user.userId;
 
-      // Check if already liked
-      const existingLike = await db
-        .select()
-        .from(circleMessageLikes)
-        .where(
-          and(
-            eq(circleMessageLikes.messageId, messageId),
-            eq(circleMessageLikes.userId, userId)
-          )
-        );
-
-      if (existingLike.length > 0) {
-        // Unlike - remove like and decrement count
-        await db
-          .delete(circleMessageLikes)
-          .where(
-            and(
-              eq(circleMessageLikes.messageId, messageId),
-              eq(circleMessageLikes.userId, userId)
-            )
-          );
-
-        await db
-          .update(circleMessages)
-          .set({ 
-            likesCount: sql`${circleMessages.likesCount} - 1` 
-          })
-          .where(eq(circleMessages.id, messageId));
-
-        res.json({ liked: false });
-      } else {
-        // Like - add like and increment count
-        await db
-          .insert(circleMessageLikes)
-          .values({ messageId, userId });
-
-        await db
-          .update(circleMessages)
-          .set({ 
-            likesCount: sql`${circleMessages.likesCount} + 1` 
-          })
-          .where(eq(circleMessages.id, messageId));
-
-        res.json({ liked: true });
-      }
+      const result = await storage.toggleCircleMessageLike(messageId, userId);
+      res.json(result);
     } catch (error) {
       console.error('Error toggling Circle message like:', error);
       res.status(500).json({ message: 'Internal server error' });

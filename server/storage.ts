@@ -102,6 +102,11 @@ export interface IStorage {
   createReport(reportData: InsertReport & { reporterId: number }): Promise<Report>;
   getReportsSummary(): Promise<any[]>;
   
+  // Circle messages methods
+  getCircleMessages(userId: number): Promise<any[]>;
+  createCircleMessage(userId: number, content: string, imageUrl?: string, videoUrl?: string): Promise<any>;
+  toggleCircleMessageLike(messageId: number, userId: number): Promise<{ liked: boolean }>;
+  
   // Performance analytics methods
   getUserPerformanceStats(userId: number): Promise<any>;
   
@@ -122,6 +127,8 @@ export class MemStorage implements IStorage {
   private chats: Map<number, any> = new Map();
   private postReports: Map<number, any> = new Map();
   private notifications: Map<number, any> = new Map();
+  private circleMessages: Map<number, any> = new Map();
+  private circleMessageLikes: Map<number, any> = new Map();
   
   private currentUserId = 1;
   private currentPostId = 1;
@@ -131,6 +138,8 @@ export class MemStorage implements IStorage {
   private currentFollowId = 1;
   private currentFriendRequestId = 1;
   private currentChatId = 1;
+  private currentCircleMessageId = 1;
+  private currentCircleMessageLikeId = 1;
 
   constructor() {
     this.seedData();
@@ -1476,6 +1485,97 @@ export class MemStorage implements IStorage {
   async getReportsSummary(): Promise<any[]> {
     // Stub implementation for MemStorage
     return [];
+  }
+
+  // Circle message methods implementation
+  async getCircleMessages(userId: number): Promise<any[]> {
+    const following = await this.getUserFollowing(userId);
+    const followingIds = following.map(f => f.id);
+    followingIds.push(userId); // Include user's own messages
+    
+    const messages: any[] = [];
+    for (const [id, message] of this.circleMessages.entries()) {
+      if (followingIds.includes(message.userId)) {
+        const user = this.users.get(message.userId);
+        if (user) {
+          messages.push({
+            ...message,
+            user: {
+              id: user.id,
+              username: user.username,
+              displayName: user.displayName,
+              avatar: user.avatar
+            }
+          });
+        }
+      }
+    }
+    
+    return messages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 50);
+  }
+
+  async createCircleMessage(userId: number, content: string, imageUrl?: string, videoUrl?: string): Promise<any> {
+    const message = {
+      id: this.currentCircleMessageId++,
+      userId,
+      content: content.trim(),
+      imageUrl: imageUrl || null,
+      videoUrl: videoUrl || null,
+      likesCount: 0,
+      commentsCount: 0,
+      isPublic: true,
+      createdAt: new Date()
+    };
+    
+    this.circleMessages.set(message.id, message);
+    
+    // Return with user info
+    const user = this.users.get(userId);
+    return {
+      ...message,
+      user: {
+        id: user?.id,
+        username: user?.username,
+        displayName: user?.displayName,
+        avatar: user?.avatar
+      }
+    };
+  }
+
+  async toggleCircleMessageLike(messageId: number, userId: number): Promise<{ liked: boolean }> {
+    const message = this.circleMessages.get(messageId);
+    if (!message) {
+      throw new Error('Message not found');
+    }
+    
+    // Find existing like
+    let existingLike = null;
+    for (const [id, like] of this.circleMessageLikes.entries()) {
+      if (like.messageId === messageId && like.userId === userId) {
+        existingLike = { id, ...like };
+        break;
+      }
+    }
+    
+    if (existingLike) {
+      // Unlike - remove like and decrement count
+      this.circleMessageLikes.delete(existingLike.id);
+      message.likesCount = Math.max(0, message.likesCount - 1);
+      this.circleMessages.set(messageId, message);
+      return { liked: false };
+    } else {
+      // Like - add like and increment count
+      const like = {
+        id: this.currentCircleMessageLikeId++,
+        messageId,
+        userId,
+        createdAt: new Date()
+      };
+      this.circleMessageLikes.set(like.id, like);
+      message.likesCount += 1;
+      this.circleMessages.set(messageId, message);
+      return { liked: true };
+    }
   }
 }
 
