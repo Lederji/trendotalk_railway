@@ -153,9 +153,9 @@ export default function Circle() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <div className="max-w-md mx-auto bg-white min-h-screen pt-16">
-        {/* Search */}
-        <div className="p-4 bg-white border-b">
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        {/* Search - moved to very top */}
+        <div className="pt-16 p-4 bg-white border-b">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
@@ -234,9 +234,6 @@ export default function Circle() {
                     {user?.username?.[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
-                  <Plus className="w-3 h-3 text-white" />
-                </div>
               </div>
               <p className="text-xs mt-2 font-medium">Your vibe</p>
             </div>
@@ -262,34 +259,9 @@ export default function Circle() {
 
         {/* Timeline Messages Section */}
         <div className="flex-1 bg-white">
-          <div className="p-4 border-b">
-            <div className="flex items-center space-x-2 mb-3">
-              <Input
-                placeholder="Share your thoughts..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1 bg-gray-100 border-0 rounded-full"
-                onKeyPress={(e) => e.key === 'Enter' && handlePostMessage()}
-              />
-              <Button
-                onClick={handlePostMessage}
-                disabled={!newMessage.trim() || postCircleMessageMutation.isPending}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:opacity-90 rounded-full w-10 h-10 p-0"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
           {/* Circle Messages Timeline */}
           <div className="space-y-4 p-4">
-            {circleMessages.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-2">No messages yet</p>
-                <p className="text-sm text-gray-400">Share your first thought with your circle!</p>
-              </div>
-            ) : (
-              circleMessages.map((message: any) => (
+            {circleMessages.length > 0 && circleMessages.map((message: any) => (
                 <div key={message.id} className="bg-gray-50 rounded-lg p-3">
                   <div className="flex items-start space-x-3">
                     <Avatar className="w-10 h-10">
@@ -321,8 +293,7 @@ export default function Circle() {
                     </div>
                   </div>
                 </div>
-              ))
-            )}
+            ))}
           </div>
         </div>
 
