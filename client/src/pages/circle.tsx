@@ -154,9 +154,62 @@ export default function Circle() {
       <Navigation />
       
       <div className="max-w-md mx-auto bg-white min-h-screen pt-16">
+        {/* Search */}
+        <div className="p-4 bg-white border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search users by username..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-gray-100 border-0 rounded-full"
+            />
+          </div>
+        </div>
 
-
-
+        {/* Search Results */}
+        {searchQuery.length >= 2 && (
+          <div className="bg-white border-b">
+            <div className="p-4">
+              <h3 className="font-semibold mb-3">Search Results</h3>
+              {isSearching ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500 mx-auto"></div>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No users found</p>
+              ) : (
+                <div className="space-y-3">
+                  {searchResults.map((searchUser: any) => (
+                    <div key={searchUser.id} className="flex items-center justify-between p-2">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={searchUser.avatar} alt={searchUser.username} />
+                          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                            {searchUser.username?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h4 className="font-medium text-sm">{searchUser.username}</h4>
+                          <p className="text-xs text-gray-500">{searchUser.displayName}</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => sendFriendRequestMutation.mutate(searchUser.id)}
+                        disabled={sendFriendRequestMutation.isPending}
+                        className="bg-gradient-to-r from-pink-500 to-purple-500 hover:opacity-90 text-xs px-3 py-1 h-8"
+                      >
+                        <UserPlus className="w-3 h-3 mr-1" />
+                        Add
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Circle's Vibe Section */}
         <div className="p-4 bg-white border-b">
