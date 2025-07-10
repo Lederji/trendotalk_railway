@@ -4062,6 +4062,8 @@ class HybridStorage extends DatabaseStorage {
   }
 }
 
+// Temporarily using MemStorage due to database connection issues
+// TODO: Switch back to DatabaseStorage once Neon database is properly configured
 export const storage = new MemStorage();
 export const videoCleanup = new VideoCleanupService();
 

@@ -106,7 +106,8 @@ TrendoTalk is a modern social media web application built for high-scale usage (
 - Real-time features use polling (WebSocket upgrade planned)
 
 ## Changelog
-- June 30, 2025. Initial setup
+- July 10, 2025: Database connection issues with Neon PostgreSQL - temporarily switched to in-memory storage. User accounts will need to be recreated until database connection is restored.
+- June 30, 2025: Initial setup
 
 ## User Preferences
 
