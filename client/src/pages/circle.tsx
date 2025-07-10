@@ -154,8 +154,13 @@ export default function Circle() {
       <Navigation />
       
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        {/* Search - moved to very top */}
-        <div className="pt-16 p-4 bg-white border-b">
+        {/* Your Circle Heading */}
+        <div className="pt-16 px-4 pb-2 bg-white">
+          <h1 className="text-xl font-bold text-pink-600 mb-3">Your Circle</h1>
+        </div>
+        
+        {/* Search */}
+        <div className="px-4 pb-4 bg-white border-b">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
@@ -238,15 +243,11 @@ export default function Circle() {
               <p className="text-xs mt-2 font-medium">Your vibe</p>
             </div>
 
-            {/* Friends' Vibes */}
-            {vibes.map((vibe: any) => (
+            {/* Friends' Vibes - only show if they have posted vibes */}
+            {vibes.filter((vibe: any) => vibe.imageUrl).map((vibe: any) => (
               <div key={vibe.id} className="flex-shrink-0 text-center">
                 <Avatar className="w-16 h-16 ring-2 ring-pink-500 ring-offset-2">
-                  {vibe.imageUrl ? (
-                    <AvatarImage src={vibe.imageUrl} alt="Vibe" />
-                  ) : (
-                    <AvatarImage src={vibe.user?.avatar} alt={vibe.user?.username} />
-                  )}
+                  <AvatarImage src={vibe.imageUrl} alt="Vibe" />
                   <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
                     {vibe.user?.username?.[0]?.toUpperCase()}
                   </AvatarFallback>
