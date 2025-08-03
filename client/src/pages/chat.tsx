@@ -34,7 +34,7 @@ export default function ChatPage() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // WebRTC Call functionality
-  const { callState, startCall, acceptCall, declineCall, endCall } = useWebRTCCall();
+  const { callState, startCall, acceptCall, declineCall, endCall, toggleMute } = useWebRTCCall();
 
   // Fetch chat data
   const { data: chat, isLoading } = useQuery({
@@ -480,6 +480,7 @@ export default function ChatPage() {
           onEndCall={endCall}
           callStatus={callState.callStatus}
           duration={callState.duration}
+          onToggleMute={toggleMute}
         />
       )}
       {/* Header */}
@@ -523,13 +524,15 @@ export default function ChatPage() {
         
         {/* Voice and Video Call Icons */}
         <div className="flex space-x-2">
-          <div
-            className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors shadow-lg"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-gray-600 hover:bg-gray-100"
             onClick={handleVoiceCall}
             title="Start voice call"
           >
             <Phone className="w-5 h-5" />
-          </div>
+          </Button>
           <Button
             variant="ghost"
             size="icon"

@@ -392,11 +392,23 @@ export function useWebRTCCall() {
     }, 1000);
   }, []);
 
+  const toggleMute = useCallback(() => {
+    if (localStreamRef.current) {
+      const audioTracks = localStreamRef.current.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      return !audioTracks[0]?.enabled;
+    }
+    return false;
+  }, []);
+
   return {
     callState,
     startCall,
     acceptCall,
     declineCall,
-    endCall
+    endCall,
+    toggleMute
   };
 }
