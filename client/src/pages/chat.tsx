@@ -494,33 +494,40 @@ export default function ChatPage() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
-        <Avatar className="w-10 h-10">
-          <AvatarImage src={chat?.user?.avatar} alt={chat?.user?.username} />
-          <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-            {chat?.user?.username?.[0]?.toUpperCase() || 'U'}
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1">
-          <h1 className="font-semibold text-lg">{chat?.user?.username || 'User'}</h1>
-          <p className="text-sm text-gray-500">
-            {otherUserTyping ? (
-              <span className="flex items-center">
-                <span className="animate-pulse mr-1">Typing</span>
-                <span className="flex space-x-1">
-                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        <button
+          onClick={() => setLocation(`/profile/${chat?.user?.username}`)}
+          className="flex items-center space-x-3 flex-1 hover:bg-gray-50 rounded-lg p-2 transition-colors"
+        >
+          <Avatar className="w-10 h-10">
+            <AvatarImage src={chat?.user?.avatar} alt={chat?.user?.username} />
+            <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+              {chat?.user?.username?.[0]?.toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 text-left">
+            <h1 className="font-semibold text-lg text-gray-900 hover:text-blue-600 transition-colors">
+              {chat?.user?.username || 'User'}
+            </h1>
+            <p className="text-sm text-gray-500">
+              {otherUserTyping ? (
+                <span className="flex items-center">
+                  <span className="animate-pulse mr-1">Typing</span>
+                  <span className="flex space-x-1">
+                    <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </span>
                 </span>
-              </span>
-            ) : (
-              <span className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-                Active now
-              </span>
-            )}
-          </p>
-        </div>
+              ) : (
+                <span className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                  Active now
+                </span>
+              )}
+            </p>
+          </div>
+        </button>
         
         {/* Voice and Video Call Icons */}
         <div className="flex space-x-2">
