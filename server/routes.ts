@@ -3324,7 +3324,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     
     ws.on('close', () => {
       // Remove user from connections when they disconnect
-      for (const [userId, connection] of connections.entries()) {
+      for (const [userId, connection] of Array.from(connections.entries())) {
         if (connection.ws === ws) {
           connections.delete(userId);
           console.log(`User ${connection.username} disconnected from calls`);
@@ -3412,7 +3412,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   async function handleDeclineCall(ws: WebSocket, data: any) {
     try {
       // Find and remove the call
-      for (const [callId, call] of activeCalls.entries()) {
+      for (const [callId, call] of Array.from(activeCalls.entries())) {
         const calleeConnection = connections.get(call.callee);
         if (calleeConnection?.ws === ws) {
           // Notify caller
@@ -3437,7 +3437,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   async function handleEndCall(ws: WebSocket, data: any) {
     try {
       // Find and remove the call
-      for (const [callId, call] of activeCalls.entries()) {
+      for (const [callId, call] of Array.from(activeCalls.entries())) {
         const callerConnection = connections.get(call.caller);
         const calleeConnection = connections.get(call.callee);
         
@@ -3469,7 +3469,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   async function relayWebRTCSignal(ws: WebSocket, data: any) {
     try {
       // Find the active call for this WebSocket
-      for (const call of activeCalls.values()) {
+      for (const call of Array.from(activeCalls.values())) {
         const callerConnection = connections.get(call.caller);
         const calleeConnection = connections.get(call.callee);
         

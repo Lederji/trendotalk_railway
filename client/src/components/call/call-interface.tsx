@@ -16,6 +16,7 @@ interface CallInterfaceProps {
   callStatus: 'incoming' | 'connecting' | 'connected' | 'ended';
   duration?: number;
   onToggleMute?: () => boolean;
+  isMuted?: boolean;
 }
 
 export function CallInterface({ 
@@ -26,9 +27,9 @@ export function CallInterface({
   onEndCall, 
   callStatus,
   duration = 0,
-  onToggleMute
+  onToggleMute,
+  isMuted = false
 }: CallInterfaceProps) {
-  const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const { toast } = useToast();
 
@@ -41,15 +42,6 @@ export function CallInterface({
   const handleMute = () => {
     if (onToggleMute) {
       const newMutedState = onToggleMute();
-      setIsMuted(newMutedState);
-      toast({
-        title: newMutedState ? "Microphone off" : "Microphone on",
-        description: newMutedState ? "You are now muted" : "You can now speak",
-      });
-    } else {
-      // Fallback if onToggleMute is not provided
-      const newMutedState = !isMuted;
-      setIsMuted(newMutedState);
       toast({
         title: newMutedState ? "Microphone off" : "Microphone on",
         description: newMutedState ? "You are now muted" : "You can now speak",

@@ -4274,6 +4274,134 @@ class HybridStorage extends DatabaseStorage {
       return false;
     }
   }
+
+  async getCircleMessages(userId: number): Promise<any[]> {
+    try {
+      // Get messages from users that the current user follows plus their own messages
+      const userFollowing = await db
+        .select({ followingId: follows.followingId })
+        .from(follows)
+        .where(eq(follows.followerId, userId));
+      
+      const followingIds = userFollowing.map(f => f.followingId);
+      const relevantUserIds = [...followingIds, userId];
+      
+      const messages = await db
+        .select({
+          id: circleMessages.id,
+          content: circleMessages.content,
+          imageUrl: circleMessages.imageUrl,
+          videoUrl: circleMessages.videoUrl,
+          likesCount: circleMessages.likesCount,
+          commentsCount: circleMessages.commentsCount,
+          createdAt: circleMessages.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar
+          }
+        })
+        .from(circleMessages)
+        .leftJoin(users, eq(circleMessages.userId, users.id))
+        .where(inArray(circleMessages.userId, relevantUserIds))
+        .orderBy(desc(circleMessages.createdAt));
+      
+      return messages;
+    } catch (error) {
+      console.error('Error getting circle messages:', error);
+      return [];
+    }
+  }
+
+  async createCircleMessage(userId: number, content: string, imageUrl?: string, videoUrl?: string): Promise<any> {
+    try {
+      const [message] = await db
+        .insert(circleMessages)
+        .values({
+          userId,
+          content,
+          imageUrl: imageUrl || null,
+          videoUrl: videoUrl || null
+        })
+        .returning();
+      
+      // Get user info for the created message
+      const user = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          avatar: users.avatar
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      
+      return {
+        ...message,
+        user: user[0] || null
+      };
+    } catch (error) {
+      console.error('Error creating circle message:', error);
+      throw error;
+    }
+  }
+
+  async toggleCircleMessageLike(messageId: number, userId: number): Promise<{ liked: boolean }> {
+    try {
+      // Check if user already liked this message
+      const existingLike = await db
+        .select()
+        .from(circleMessageLikes)
+        .where(and(
+          eq(circleMessageLikes.messageId, messageId),
+          eq(circleMessageLikes.userId, userId)
+        ))
+        .limit(1);
+      
+      if (existingLike.length > 0) {
+        // Unlike - remove the like
+        await db
+          .delete(circleMessageLikes)
+          .where(and(
+            eq(circleMessageLikes.messageId, messageId),
+            eq(circleMessageLikes.userId, userId)
+          ));
+        
+        // Decrement likes count
+        await db
+          .update(circleMessages)
+          .set({ 
+            likesCount: sql`${circleMessages.likesCount} - 1`
+          })
+          .where(eq(circleMessages.id, messageId));
+        
+        return { liked: false };
+      } else {
+        // Like - add the like
+        await db
+          .insert(circleMessageLikes)
+          .values({
+            messageId,
+            userId
+          });
+        
+        // Increment likes count
+        await db
+          .update(circleMessages)
+          .set({ 
+            likesCount: sql`${circleMessages.likesCount} + 1`
+          })
+          .where(eq(circleMessages.id, messageId));
+        
+        return { liked: true };
+      }
+    } catch (error) {
+      console.error('Error toggling circle message like:', error);
+      throw error;
+    }
+  }
 }
 
 // Using DatabaseStorage for persistent data storage with PostgreSQL

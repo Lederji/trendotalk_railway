@@ -7,6 +7,7 @@ interface CallState {
   callStatus: 'incoming' | 'connecting' | 'connected' | 'ended';
   caller: { username: string; avatar?: string } | null;
   duration: number;
+  isMuted: boolean;
 }
 
 export function useWebRTCCall() {
@@ -15,7 +16,8 @@ export function useWebRTCCall() {
     isIncoming: false,
     callStatus: 'ended',
     caller: null,
-    duration: 0
+    duration: 0,
+    isMuted: false
   });
 
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -163,7 +165,8 @@ export function useWebRTCCall() {
         isIncoming: false,
         callStatus: 'connecting',
         caller: targetUser,
-        duration: 0
+        duration: 0,
+        isMuted: false
       });
 
       toast({
@@ -187,7 +190,8 @@ export function useWebRTCCall() {
       isIncoming: true,
       callStatus: 'incoming',
       caller: { username: data.caller, avatar: data.callerAvatar },
-      duration: 0
+      duration: 0,
+      isMuted: false
     });
 
     // Play incoming call sound
@@ -279,7 +283,8 @@ export function useWebRTCCall() {
       isIncoming: false,
       callStatus: 'ended',
       caller: null,
-      duration: 0
+      duration: 0,
+      isMuted: false
     });
   }, [callState.isCallActive]);
 
@@ -393,12 +398,33 @@ export function useWebRTCCall() {
   }, []);
 
   const toggleMute = useCallback(() => {
-    if (localStreamRef.current) {
+    if (localStreamRef.current && peerConnectionRef.current) {
       const audioTracks = localStreamRef.current.getAudioTracks();
-      audioTracks.forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      return !audioTracks[0]?.enabled;
+      
+      if (audioTracks.length > 0) {
+        const newMutedState = !audioTracks[0].enabled;
+        
+        // Disable/enable all audio tracks in the local stream
+        audioTracks.forEach(track => {
+          track.enabled = !newMutedState;
+        });
+        
+        // Also control the audio tracks being sent through peer connection
+        const senders = peerConnectionRef.current.getSenders();
+        senders.forEach(sender => {
+          if (sender.track && sender.track.kind === 'audio') {
+            sender.track.enabled = !newMutedState;
+          }
+        });
+        
+        // Update call state with mute status
+        setCallState(prev => ({
+          ...prev,
+          isMuted: newMutedState
+        }));
+        
+        return newMutedState;
+      }
     }
     return false;
   }, []);
