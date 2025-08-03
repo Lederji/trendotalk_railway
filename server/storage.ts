@@ -3038,9 +3038,22 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      // Get the other user details and messages for each valid chat
-      const formattedChats = [];
+      // Group chats by other user and keep only the most recent one
+      const chatsByUser = new Map<number, any>();
+      
       for (const chat of validChats) {
+        const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
+        
+        // Check if we already have a chat with this user
+        const existingChat = chatsByUser.get(otherUserId);
+        if (!existingChat || new Date(chat.createdAt) > new Date(existingChat.createdAt)) {
+          chatsByUser.set(otherUserId, chat);
+        }
+      }
+      
+      // Get the other user details and messages for each unique chat
+      const formattedChats = [];
+      for (const chat of chatsByUser.values()) {
         const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
         const [otherUser] = await db
           .select()
