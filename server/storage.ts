@@ -92,6 +92,7 @@ export interface IStorage {
   // Chat methods
   getUserChats(userId: number): Promise<any[]>;
   sendMessage(chatId: number, senderId: number, message: string): Promise<any>;
+  markChatAsRead(chatId: number, userId: number): Promise<void>;
   
   // CV methods
   getUserCV(userId: number): Promise<any>;
@@ -1657,6 +1658,9 @@ export class DatabaseStorage implements IStorage {
   private circleMessageLikes: Map<number, any> = new Map();
   private currentCircleMessageId = 1;
   private currentCircleMessageLikeId = 1;
+  
+  // Track when users last read each chat (chatId_userId -> timestamp)
+  private chatReadTimes: Map<string, Date> = new Map();
   constructor() {
     this.initializeDatabase();
   }
@@ -3177,25 +3181,19 @@ export class DatabaseStorage implements IStorage {
           ? chatMessages[chatMessages.length - 1].createdAt 
           : chat.createdAt;
         
-        // Calculate unread messages count
-        // Find the last message sent by the current user
-        let lastUserMessageTime: Date | null = null;
-        for (let i = chatMessages.length - 1; i >= 0; i--) {
-          if (chatMessages[i].senderId === userId) {
-            lastUserMessageTime = chatMessages[i].createdAt;
-            break;
-          }
-        }
+        // Calculate unread messages count based on last read time
+        const lastReadTimeKey = `${chat.id}_${userId}_lastRead`;
+        const lastReadTime = this.chatReadTimes.get(lastReadTimeKey);
         
-        // Count messages from other user that are newer than current user's last message
+        // Count messages from other user that are newer than last read time
         let unreadCount = 0;
-        if (lastUserMessageTime) {
+        if (lastReadTime) {
           unreadCount = chatMessages.filter(msg => 
             msg.senderId !== userId && 
-            new Date(msg.createdAt) > new Date(lastUserMessageTime!)
+            new Date(msg.createdAt) > new Date(lastReadTime)
           ).length;
         } else {
-          // If user never sent a message, count all messages from other user
+          // If user never read the chat, count all messages from other user
           unreadCount = chatMessages.filter(msg => msg.senderId !== userId).length;
         }
         
@@ -3249,6 +3247,17 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting user chats:', error);
       return [];
+    }
+  }
+  
+  async markChatAsRead(chatId: number, userId: number): Promise<void> {
+    try {
+      const readTimeKey = `${chatId}_${userId}_lastRead`;
+      this.chatReadTimes.set(readTimeKey, new Date());
+      console.log(`Chat ${chatId} marked as read by user ${userId}`);
+    } catch (error) {
+      console.error('Error marking chat as read:', error);
+      throw error;
     }
   }
 

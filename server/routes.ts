@@ -2816,6 +2816,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark chat as read
+  app.post('/api/chats/:chatId/read', authenticateUser, async (req: any, res: any) => {
+    try {
+      const chatId = Number(req.params.chatId);
+      await storage.markChatAsRead(chatId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking chat as read:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Account Center API endpoints
   
   // Get account status

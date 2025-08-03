@@ -214,6 +214,29 @@ export default function ChatPage() {
     }
   });
 
+  // Mark chat as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: async (chatId: number) => {
+      const sessionId = localStorage.getItem('sessionId');
+      const response = await fetch(`/api/chats/${chatId}/read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionId}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to mark as read');
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate chats list to update unread counts
+      queryClient.invalidateQueries({ queryKey: ['/api/chats'] });
+    },
+    onError: (error) => {
+      console.error('Failed to mark chat as read:', error);
+    }
+  });
+
   const handleSendMessage = () => {
     if (message.trim() || selectedFile) {
       const messageToSend = message.trim();
@@ -512,6 +535,13 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Mark chat as read when component mounts or chatId changes
+  useEffect(() => {
+    if (chatId && user?.id) {
+      markAsReadMutation.mutate(Number(chatId));
+    }
+  }, [chatId, user?.id]);
 
   if (isLoading) {
     return (
