@@ -53,13 +53,6 @@ export default function ProfilePage() {
   const isNumericId = userId && !isNaN(parseInt(userId));
   const profileUserId = isNumericId ? parseInt(userId) : currentUser?.id;
   const profileUsername = !isNumericId ? userId : null;
-  
-  // Determine if this is the current user's profile - using profile data when available
-  const isOwnProfile = profile ? 
-    profile.id === currentUser?.id : 
-    (isNumericId ? 
-      profileUserId === currentUser?.id : 
-      profileUsername === currentUser?.username);
 
   // Fetch user profile data - handle both username and userId
   const { data: profile, isLoading } = useQuery({
@@ -67,6 +60,13 @@ export default function ProfilePage() {
     enabled: !!(profileUserId || profileUsername),
     retry: false,
   }) as { data: any, isLoading: boolean };
+  
+  // Determine if this is the current user's profile - using profile data when available
+  const isOwnProfile = profile ? 
+    profile.id === currentUser?.id : 
+    (isNumericId ? 
+      profileUserId === currentUser?.id : 
+      profileUsername === currentUser?.username);
 
   // If profile not found but viewing own profile, use current user data
   const displayProfile = profile || (isOwnProfile ? currentUser : null);
