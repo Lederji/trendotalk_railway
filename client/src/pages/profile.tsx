@@ -54,10 +54,12 @@ export default function ProfilePage() {
   const profileUserId = isNumericId ? parseInt(userId) : currentUser?.id;
   const profileUsername = !isNumericId ? userId : null;
   
-  // Determine if this is the current user's profile
-  const isOwnProfile = isNumericId ? 
-    profileUserId === currentUser?.id : 
-    profileUsername === currentUser?.username;
+  // Determine if this is the current user's profile - using profile data when available
+  const isOwnProfile = profile ? 
+    profile.id === currentUser?.id : 
+    (isNumericId ? 
+      profileUserId === currentUser?.id : 
+      profileUsername === currentUser?.username);
 
   // Fetch user profile data - handle both username and userId
   const { data: profile, isLoading } = useQuery({
