@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrendoTalk</string>
+    <string name="title_activity_main">TrendoTalk</string>
+    <string name="package_name">com.trendotalk.app</string>
+    <string name="custom_url_scheme">com.trendotalk.app</string>
+    <string name="app_description">Connect, Share, and Trend with friends on TrendoTalk - the ultimate social media platform</string>
+    <string name="camera_permission_description">TrendoTalk needs camera access to take photos and videos for your posts</string>
+    <string name="storage_permission_description">TrendoTalk needs storage access to save and share media files</string>
+    <string name="microphone_permission_description">TrendoTalk needs microphone access to record videos with audio</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TrendoTalk brand colors -->
+    <color name="colorPrimary">#667eea</color>
+    <color name="colorPrimaryDark">#764ba2</color>
+    <color name="colorAccent">#667eea</color>
+    
+    <!-- Status bar and navigation -->
+    <color name="statusBarColor">#1a1a1a</color>
+    <color name="navigationBarColor">#1a1a1a</color>
+    
+    <!-- Splash screen -->
+    <color name="splashBackground">#667eea</color>
+    
+    <!-- Common colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="dark_background">#1a1a1a</color>
+</resources>

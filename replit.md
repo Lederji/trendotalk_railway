@@ -1,8 +1,8 @@
-# TrendoTalk - Social Media Web Application
+# TrendoTalk - Social Media Web & Mobile Application
 
 ## Overview
 
-TrendoTalk is a modern social media web application built for high-scale usage (10,000+ active users). It combines features from Instagram, TikTok, and messaging platforms, providing users with content creation, social interaction, and real-time communication capabilities.
+TrendoTalk is a modern social media application built for high-scale usage (10,000+ active users). It combines features from Instagram, TikTok, and messaging platforms, providing users with content creation, social interaction, and real-time communication capabilities. Now available as both a web application and native mobile app for Android (Google Play Store ready).
 
 ## System Architecture
 
