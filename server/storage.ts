@@ -3091,15 +3091,23 @@ export class DatabaseStorage implements IStorage {
 
   async sendMessage(chatId: number, senderId: number, message: string): Promise<any> {
     try {
+      const now = new Date();
+      
       const [newMessage] = await db
         .insert(messages)
         .values({
           chatId,
           senderId,
           content: message,
-          createdAt: new Date()
+          createdAt: now
         })
         .returning();
+      
+      // Update chat's updatedAt timestamp for proper sorting
+      await db
+        .update(chats)
+        .set({ updatedAt: now })
+        .where(eq(chats.id, chatId));
       
       // Return message in expected format
       return {
