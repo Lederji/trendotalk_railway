@@ -3038,29 +3038,18 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      // Group chats by other user and keep only the most recent one
-      const chatsByUser = new Map<number, any>();
-      
+      // First, get all chat details with their actual last message times
+      const chatDetails = [];
       for (const chat of validChats) {
-        const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
-        
-        // Check if we already have a chat with this user
-        const existingChat = chatsByUser.get(otherUserId);
-        if (!existingChat || new Date(chat.createdAt) > new Date(existingChat.createdAt)) {
-          chatsByUser.set(otherUserId, chat);
-        }
-      }
-      
-      // Get the other user details and messages for each unique chat
-      const formattedChats = [];
-      for (const chat of chatsByUser.values()) {
         const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
         const [otherUser] = await db
           .select()
           .from(users)
           .where(eq(users.id, otherUserId));
         
-        // Get chat messages
+        if (!otherUser) continue;
+        
+        // Get chat messages to determine real last message time
         const chatMessages = await db
           .select({
             id: messages.id,
@@ -3073,20 +3062,35 @@ export class DatabaseStorage implements IStorage {
           .where(eq(messages.chatId, chat.id))
           .orderBy(messages.createdAt);
         
-        if (otherUser) {
-          formattedChats.push({
-            id: chat.id,
-            user: {
-              id: otherUser.id,
-              username: otherUser.username,
-              avatar: otherUser.avatar
-            },
-            messages: chatMessages,
-            lastMessage: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].content : null,
-            lastMessageTime: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].createdAt : chat.createdAt
-          });
+        const actualLastMessageTime = chatMessages.length > 0 
+          ? chatMessages[chatMessages.length - 1].createdAt 
+          : chat.createdAt;
+        
+        chatDetails.push({
+          id: chat.id,
+          otherUserId,
+          user: {
+            id: otherUser.id,
+            username: otherUser.username,
+            avatar: otherUser.avatar
+          },
+          messages: chatMessages,
+          lastMessage: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].content : null,
+          lastMessageTime: actualLastMessageTime
+        });
+      }
+      
+      // Now deduplicate by keeping only the most recent chat per user
+      const chatsByUser = new Map<number, any>();
+      for (const chatDetail of chatDetails) {
+        const existingChat = chatsByUser.get(chatDetail.otherUserId);
+        if (!existingChat || new Date(chatDetail.lastMessageTime) > new Date(existingChat.lastMessageTime)) {
+          chatsByUser.set(chatDetail.otherUserId, chatDetail);
         }
       }
+      
+      // Convert map values to array
+      const formattedChats = Array.from(chatsByUser.values());
       
       // Sort chats by last message time (most recent first)
       formattedChats.sort((a, b) => {
