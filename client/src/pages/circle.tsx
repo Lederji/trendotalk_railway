@@ -106,7 +106,7 @@ export default function Circle() {
 
   const respondToFriendRequestMutation = useMutation({
     mutationFn: async ({ requestId, action }: { requestId: number; action: "accept" | "reject" }) => {
-      return apiRequest("PATCH", `/api/friend-requests/${requestId}`, { action });
+      return apiRequest("POST", `/api/friend-requests/${requestId}/${action}`, {});
     },
     onSuccess: (_, variables) => {
       toast({
