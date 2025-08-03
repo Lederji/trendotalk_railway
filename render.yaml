@@ -3,8 +3,8 @@ services:
     name: trendotalk
     env: node
     plan: free
-    buildCommand: npm install && node migrate.js && npm run build
-    startCommand: npm start
+    buildCommand: npm install && npm run build
+    startCommand: node migrate.js && npm start
     envVars:
       - key: NODE_ENV
         value: production
