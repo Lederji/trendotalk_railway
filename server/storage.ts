@@ -1661,6 +1661,108 @@ export class DatabaseStorage implements IStorage {
     this.initializeDatabase();
   }
 
+  // Circle messages methods
+  async getCircleMessages(userId: number): Promise<any[]> {
+    try {
+      const messages = Array.from(this.circleMessages.values())
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      // Get user likes
+      const userLikes = Array.from(this.circleMessageLikes.values())
+        .filter(like => like.userId === userId)
+        .map(like => like.messageId);
+      
+      return messages.map(message => ({
+        ...message,
+        isLiked: userLikes.includes(message.id)
+      }));
+    } catch (error) {
+      console.error('Error getting circle messages:', error);
+      return [];
+    }
+  }
+
+  async createCircleMessage(userId: number, content: string, imageUrl?: string, videoUrl?: string): Promise<any> {
+    try {
+      const user = await this.getUser(userId);
+      const message = {
+        id: this.currentCircleMessageId++,
+        userId,
+        content,
+        imageUrl: imageUrl || null,
+        videoUrl: videoUrl || null,
+        likesCount: 0,
+        commentsCount: 0,
+        isPublic: true,
+        createdAt: new Date(),
+        user: {
+          id: user?.id,
+          username: user?.username,
+          displayName: user?.displayName,
+          avatar: user?.avatar
+        }
+      };
+      
+      this.circleMessages.set(message.id, message);
+      return message;
+    } catch (error) {
+      console.error('Error creating circle message:', error);
+      throw error;
+    }
+  }
+
+  async toggleCircleMessageLike(messageId: number, userId: number): Promise<{ liked: boolean }> {
+    try {
+      const existingLike = Array.from(this.circleMessageLikes.values())
+        .find(like => like.messageId === messageId && like.userId === userId);
+      
+      if (existingLike) {
+        // Unlike
+        this.circleMessageLikes.delete(existingLike.id);
+        const message = this.circleMessages.get(messageId);
+        if (message) {
+          message.likesCount = Math.max(0, message.likesCount - 1);
+          this.circleMessages.set(messageId, message);
+        }
+        return { liked: false };
+      } else {
+        // Like
+        const like = {
+          id: this.currentCircleMessageLikeId++,
+          messageId,
+          userId,
+          createdAt: new Date()
+        };
+        this.circleMessageLikes.set(like.id, like);
+        
+        const message = this.circleMessages.get(messageId);
+        if (message) {
+          message.likesCount = (message.likesCount || 0) + 1;
+          this.circleMessages.set(messageId, message);
+        }
+        return { liked: true };
+      }
+    } catch (error) {
+      console.error('Error toggling circle message like:', error);
+      return { liked: false };
+    }
+  }
+
+  async createPostReport(report: any): Promise<any> {
+    // Implementation for post reports
+    return report;
+  }
+
+  async createReport(reportData: any): Promise<any> {
+    // Implementation for general reports
+    return reportData;
+  }
+
+  async getReportsSummary(): Promise<any[]> {
+    // Implementation for reports summary
+    return [];
+  }
+
   private async initializeDatabase() {
     try {
       // Ensure tables exist before seeding data
