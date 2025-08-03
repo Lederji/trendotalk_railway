@@ -369,13 +369,13 @@ export default function Circle() {
                     <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <Avatar className="w-12 h-12">
-                          <AvatarImage src={request.requester.avatar} alt={request.requester.username} />
+                          <AvatarImage src={request.user?.avatar} alt={request.user?.username} />
                           <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
-                            {request.requester.username?.[0]?.toUpperCase()}
+                            {request.user?.username?.[0]?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h4 className="font-medium">{request.requester.username}</h4>
+                          <h4 className="font-medium">{request.user?.username}</h4>
                           <p className="text-sm text-gray-500">Wants to be friends</p>
                         </div>
                       </div>
