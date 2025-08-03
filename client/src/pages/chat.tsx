@@ -142,7 +142,7 @@ export default function ChatPage() {
       // Optimistically update to the new value - show message immediately
       const optimisticMessage = {
         id: Date.now(), // temporary ID
-        chatId: parseInt(chatId),
+        chatId: parseInt(chatId || '0'),
         senderId: user?.id,
         message: content,
         createdAt: new Date().toISOString(),
@@ -527,7 +527,7 @@ export default function ChatPage() {
       console.log("Using fallback user data");
       startCall({
         username: `User${chatId}`,
-        avatar: null
+        avatar: undefined
       });
     }
   };
