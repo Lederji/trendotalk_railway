@@ -1771,9 +1771,9 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeDatabase() {
     try {
-      // Ensure tables exist before seeding data
+      // Ensure tables exist
       await this.createTablesIfNotExists();
-      await this.seedData();
+      console.log('Database initialization completed successfully');
     } catch (error) {
       console.error('Database initialization failed:', error);
     }
