@@ -509,7 +509,7 @@ export default function ChatPage() {
             <h1 className="font-semibold text-lg text-gray-900 hover:text-blue-600 transition-colors">
               {chat?.user?.username || 'User'}
             </h1>
-            <p className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500">
               {otherUserTyping ? (
                 <span className="flex items-center">
                   <span className="animate-pulse mr-1">Typing</span>
@@ -525,7 +525,7 @@ export default function ChatPage() {
                   Active now
                 </span>
               )}
-            </p>
+            </div>
           </div>
         </button>
         
