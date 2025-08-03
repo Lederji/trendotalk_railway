@@ -4290,8 +4290,8 @@ class HybridStorage extends DatabaseStorage {
   }
 }
 
-// Using MemStorage temporarily to get Circle messages working
-export const storage = new MemStorage();
+// Using DatabaseStorage for persistent data storage with PostgreSQL
+export const storage = new DatabaseStorage();
 export const videoCleanup = new VideoCleanupService();
 
 // Schedule cleanup to run every 24 hours
