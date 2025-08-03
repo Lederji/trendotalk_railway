@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Phone, Video, MoreVertical, FileText, MapPin, User, Calendar, Headphones, ImageIcon } from "lucide-react";
+import { CallInterface } from "@/components/call/call-interface";
+import { useWebRTCCall } from "@/hooks/use-webrtc-call";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ChatPage() {
@@ -30,6 +32,9 @@ export default function ChatPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // WebRTC Call functionality
+  const { callState, startCall, acceptCall, declineCall, endCall } = useWebRTCCall();
 
   // Fetch chat data
   const { data: chat, isLoading } = useQuery({
@@ -418,10 +423,12 @@ export default function ChatPage() {
   };
 
   const handleVoiceCall = () => {
-    toast({
-      title: "Voice Call", 
-      description: "Starting voice call...",
-    });
+    if (chat?.user) {
+      startCall({
+        username: chat.user.username,
+        avatar: chat.user.avatar
+      });
+    }
   };
 
   useEffect(() => {
@@ -451,6 +458,18 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      {/* Call Interface Overlay */}
+      {callState.isCallActive && (
+        <CallInterface
+          isIncoming={callState.isIncoming}
+          caller={callState.caller!}
+          onAccept={acceptCall}
+          onDecline={declineCall}
+          onEndCall={endCall}
+          callStatus={callState.callStatus}
+          duration={callState.duration}
+        />
+      )}
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center space-x-3 sticky top-0 z-10">
         <Button

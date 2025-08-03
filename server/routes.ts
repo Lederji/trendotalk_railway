@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { db } from "./db";
 import { users, reports, messageRequests, chats, messages, circleMessages, circleMessageComments, circleMessageLikes, dmChats, dmMessages } from "@shared/schema";
@@ -3269,5 +3270,227 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   });
 
   const httpServer = createServer(app);
+  
+  // WebSocket server for audio calls
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Store active connections and ongoing calls
+  const connections = new Map<string, { ws: WebSocket, userId: string, username: string }>();
+  const activeCalls = new Map<string, { caller: string, callee: string, callId: string }>();
+  
+  wss.on('connection', (ws: WebSocket, req) => {
+    console.log('WebSocket client connected for calls');
+    
+    ws.on('message', async (message: Buffer) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('Received WebSocket message:', data.type);
+        
+        switch (data.type) {
+          case 'register':
+            // Register user connection
+            if (data.userId && data.username) {
+              connections.set(data.userId, { ws, userId: data.userId, username: data.username });
+              console.log(`User ${data.username} registered for calls`);
+            }
+            break;
+            
+          case 'initiate-call':
+            await handleInitiateCall(ws, data);
+            break;
+            
+          case 'accept-call':
+            await handleAcceptCall(ws, data);
+            break;
+            
+          case 'decline-call':
+            await handleDeclineCall(ws, data);
+            break;
+            
+          case 'end-call':
+            await handleEndCall(ws, data);
+            break;
+            
+          case 'webrtc-offer':
+          case 'webrtc-answer':
+          case 'webrtc-ice-candidate':
+            await relayWebRTCSignal(ws, data);
+            break;
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+    
+    ws.on('close', () => {
+      // Remove user from connections when they disconnect
+      for (const [userId, connection] of connections.entries()) {
+        if (connection.ws === ws) {
+          connections.delete(userId);
+          console.log(`User ${connection.username} disconnected from calls`);
+          break;
+        }
+      }
+    });
+  });
+  
+  async function handleInitiateCall(ws: WebSocket, data: any) {
+    try {
+      // Find the caller
+      const caller = Array.from(connections.values()).find(conn => conn.ws === ws);
+      if (!caller) return;
+      
+      // Find target user by username
+      const targetUser = Array.from(connections.values()).find(conn => conn.username === data.targetUser);
+      if (!targetUser) {
+        ws.send(JSON.stringify({
+          type: 'call-failed',
+          reason: 'User not online'
+        }));
+        return;
+      }
+      
+      // Create call ID
+      const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Store active call
+      activeCalls.set(callId, {
+        caller: caller.userId,
+        callee: targetUser.userId,
+        callId
+      });
+      
+      // Get caller's user info
+      const callerUser = await storage.getUser(parseInt(caller.userId));
+      
+      // Send incoming call to target user
+      targetUser.ws.send(JSON.stringify({
+        type: 'incoming-call',
+        callId,
+        caller: caller.username,
+        callerAvatar: callerUser?.avatar,
+        callerId: caller.userId
+      }));
+      
+      console.log(`Call initiated: ${caller.username} -> ${targetUser.username}`);
+      
+    } catch (error) {
+      console.error('Error initiating call:', error);
+      ws.send(JSON.stringify({
+        type: 'call-failed',
+        reason: 'Server error'
+      }));
+    }
+  }
+  
+  async function handleAcceptCall(ws: WebSocket, data: any) {
+    try {
+      // Find the call
+      const call = Array.from(activeCalls.values()).find(call => {
+        const calleeConnection = connections.get(call.callee);
+        return calleeConnection?.ws === ws;
+      });
+      
+      if (!call) return;
+      
+      // Notify caller that call was accepted
+      const callerConnection = connections.get(call.caller);
+      if (callerConnection) {
+        callerConnection.ws.send(JSON.stringify({
+          type: 'call-accepted',
+          callId: call.callId
+        }));
+      }
+      
+      console.log(`Call accepted: ${call.callId}`);
+      
+    } catch (error) {
+      console.error('Error accepting call:', error);
+    }
+  }
+  
+  async function handleDeclineCall(ws: WebSocket, data: any) {
+    try {
+      // Find and remove the call
+      for (const [callId, call] of activeCalls.entries()) {
+        const calleeConnection = connections.get(call.callee);
+        if (calleeConnection?.ws === ws) {
+          // Notify caller
+          const callerConnection = connections.get(call.caller);
+          if (callerConnection) {
+            callerConnection.ws.send(JSON.stringify({
+              type: 'call-declined',
+              callId
+            }));
+          }
+          
+          activeCalls.delete(callId);
+          console.log(`Call declined: ${callId}`);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error declining call:', error);
+    }
+  }
+  
+  async function handleEndCall(ws: WebSocket, data: any) {
+    try {
+      // Find and remove the call
+      for (const [callId, call] of activeCalls.entries()) {
+        const callerConnection = connections.get(call.caller);
+        const calleeConnection = connections.get(call.callee);
+        
+        if (callerConnection?.ws === ws || calleeConnection?.ws === ws) {
+          // Notify both parties
+          if (callerConnection && callerConnection.ws !== ws) {
+            callerConnection.ws.send(JSON.stringify({
+              type: 'call-ended',
+              callId
+            }));
+          }
+          if (calleeConnection && calleeConnection.ws !== ws) {
+            calleeConnection.ws.send(JSON.stringify({
+              type: 'call-ended',
+              callId
+            }));
+          }
+          
+          activeCalls.delete(callId);
+          console.log(`Call ended: ${callId}`);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error ending call:', error);
+    }
+  }
+  
+  async function relayWebRTCSignal(ws: WebSocket, data: any) {
+    try {
+      // Find the active call for this WebSocket
+      for (const call of activeCalls.values()) {
+        const callerConnection = connections.get(call.caller);
+        const calleeConnection = connections.get(call.callee);
+        
+        if (callerConnection?.ws === ws) {
+          // Relay to callee
+          if (calleeConnection) {
+            calleeConnection.ws.send(JSON.stringify(data));
+          }
+          break;
+        } else if (calleeConnection?.ws === ws) {
+          // Relay to caller
+          if (callerConnection) {
+            callerConnection.ws.send(JSON.stringify(data));
+          }
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error relaying WebRTC signal:', error);
+    }
+  }
+  
   return httpServer;
 }
