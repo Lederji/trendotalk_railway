@@ -345,10 +345,17 @@ export default function Circle() {
                           <h4 className="font-medium">{chat.user?.username}</h4>
                           <p className="text-sm text-gray-500">{chat.lastMessage || "Start chatting"}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-400">
-                            {chat.lastMessageTime ? format(new Date(chat.lastMessageTime), 'dd/MM/yyyy') : ''}
-                          </p>
+                        <div className="text-right flex items-center">
+                          {/* Show notification badge for unread messages */}
+                          {chat.unreadCount && chat.unreadCount > 0 ? (
+                            <div className="bg-red-500 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+                              <span className="text-xs font-medium">
+                                {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="w-3 h-3 rounded-full bg-gray-300"></div>
+                          )}
                         </div>
                       </div>
                     </Link>

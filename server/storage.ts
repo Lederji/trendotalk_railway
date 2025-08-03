@@ -3066,6 +3066,28 @@ export class DatabaseStorage implements IStorage {
           ? chatMessages[chatMessages.length - 1].createdAt 
           : chat.createdAt;
         
+        // Calculate unread messages count
+        // Find the last message sent by the current user
+        let lastUserMessageTime: Date | null = null;
+        for (let i = chatMessages.length - 1; i >= 0; i--) {
+          if (chatMessages[i].senderId === userId) {
+            lastUserMessageTime = chatMessages[i].createdAt;
+            break;
+          }
+        }
+        
+        // Count messages from other user that are newer than current user's last message
+        let unreadCount = 0;
+        if (lastUserMessageTime) {
+          unreadCount = chatMessages.filter(msg => 
+            msg.senderId !== userId && 
+            new Date(msg.createdAt) > new Date(lastUserMessageTime!)
+          ).length;
+        } else {
+          // If user never sent a message, count all messages from other user
+          unreadCount = chatMessages.filter(msg => msg.senderId !== userId).length;
+        }
+        
         chatDetails.push({
           id: chat.id,
           otherUserId,
@@ -3076,16 +3098,29 @@ export class DatabaseStorage implements IStorage {
           },
           messages: chatMessages,
           lastMessage: chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].content : null,
-          lastMessageTime: actualLastMessageTime
+          lastMessageTime: actualLastMessageTime,
+          unreadCount: unreadCount
         });
       }
       
       // Now deduplicate by keeping only the most recent chat per user
+      // Also combine unread counts from all chats with the same user
       const chatsByUser = new Map<number, any>();
       for (const chatDetail of chatDetails) {
         const existingChat = chatsByUser.get(chatDetail.otherUserId);
         if (!existingChat || new Date(chatDetail.lastMessageTime) > new Date(existingChat.lastMessageTime)) {
-          chatsByUser.set(chatDetail.otherUserId, chatDetail);
+          // If this is a newer chat, use it but add unread counts from older chats
+          const totalUnreadCount = existingChat 
+            ? chatDetail.unreadCount + existingChat.unreadCount
+            : chatDetail.unreadCount;
+          
+          chatsByUser.set(chatDetail.otherUserId, {
+            ...chatDetail,
+            unreadCount: totalUnreadCount
+          });
+        } else if (existingChat) {
+          // If existing chat is newer, just add this chat's unread count to it
+          existingChat.unreadCount += chatDetail.unreadCount;
         }
       }
       
