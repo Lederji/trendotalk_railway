@@ -135,13 +135,17 @@ export function useWebRTCCall() {
   }, []);
 
   const startCall = useCallback(async (targetUser: { username: string; avatar?: string }) => {
+    console.log("startCall function called with:", targetUser);
     try {
+      console.log("Requesting microphone access...");
       // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
+      console.log("Microphone access granted, stream:", stream);
 
       // Create peer connection
       peerConnectionRef.current = createPeerConnection();
+      console.log("Peer connection created");
       
       // Add local stream to peer connection
       stream.getTracks().forEach(track => {
@@ -149,15 +153,20 @@ export function useWebRTCCall() {
           peerConnectionRef.current.addTrack(track, stream);
         }
       });
+      console.log("Local stream added to peer connection");
 
       // Send call invitation
       if (wsRef.current) {
+        console.log("Sending call invitation via WebSocket");
         wsRef.current.send(JSON.stringify({
           type: 'initiate-call',
           targetUser: targetUser.username
         }));
+      } else {
+        console.log("WebSocket not available!");
       }
 
+      console.log("Setting call state to connecting");
       setCallState({
         isCallActive: true,
         isIncoming: false,

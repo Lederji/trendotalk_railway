@@ -423,11 +423,15 @@ export default function ChatPage() {
   };
 
   const handleVoiceCall = () => {
+    console.log("Voice call button clicked!", chat?.user);
     if (chat?.user) {
+      console.log("Starting call with:", chat.user.username);
       startCall({
         username: chat.user.username,
         avatar: chat.user.avatar
       });
+    } else {
+      console.log("No chat user found");
     }
   };
 
