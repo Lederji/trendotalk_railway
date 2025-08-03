@@ -114,6 +114,11 @@ export interface IStorage {
   getUnreadNotificationCount(userId: number): Promise<number>;
   markAllNotificationsAsRead(userId: number): Promise<boolean>;
   dismissNotification(notificationId: number): Promise<boolean>;
+  
+  // Circle messages methods (already defined above but ensuring they're here)
+  getCircleMessages(userId: number): Promise<any[]>;
+  createCircleMessage(userId: number, content: string, imageUrl?: string, videoUrl?: string): Promise<any>;
+  toggleCircleMessageLike(messageId: number, userId: number): Promise<{ liked: boolean }>;
 }
 
 export class MemStorage implements IStorage {
@@ -3158,12 +3163,6 @@ export class DatabaseStorage implements IStorage {
           createdAt: now
         })
         .returning();
-      
-      // Update chat's updatedAt timestamp for proper sorting
-      await db
-        .update(chats)
-        .set({ updatedAt: now })
-        .where(eq(chats.id, chatId));
       
       // Return message in expected format
       return {
