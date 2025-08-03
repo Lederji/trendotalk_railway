@@ -154,10 +154,14 @@ export default function Circle() {
       <Navigation />
       
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        {/* Your Circle Heading */}
-        <div className="pt-16 px-4 bg-white">
-          <h1 className="text-xl font-bold text-pink-600">Your Circle</h1>
-        </div>
+        {/* Header like home page */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <h1 className="text-xl md:text-2xl font-bold gradient-text">
+              Your Circle
+            </h1>
+          </div>
+        </header>
         
         {/* Search */}
         <div className="px-4 py-3 bg-white border-b">
