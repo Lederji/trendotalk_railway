@@ -42,11 +42,11 @@ export default function ChatPage() {
     enabled: !!chatId,
   }) as { data: any, isLoading: boolean };
 
-  // Fetch messages with optimized polling
+  // Fetch messages with faster polling for smooth experience
   const { data: messages = [] } = useQuery({
     queryKey: [`/api/chats/${chatId}/messages`],
     enabled: !!chatId,
-    refetchInterval: 1000, // 1 second polling for good real-time experience
+    refetchInterval: 500, // 0.5 second polling for instant messaging feel
     refetchOnWindowFocus: true,
     refetchOnMount: true,
   }) as { data: any[] };
@@ -112,7 +112,7 @@ export default function ChatPage() {
     }
   };
 
-  // Send message mutation with better error handling
+  // Send message mutation with optimistic updates for instant messaging
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       const sessionId = localStorage.getItem('sessionId');
@@ -132,18 +132,54 @@ export default function ChatPage() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onMutate: async (content: string) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
+      
+      // Snapshot the previous value
+      const previousMessages = queryClient.getQueryData([`/api/chats/${chatId}/messages`]);
+      
+      // Optimistically update to the new value - show message immediately
+      const optimisticMessage = {
+        id: Date.now(), // temporary ID
+        chatId: parseInt(chatId),
+        senderId: user?.id,
+        message: content,
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: user?.id,
+          username: user?.username,
+          avatar: user?.avatar
+        },
+        isOptimistic: true // flag to identify optimistic messages
+      };
+      
+      queryClient.setQueryData([`/api/chats/${chatId}/messages`], (old: any[]) => {
+        return [...(old || []), optimisticMessage];
+      });
+      
+      // Return a context object with the snapshotted value
+      return { previousMessages };
+    },
+    onSuccess: (data) => {
+      // Immediately invalidate to get the real message from server
       queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
       setMessage("");
       setSelectedFile(null);
     },
-    onError: (error: any) => {
+    onError: (error: any, content, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData([`/api/chats/${chatId}/messages`], context?.previousMessages);
       toast({
         title: "Message failed",
         description: error.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure server state
+      queryClient.invalidateQueries({ queryKey: [`/api/chats/${chatId}/messages`] });
     }
   });
 
@@ -197,15 +233,45 @@ export default function ChatPage() {
     }
   };
 
-  const handleTyping = () => {
+  // Enhanced typing indicator with server notification
+  const handleTyping = async () => {
     setIsTyping(true);
+    
+    // Send typing indicator to server (silently fail if not available)
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      fetch(`/api/chats/${chatId}/typing`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionId}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isTyping: true })
+      }).catch(() => {});
+    } catch (error) {
+      // Silently fail for typing indicators
+    }
     
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
     
-    typingTimeoutRef.current = setTimeout(() => {
+    typingTimeoutRef.current = setTimeout(async () => {
       setIsTyping(false);
+      // Send stop typing indicator
+      try {
+        const sessionId = localStorage.getItem('sessionId');
+        fetch(`/api/chats/${chatId}/typing`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessionId}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ isTyping: false })
+        }).catch(() => {});
+      } catch (error) {
+        // Silently fail
+      }
     }, 2000);
   };
 
@@ -789,7 +855,10 @@ export default function ChatPage() {
                 value={message}
                 onChange={(e) => {
                   setMessage(e.target.value);
-                  handleTyping();
+                  // Only trigger typing indicator if there's actual content being typed
+                  if (e.target.value.trim()) {
+                    handleTyping();
+                  }
                 }}
                 onKeyPress={handleKeyPress}
                 placeholder="Message"
