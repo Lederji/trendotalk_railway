@@ -495,7 +495,7 @@ export default function ChatPage() {
         </Button>
         
         <button
-          onClick={() => setLocation(`/profile/${chat?.user?.username}`)}
+          onClick={() => setLocation(`/profile/${chat?.user?.id}`)}
           className="flex items-center space-x-3 flex-1 hover:bg-gray-50 rounded-lg p-2 transition-colors"
         >
           <Avatar className="w-10 h-10">
