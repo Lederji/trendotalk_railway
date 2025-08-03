@@ -3075,6 +3075,13 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
+      // Sort chats by last message time (most recent first)
+      formattedChats.sort((a, b) => {
+        const timeA = new Date(a.lastMessageTime).getTime();
+        const timeB = new Date(b.lastMessageTime).getTime();
+        return timeB - timeA; // Descending order (newest first)
+      });
+      
       return formattedChats;
     } catch (error) {
       console.error('Error getting user chats:', error);
