@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist/public',
   server: {
     // For production, this will be your actual API server
-    url: 'https://your-app-domain.replit.app',
+    url: 'https://workspace.irshadji6209.repl.co',
     cleartext: true
   },
   plugins: {
