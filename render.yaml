@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: node migrate.js && NODE_ENV=production node dist/index.js
+    startCommand: node migrate.js && echo "Migration completed successfully" && NODE_ENV=production node dist/index.js
     envVars:
       - key: NODE_ENV
         value: production

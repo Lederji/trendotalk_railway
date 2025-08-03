@@ -10,11 +10,15 @@ if (!process.env.DATABASE_URL) {
 
 async function runMigrations() {
   console.log('Starting database migration...');
+  console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
   
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const db = drizzle({ client: pool });
 
   try {
+    // Test database connection first
+    await pool.query('SELECT 1');
+    console.log('Database connection successful');
     // Create tables manually
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -41,22 +45,32 @@ async function runMigrations() {
       );
     `);
 
+    console.log('Users table created/verified');
+
     // Add missing columns to existing users table
     try {
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS links TEXT;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS followers_count INTEGER DEFAULT 0;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS following_count INTEGER DEFAULT 0;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS total_posts_created INTEGER DEFAULT 0;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT DEFAULT 'live';`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status_reason TEXT;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status_expires TIMESTAMP;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile TEXT;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_verified BOOLEAN DEFAULT false;`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;`);
+      const columns = [
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS links TEXT',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS followers_count INTEGER DEFAULT 0',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS following_count INTEGER DEFAULT 0',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS total_posts_created INTEGER DEFAULT 0',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT DEFAULT \'live\'',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status_reason TEXT',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status_expires TIMESTAMP',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile TEXT',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_verified BOOLEAN DEFAULT false',
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false'
+      ];
+      
+      for (const sql of columns) {
+        await pool.query(sql);
+        console.log('Added column:', sql.split('ADD COLUMN IF NOT EXISTS ')[1]?.split(' ')[0]);
+      }
       console.log('Successfully added missing columns to users table');
     } catch (error) {
-      console.log('Some columns may already exist:', error.message);
+      console.error('Error adding columns to users table:', error.message);
+      throw error;
     }
 
     await pool.query(`
@@ -357,16 +371,43 @@ async function runMigrations() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_circle_messages_user_id ON circle_messages(user_id);`);
 
-    console.log('Database migration completed successfully!');
+    // Verify critical columns exist
+    console.log('Verifying critical columns...');
+    const result = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      AND column_name IN ('display_name', 'username', 'password')
+      ORDER BY column_name;
+    `);
+    
+    const foundColumns = result.rows.map(row => row.column_name);
+    console.log('Found critical columns:', foundColumns);
+    
+    const requiredColumns = ['display_name', 'password', 'username'];
+    const missingColumns = requiredColumns.filter(col => !foundColumns.includes(col));
+    
+    if (missingColumns.length > 0) {
+      throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+    }
+    
+    console.log('✅ Database migration completed successfully!');
+    console.log('✅ All required columns verified');
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error('❌ Migration failed:', error);
     throw error;
   } finally {
     await pool.end();
   }
 }
 
-runMigrations().catch((error) => {
-  console.error('Migration script failed:', error);
-  process.exit(1);
-});
+runMigrations()
+  .then(() => {
+    console.log('✅ Migration script completed successfully');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('❌ Migration script failed:', error);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
+  });
