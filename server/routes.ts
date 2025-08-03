@@ -3336,13 +3336,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   
   async function handleInitiateCall(ws: WebSocket, data: any) {
     try {
+      console.log('🔵 Handling initiate call:', data);
+      
       // Find the caller
       const caller = Array.from(connections.values()).find(conn => conn.ws === ws);
+      console.log('🔵 Caller found:', caller ? caller.username : 'NOT FOUND');
       if (!caller) return;
       
       // Find target user by username
+      console.log('🔵 Looking for target user:', data.targetUser);
+      console.log('🔵 Available connections:', Array.from(connections.values()).map(c => c.username));
       const targetUser = Array.from(connections.values()).find(conn => conn.username === data.targetUser);
+      console.log('🔵 Target user found:', targetUser ? targetUser.username : 'NOT FOUND');
+      
       if (!targetUser) {
+        console.log('🔵 Target user not online, sending call-failed');
         ws.send(JSON.stringify({
           type: 'call-failed',
           reason: 'User not online'
