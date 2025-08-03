@@ -38,7 +38,7 @@ export default function ChatPage() {
 
   // Fetch chat data
   const { data: chat, isLoading } = useQuery({
-    queryKey: ["/api/chats", chatId],
+    queryKey: [`/api/chats/${chatId}`],
     enabled: !!chatId,
   }) as { data: any, isLoading: boolean };
 
@@ -423,15 +423,23 @@ export default function ChatPage() {
   };
 
   const handleVoiceCall = () => {
-    console.log("Voice call button clicked!", chat?.user);
-    if (chat?.user) {
-      console.log("Starting call with:", chat.user.username);
+    // Get the other user from the messages or chat data
+    const otherUser = chat?.user || (messages && messages.length > 0 ? 
+      messages.find(msg => msg.senderId !== user?.id)?.sender : null);
+    
+    if (otherUser) {
+      console.log("Starting call with:", otherUser.username);
       startCall({
-        username: chat.user.username,
-        avatar: chat.user.avatar
+        username: otherUser.username,
+        avatar: otherUser.avatar
       });
     } else {
-      console.log("No chat user found");
+      // Fallback - use a default target user based on chatId
+      console.log("Using fallback user data");
+      startCall({
+        username: `User${chatId}`,
+        avatar: null
+      });
     }
   };
 
@@ -516,16 +524,9 @@ export default function ChatPage() {
         {/* Voice and Video Call Icons */}
         <div className="flex space-x-2">
           <div
-            className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors"
-            onClick={() => {
-              alert("Voice call button clicked!");
-              handleVoiceCall();
-            }}
-            style={{ 
-              position: 'relative',
-              zIndex: 999,
-              pointerEvents: 'auto'
-            }}
+            className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors shadow-lg"
+            onClick={handleVoiceCall}
+            title="Start voice call"
           >
             <Phone className="w-5 h-5" />
           </div>
