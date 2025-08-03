@@ -515,18 +515,20 @@ export default function ChatPage() {
         
         {/* Voice and Video Call Icons */}
         <div className="flex space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full text-gray-600 hover:bg-gray-100 cursor-pointer"
+          <div
+            className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors"
             onClick={() => {
-              alert("Button clicked!");
+              alert("Voice call button clicked!");
               handleVoiceCall();
             }}
-            style={{ pointerEvents: 'auto', zIndex: 10 }}
+            style={{ 
+              position: 'relative',
+              zIndex: 999,
+              pointerEvents: 'auto'
+            }}
           >
             <Phone className="w-5 h-5" />
-          </Button>
+          </div>
           <Button
             variant="ghost"
             size="icon"
