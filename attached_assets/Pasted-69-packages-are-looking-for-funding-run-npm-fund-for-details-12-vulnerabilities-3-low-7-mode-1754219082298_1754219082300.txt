@@ -1,0 +1,121 @@
+69 packages are looking for funding
+  run `npm fund` for details
+12 vulnerabilities (3 low, 7 moderate, 1 high, 1 critical)
+To address issues that do not require attention, run:
+  npm audit fix
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+vite v5.4.14 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 2166 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                   0.63 kB │ gzip:   0.38 kB
+../dist/public/assets/index-CO32y6jh.css  101.64 kB │ gzip:  16.04 kB
+../dist/public/assets/index-BtX6XZm3.js   797.06 kB │ gzip: 215.65 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.03s
+▲ [WARNING] Duplicate member "getUnreadNotificationCount" in class body [duplicate-class-member]
+    server/storage.ts:1472:8:
+      1472 │   async getUnreadNotificationCount(userId: number): Promise<numb...
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  The original member "getUnreadNotificationCount" is here:
+    server/storage.ts:871:8:
+      871 │   async getUnreadNotificationCount(userId: number): Promise<numbe...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+▲ [WARNING] Duplicate member "markAllNotificationsAsRead" in class body [duplicate-class-member]
+    server/storage.ts:1478:8:
+      1478 │   async markAllNotificationsAsRead(userId: number): Promise<bool...
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  The original member "markAllNotificationsAsRead" is here:
+    server/storage.ts:882:8:
+      882 │   async markAllNotificationsAsRead(userId: number): Promise<boole...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+▲ [WARNING] Duplicate member "getUserFollowers" in class body [duplicate-class-member]
+    server/storage.ts:2867:8:
+      2867 │   async getUserFollowers(userId: number): Promise<User[]> {
+           ╵         ~~~~~~~~~~~~~~~~
+  The original member "getUserFollowers" is here:
+    server/storage.ts:2723:8:
+      2723 │   async getUserFollowers(userId: number): Promise<User[]> {
+           ╵         ~~~~~~~~~~~~~~~~
+▲ [WARNING] Duplicate member "getUserFollowing" in class body [duplicate-class-member]
+    server/storage.ts:2883:8:
+      2883 │   async getUserFollowing(userId: number): Promise<User[]> {
+           ╵         ~~~~~~~~~~~~~~~~
+  The original member "getUserFollowing" is here:
+    server/storage.ts:2744:8:
+      2744 │   async getUserFollowing(userId: number): Promise<User[]> {
+           ╵         ~~~~~~~~~~~~~~~~
+▲ [WARNING] Duplicate member "createVibe" in class body [duplicate-class-member]
+    server/storage.ts:3827:8:
+      3827 │   async createVibe(vibeData: any): Promise<any> {
+           ╵         ~~~~~~~~~~
+  The original member "createVibe" is here:
+    server/storage.ts:2625:8:
+      2625 │   async createVibe(vibe: InsertVibe & { userId: number; expiresA...
+           ╵         ~~~~~~~~~~
+▲ [WARNING] Duplicate member "getActiveVibes" in class body [duplicate-class-member]
+    server/storage.ts:3844:8:
+      3844 │   async getActiveVibes(): Promise<any[]> {
+           ╵         ~~~~~~~~~~~~~~
+  The original member "getActiveVibes" is here:
+    server/storage.ts:2666:8:
+      2666 │   async getActiveVibes(): Promise<VibeWithUser[]> {
+           ╵         ~~~~~~~~~~~~~~
+6 of 21 warnings shown (disable the message limit with --log-limit=0)
+  dist/index.js  199.3kb
+⚡ Done in 22ms
+==> Uploading build...
+==> Uploaded in 26.4s. Compression took 4.1s
+==> Build successful 🎉
+==> Deploying...
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+file:///opt/render/project/src/dist/index.js:380
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at file:///opt/render/project/src/dist/index.js:380:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:274:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.16.0
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+file:///opt/render/project/src/dist/index.js:380
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at file:///opt/render/project/src/dist/index.js:380:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:274:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.16.0
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+==> No open ports detected, continuing to scan...
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+file:///opt/render/project/src/dist/index.js:380
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at file:///opt/render/project/src/dist/index.js:380:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:274:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.16.0
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
