@@ -236,38 +236,56 @@ export default function Circle() {
           </div>
           
           <div className="flex space-x-4 overflow-x-auto pb-2">
-            {/* My Vibe */}
-            <div className="flex-shrink-0 text-center">
-              <div className="relative">
-                <Avatar className="w-16 h-16 ring-2 ring-pink-500 ring-offset-2">
-                  <AvatarImage src={user?.avatar} alt={user?.username} />
-                  <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-lg">
-                    {user?.username?.[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <p className="text-xs mt-2 font-medium">Your vibe</p>
-            </div>
+            {/* Sort vibes: User's own vibes first, then others */}
+            {vibes
+              .filter((vibe: any) => vibe.imageUrl || vibe.videoUrl)
+              .sort((a: any, b: any) => {
+                // Put current user's vibes first
+                if (a.userId === user?.id && b.userId !== user?.id) return -1;
+                if (a.userId !== user?.id && b.userId === user?.id) return 1;
+                return 0;
+              })
+              .map((vibe: any) => {
+                const isOwnVibe = vibe.userId === user?.id;
+                return (
+                  <div 
+                    key={vibe.id} 
+                    className="flex-shrink-0 text-center cursor-pointer"
+                    onClick={() => {
+                      setSelectedVibe(vibe);
+                      setShowVibeModal(true);
+                    }}
+                  >
+                    <Avatar className="w-16 h-16 ring-2 ring-pink-500 ring-offset-2 hover:ring-4 transition-all">
+                      <AvatarImage 
+                        src={vibe.imageUrl || vibe.videoUrl || '/placeholder-vibe.jpg'} 
+                        alt="Vibe" 
+                      />
+                      <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                        {vibe.user?.username?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-xs mt-2 truncate w-16 font-medium">
+                      {isOwnVibe ? 'Your vibe' : vibe.user?.username}
+                    </p>
+                  </div>
+                );
+              })}
 
-            {/* Friends' Vibes - show if they have posted vibes (image or video) */}
-            {vibes.filter((vibe: any) => vibe.imageUrl || vibe.videoUrl).map((vibe: any) => (
-              <div 
-                key={vibe.id} 
-                className="flex-shrink-0 text-center cursor-pointer"
-                onClick={() => {
-                  setSelectedVibe(vibe);
-                  setShowVibeModal(true);
-                }}
-              >
-                <Avatar className="w-16 h-16 ring-2 ring-pink-500 ring-offset-2 hover:ring-4 transition-all">
-                  <AvatarImage src={vibe.imageUrl || '/placeholder-vibe.jpg'} alt="Vibe" />
-                  <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
-                    {vibe.user?.username?.[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <p className="text-xs mt-2 truncate w-16">{vibe.user?.username}</p>
+            {/* Show "Your vibe" placeholder only if user has no vibes */}
+            {vibes.filter((vibe: any) => vibe.userId === user?.id && (vibe.imageUrl || vibe.videoUrl)).length === 0 && (
+              <div className="flex-shrink-0 text-center">
+                <div className="relative">
+                  <Avatar className="w-16 h-16 ring-2 ring-gray-300 ring-offset-2">
+                    <AvatarImage src={user?.avatar} alt={user?.username} />
+                    <AvatarFallback className="bg-gray-300 text-gray-600 text-lg">
+                      {user?.username?.[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <p className="text-xs mt-2 font-medium text-gray-500">Your vibe</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -440,20 +458,31 @@ export default function Circle() {
 
       {/* Full Screen Vibe Viewer - Instagram Stories Style */}
       {showVibeModal && selectedVibe && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+        <div 
+          className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+          onClick={(e) => {
+            // Close modal when clicking on the background
+            if (e.target === e.currentTarget) {
+              setShowVibeModal(false);
+              setSelectedVibe(null);
+            }
+          }}
+        >
           {/* Close Button */}
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               setShowVibeModal(false);
               setSelectedVibe(null);
             }}
-            className="absolute top-4 right-4 z-60 bg-black bg-opacity-50 rounded-full p-2 text-white hover:bg-opacity-70 transition-all"
+            className="absolute top-4 right-4 z-[100] bg-black bg-opacity-50 rounded-full p-2 text-white hover:bg-opacity-70 transition-all focus:outline-none focus:ring-2 focus:ring-white"
           >
             <X className="w-6 h-6" />
           </button>
           
           {/* User Info */}
-          <div className="absolute top-4 left-4 z-60 flex items-center space-x-3 text-white">
+          <div className="absolute top-4 left-4 z-[90] flex items-center space-x-3 text-white">
             <Avatar className="w-10 h-10 ring-2 ring-white">
               <AvatarImage src={selectedVibe.user?.avatar} alt={selectedVibe.user?.username} />
               <AvatarFallback className="bg-gray-600 text-white">
@@ -467,7 +496,7 @@ export default function Circle() {
           </div>
 
           {/* Content */}
-          <div className="relative w-full h-full flex items-center justify-center">
+          <div className="relative w-full h-full flex items-center justify-center z-10">
             {selectedVibe.videoUrl ? (
               <video
                 src={selectedVibe.videoUrl}
@@ -495,7 +524,7 @@ export default function Circle() {
 
           {/* Title/Caption */}
           {selectedVibe.title && (
-            <div className="absolute bottom-4 left-4 right-4 z-60 text-white">
+            <div className="absolute bottom-4 left-4 right-4 z-[90] text-white">
               <p className="text-center bg-black bg-opacity-50 rounded-lg p-3">
                 {selectedVibe.title}
               </p>
