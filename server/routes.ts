@@ -897,12 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/friend-requests/:userId', authenticateUser, async (req: any, res: any) => {
     try {
       const targetUserId = Number(req.params.userId);
-      console.log(`=== FRIEND REQUEST ROUTE ===`);
-      console.log(`From user: ${req.user.userId}, To user: ${targetUserId}`);
-      console.log(`Target user ID type: ${typeof targetUserId}, value: ${targetUserId}`);
-      
       const success = await storage.sendFriendRequest(req.user.userId, targetUserId);
-      console.log(`Friend request result: ${success}`);
       
       if (success) {
         res.json({ message: 'Friend request sent', success: true });

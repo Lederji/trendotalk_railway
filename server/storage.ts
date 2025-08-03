@@ -2792,11 +2792,8 @@ export class DatabaseStorage implements IStorage {
 
   async sendFriendRequest(fromUserId: number, toUserId: number): Promise<boolean> {
     try {
-      console.log(`Attempting to send friend request from ${fromUserId} to ${toUserId}`);
-      
       // Prevent self-friend requests
       if (fromUserId === toUserId) {
-        console.log('Cannot send friend request to self');
         return false;
       }
 
@@ -2804,18 +2801,13 @@ export class DatabaseStorage implements IStorage {
       const [fromUser] = await db.select().from(users).where(eq(users.id, fromUserId));
       const [toUser] = await db.select().from(users).where(eq(users.id, toUserId));
       
-      console.log(`From user: ${fromUser?.username} (admin: ${fromUser?.isAdmin})`);
-      console.log(`To user: ${toUser?.username} (admin: ${toUser?.isAdmin})`);
-      
       if (!fromUser || !toUser) {
-        console.log('One or both users not found');
         return false;
       }
       
       // Only prevent friend requests between regular users and system admins
       // Allow friend requests between all regular users
       if (!fromUser?.isAdmin && toUser?.isAdmin) {
-        console.log(`Blocked friend request from non-admin ${fromUserId} to admin ${toUserId}`);
         return false; // Block friend request to admin
       }
 
