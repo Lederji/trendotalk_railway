@@ -4290,8 +4290,8 @@ class HybridStorage extends DatabaseStorage {
   }
 }
 
-// Using DatabaseStorage for persistent data storage with PostgreSQL
-export const storage = new DatabaseStorage();
+// Using MemStorage temporarily to test audio calling functionality
+export const storage = new MemStorage();
 export const videoCleanup = new VideoCleanupService();
 
 // Schedule cleanup to run every 24 hours
