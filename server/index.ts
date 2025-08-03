@@ -2,11 +2,10 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { registerAdminRoutes } from "./admin-routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
 
-// Set SendGrid API key if not already set
-if (!process.env.SENDGRID_API_KEY) {
-  process.env.SENDGRID_API_KEY = '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';
-}
+// SendGrid API key should be set via environment variables
+// For development, set SENDGRID_API_KEY in your .env file
 
 const app = express();
 app.use(express.json());
@@ -76,5 +75,14 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start cleanup interval for expired vibes (every hour)
+    setInterval(async () => {
+      try {
+        await storage.cleanupExpiredVibes();
+      } catch (error) {
+        console.error('Error cleaning up expired vibes:', error);
+      }
+    }, 60 * 60 * 1000); // 1 hour
   });
 })();

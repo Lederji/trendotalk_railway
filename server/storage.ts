@@ -62,6 +62,7 @@ export interface IStorage {
   createVibe(vibe: InsertVibe & { userId: number; expiresAt?: Date }): Promise<Vibe>;
   getActiveVibes(): Promise<VibeWithUser[]>;
   getUserVibes(userId: number): Promise<Vibe[]>;
+  cleanupExpiredVibes(): Promise<void>;
   
   // Follow methods
   followUser(followerId: number, followingId: number): Promise<boolean>;
@@ -1391,6 +1392,25 @@ export class MemStorage implements IStorage {
     return activeVibes;
   }
 
+  async cleanupExpiredVibes(): Promise<void> {
+    const now = new Date();
+    const expiredIds: number[] = [];
+    
+    for (const [id, vibe] of this.stories.entries()) {
+      if (vibe.expiresAt <= now) {
+        expiredIds.push(id);
+      }
+    }
+    
+    for (const id of expiredIds) {
+      this.stories.delete(id);
+    }
+    
+    if (expiredIds.length > 0) {
+      console.log(`Cleaned up ${expiredIds.length} expired vibes`);
+    }
+  }
+
   async getUserVibes(userId: number): Promise<Vibe[]> {
     const userVibes: Vibe[] = [];
     
@@ -2670,6 +2690,22 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async cleanupExpiredVibes(): Promise<void> {
+    try {
+      const now = new Date();
+      const deletedVibes = await db
+        .delete(vibes)
+        .where(sql`${vibes.expiresAt} <= ${now}`)
+        .returning({ id: vibes.id });
+      
+      if (deletedVibes.length > 0) {
+        console.log(`Cleaned up ${deletedVibes.length} expired vibes from database`);
+      }
+    } catch (error) {
+      console.error('Error cleaning up expired vibes:', error);
+    }
+  }
+
   async getUserVibes(userId: number): Promise<Vibe[]> {
     try {
       const result = await db
@@ -3831,6 +3867,26 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting active vibes:', error);
       return [];
+    }
+  }
+
+  async cleanupExpiredVibes(): Promise<void> {
+    try {
+      const now = new Date();
+      const expiredVibes = await db
+        .select()
+        .from(vibes)
+        .where(sql`${vibes.expiresAt} <= ${now}`);
+      
+      if (expiredVibes.length > 0) {
+        await db
+          .delete(vibes)
+          .where(sql`${vibes.expiresAt} <= ${now}`);
+        
+        console.log(`Cleaned up ${expiredVibes.length} expired vibes`);
+      }
+    } catch (error) {
+      console.error('Error cleaning up expired vibes:', error);
     }
   }
 

@@ -1,10 +1,10 @@
 services:
   - type: web
     name: trendotalk
-    runtime: node
+    env: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: node startup.js && npm start
+    buildCommand: npm install && node migrate.js && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -12,6 +12,14 @@ services:
         fromDatabase:
           name: trendotalk-db
           property: connectionString
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
     autoDeploy: false
 
 databases:
