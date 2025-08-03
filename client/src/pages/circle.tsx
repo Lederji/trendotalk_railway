@@ -86,7 +86,7 @@ export default function Circle() {
 
   const sendFriendRequestMutation = useMutation({
     mutationFn: async (userId: number) => {
-      return apiRequest("POST", "/api/friend-requests", { userId });
+      return apiRequest("POST", `/api/friend-requests/${userId}`, {});
     },
     onSuccess: () => {
       toast({
