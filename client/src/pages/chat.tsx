@@ -218,6 +218,11 @@ export default function ChatPage() {
   const markAsReadMutation = useMutation({
     mutationFn: async (chatId: number) => {
       const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        throw new Error('No session ID found');
+      }
+      
+      console.log(`Marking chat ${chatId} as read...`);
       const response = await fetch(`/api/chats/${chatId}/read`, {
         method: 'POST',
         headers: {
@@ -225,15 +230,23 @@ export default function ChatPage() {
           'Content-Type': 'application/json'
         }
       });
-      if (!response.ok) throw new Error('Failed to mark as read');
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Mark as read failed:', response.status, errorText);
+        throw new Error(`Failed to mark as read: ${response.status}`);
+      }
+      
+      console.log(`Chat ${chatId} marked as read successfully`);
       return response.json();
     },
     onSuccess: () => {
+      console.log('Invalidating chats query after mark as read');
       // Invalidate chats list to update unread counts
       queryClient.invalidateQueries({ queryKey: ['/api/chats'] });
     },
     onError: (error) => {
-      console.error('Failed to mark chat as read:', error);
+      console.error('Mark as read mutation failed:', error);
     }
   });
 
@@ -538,10 +551,16 @@ export default function ChatPage() {
 
   // Mark chat as read when component mounts or chatId changes
   useEffect(() => {
-    if (chatId && user?.id) {
+    console.log(`useEffect triggered: chatId=${chatId}, userId=${user?.id}, isLoading=${isLoading}, chat=${!!chat}`);
+    
+    if (chatId && user?.id && chat) {
+      console.log(`✅ Marking chat ${chatId} as read for user ${user.id}`);
+      // Mark as read immediately when chat is loaded
       markAsReadMutation.mutate(Number(chatId));
+    } else {
+      console.log(`❌ Not marking as read: missing chatId(${!!chatId}) or userId(${!!user?.id}) or chat(${!!chat})`);
     }
-  }, [chatId, user?.id]);
+  }, [chatId, user?.id, chat]);
 
   if (isLoading) {
     return (
