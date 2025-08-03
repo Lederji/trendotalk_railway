@@ -518,8 +518,12 @@ export default function ChatPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full text-gray-600 hover:bg-gray-100"
-            onClick={handleVoiceCall}
+            className="rounded-full text-gray-600 hover:bg-gray-100 cursor-pointer"
+            onClick={() => {
+              alert("Button clicked!");
+              handleVoiceCall();
+            }}
+            style={{ pointerEvents: 'auto', zIndex: 10 }}
           >
             <Phone className="w-5 h-5" />
           </Button>
