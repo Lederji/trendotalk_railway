@@ -1,0 +1,106 @@
+line: '1065',
+  routine: 'checkInsertTargets'
+}
+11:52:03 AM [express] POST /api/signup 500 in 550ms :: {"message":"Internal server error"}
+Error getting user by username: error: column "display_name" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getUserByUsername (file:///opt/render/project/src/dist/index.js:696:22)
+    at async file:///opt/render/project/src/dist/index.js:2201:20 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '26',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+11:52:10 AM [express] POST /api/login 401 in 11ms :: {"message":"Invalid credentials"}
+     ==> Detected a new open port HTTP:5000
+Error getting user by username: error: column "display_name" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getUserByUsername (file:///opt/render/project/src/dist/index.js:696:22)
+    at async file:///opt/render/project/src/dist/index.js:2201:20 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '26',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+11:52:35 AM [express] POST /api/login 401 in 13ms :: {"message":"Invalid credentials"}
+Error getting user by username: error: column "display_name" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getUserByUsername (file:///opt/render/project/src/dist/index.js:696:22)
+    at async DatabaseStorage.checkUsernameAvailability (file:///opt/render/project/src/dist/index.js:718:20)
+    at async file:///opt/render/project/src/dist/index.js:2173:27 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '26',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error creating user: error: column "display_name" of relation "users" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.createUser (file:///opt/render/project/src/dist/index.js:706:22)
+    at async file:///opt/render/project/src/dist/index.js:2177:20 {
+  length: 130,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '40',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1065',
+  routine: 'checkInsertTargets'
+}
+11:52:41 AM [express] POST /api/signup 500 in 442ms :: {"message":"Internal server error"}
+     ==> Detected a new open port HTTP:5000
