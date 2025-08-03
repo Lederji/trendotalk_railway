@@ -49,34 +49,44 @@ export default function ProfilePage() {
   const [showDMDialog, setShowDMDialog] = useState(false);
   const [dmMessage, setDmMessage] = useState('');
 
-  const profileUserId = userId ? parseInt(userId) : currentUser?.id;
-  const isOwnProfile = profileUserId === currentUser?.id;
+  // Check if userId is a number or username
+  const isNumericId = userId && !isNaN(parseInt(userId));
+  const profileUserId = isNumericId ? parseInt(userId) : currentUser?.id;
+  const profileUsername = !isNumericId ? userId : null;
+  
+  // Determine if this is the current user's profile
+  const isOwnProfile = isNumericId ? 
+    profileUserId === currentUser?.id : 
+    profileUsername === currentUser?.username;
 
-  // Fetch user profile data - fallback to current user if profile not found
+  // Fetch user profile data - handle both username and userId
   const { data: profile, isLoading } = useQuery({
-    queryKey: [`/api/users/${profileUserId}`],
-    enabled: !!profileUserId,
+    queryKey: profileUsername ? [`/api/users/username/${profileUsername}`] : [`/api/users/${profileUserId}`],
+    enabled: !!(profileUserId || profileUsername),
     retry: false,
   }) as { data: any, isLoading: boolean };
 
   // If profile not found but viewing own profile, use current user data
   const displayProfile = profile || (isOwnProfile ? currentUser : null);
 
+  // Get the actual user ID for other queries (from profile data if we have it)
+  const actualUserId = profile?.id || profileUserId;
+
   // Fetch user posts
   const { data: posts = [] } = useQuery({
-    queryKey: [`/api/users/${profileUserId}/posts`],
-    enabled: !!profileUserId,
+    queryKey: [`/api/users/${actualUserId}/posts`],
+    enabled: !!actualUserId,
   }) as { data: any[] };
 
   // Check if following
   const { data: isFollowing } = useQuery({
-    queryKey: [`/api/users/${profileUserId}/following`],
-    enabled: !!profileUserId && !isOwnProfile,
+    queryKey: [`/api/users/${actualUserId}/following`],
+    enabled: !!actualUserId && !isOwnProfile,
   }) as { data: boolean };
 
   // Fetch followers list
   const { data: followers = [] } = useQuery({
-    queryKey: [`/api/users/${profileUserId}/followers`],
+    queryKey: [`/api/users/${actualUserId}/followers`],
     enabled: !!profileUserId && showFollowersList,
   }) as { data: any[] };
 

@@ -997,6 +997,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user by username
+  app.get('/api/users/username/:username', authenticateUser, async (req: any, res: any) => {
+    try {
+      const username = req.params.username;
+      console.log('✓ USERNAME ROUTE called for username:', username, 'Session userId:', req.user.userId);
+      
+      const user = await storage.getUserByUsername(username);
+      console.log('✓ User found in USERNAME route:', user ? 'Yes' : 'No', user?.username, 'Followers:', user?.followersCount, 'Following:', user?.followingCount);
+      if (!user) {
+        console.log('✓ User not found in USERNAME route, returning 404');
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Check if current user is following this user
+      let isFollowing = false;
+      if (req.user.userId !== user.id) {
+        isFollowing = await storage.isFollowing(req.user.userId, user.id);
+      }
+      
+      // Get user's posts
+      const posts = await storage.getUserPosts(user.id);
+      
+      // Calculate follower counts excluding admin users
+      const followers = await storage.getUserFollowers(user.id);
+      const following = await storage.getUserFollowing(user.id);
+      
+      // Remove sensitive information and add computed fields
+      const { password, ...userProfile } = user;
+      res.json({
+        ...userProfile,
+        followersCount: followers.length,
+        followingCount: following.length,
+        isFollowing,
+        posts
+      });
+    } catch (error) {
+      console.error('Error getting user profile by username:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get user posts
   app.get('/api/users/:userId/posts', authenticateUser, async (req: any, res: any) => {
     try {
