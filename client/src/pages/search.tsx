@@ -12,6 +12,7 @@ import { Navigation } from "@/components/layout/navigation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { NativeAd } from "@/components/ads/native-ad";
 
 // Custom hook for video intersection observer
 function useVideoInView(videoRef: React.RefObject<HTMLVideoElement>) {
@@ -571,29 +572,38 @@ export function SearchPage() {
                   <div>
                     <h3 className="text-sm font-medium text-gray-700 mb-3">Posts</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      {filteredPosts.slice(0, 4).map((post) => (
-                        <div
-                          key={post.id}
-                          onClick={() => handleVideoClick(post.id)}
-                          className="bg-white/70 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
-                        >
-                          <div className="aspect-square">
-                            <img 
-                              src={post.imageUrl} 
-                              alt={post.caption}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="p-3">
-                            <p className="text-sm text-gray-600 line-clamp-2">{post.caption}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Avatar className="h-4 w-4">
-                                <AvatarImage src={post.user.avatar} />
-                                <AvatarFallback className="text-xs">{post.user.username[0]}</AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs text-gray-500">@{post.user.username}</span>
+                      {filteredPosts.slice(0, 4).map((post, index) => (
+                        <div key={post.id}>
+                          <div
+                            onClick={() => handleVideoClick(post.id)}
+                            className="bg-white/70 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
+                          >
+                            <div className="aspect-square">
+                              <img 
+                                src={post.imageUrl} 
+                                alt={post.caption}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="p-3">
+                              <p className="text-sm text-gray-600 line-clamp-2">{post.caption}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Avatar className="h-4 w-4">
+                                  <AvatarImage src={post.user.avatar} />
+                                  <AvatarFallback className="text-xs">{post.user.username[0]}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs text-gray-500">@{post.user.username}</span>
+                              </div>
                             </div>
                           </div>
+                          {/* Show native ad after every 4 posts */}
+                          {(index + 1) % 4 === 0 && (
+                            <NativeAd
+                              slot="9876543210"
+                              className="col-span-2 my-4"
+                              style="instagram-feed"
+                            />
+                          )}
                         </div>
                       ))}
                     </div>
@@ -703,41 +713,50 @@ export function SearchPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
-                    {filteredPosts.map((post) => (
-                      <div
-                        key={post.id}
-                        onClick={() => handleVideoClick(post.id)}
-                        className="bg-white/70 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
-                      >
-                        <div className="aspect-square relative">
-                          <img 
-                            src={post.imageUrl} 
-                            alt={post.caption}
-                            className="w-full h-full object-cover"
-                          />
-                          {post.type === "video" && (
-                            <div className="absolute top-2 right-2">
-                              <Video className="h-5 w-5 text-white drop-shadow-lg" />
+                    {filteredPosts.map((post, index) => (
+                      <div key={post.id}>
+                        <div
+                          onClick={() => handleVideoClick(post.id)}
+                          className="bg-white/70 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-100 hover:bg-white/90 transition-all cursor-pointer"
+                        >
+                          <div className="aspect-square relative">
+                            <img 
+                              src={post.imageUrl} 
+                              alt={post.caption}
+                              className="w-full h-full object-cover"
+                            />
+                            {post.type === "video" && (
+                              <div className="absolute top-2 right-2">
+                                <Video className="h-5 w-5 text-white drop-shadow-lg" />
+                              </div>
+                            )}
+                            <div className="absolute bottom-2 left-2 right-2">
+                              <Badge className="bg-black/50 text-white text-xs">
+                                {post.likesCount} likes
+                              </Badge>
                             </div>
-                          )}
-                          <div className="absolute bottom-2 left-2 right-2">
-                            <Badge className="bg-black/50 text-white text-xs">
-                              {post.likesCount} likes
-                            </Badge>
+                          </div>
+                          <div className="p-3">
+                            <p className="text-sm text-gray-600 line-clamp-2">{post.caption}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage src={post.user.avatar} />
+                                <AvatarFallback className="text-xs">{post.user.username[0].toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs text-gray-500">@{post.user.username}</span>
+                              <span className="text-xs text-gray-400">•</span>
+                              <span className="text-xs text-gray-400">{post.timestamp}</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="p-3">
-                          <p className="text-sm text-gray-600 line-clamp-2">{post.caption}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={post.user.avatar} />
-                              <AvatarFallback className="text-xs">{post.user.username[0].toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs text-gray-500">@{post.user.username}</span>
-                            <span className="text-xs text-gray-400">•</span>
-                            <span className="text-xs text-gray-400">{post.timestamp}</span>
-                          </div>
-                        </div>
+                        {/* Instagram-style native ad every 6 posts */}
+                        {(index + 1) % 6 === 0 && (
+                          <NativeAd
+                            slot="9876543210"
+                            className="col-span-2 my-4"
+                            style="instagram-feed"
+                          />
+                        )}
                       </div>
                     ))}
                   </div>

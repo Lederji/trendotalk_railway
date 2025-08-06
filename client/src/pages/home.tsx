@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Hash } from "lucide-react";
 import { useState } from "react";
 import Auth from "@/pages/auth";
+import { BannerAd, FallbackAd } from "@/components/ads/banner-ad";
 
 const CATEGORIES = [
   { id: "all", label: "Top Trends" },
@@ -140,12 +141,21 @@ export default function HomePage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {filteredPosts.map((post: any) => (
-              <UnifiedPostCard
-                key={post.id}
-                post={post}
-                currentUser={user}
-              />
+            {filteredPosts.map((post: any, index: number) => (
+              <div key={post.id}>
+                <UnifiedPostCard
+                  post={post}
+                  currentUser={user}
+                />
+                {/* Show ad after every 3 posts */}
+                {(index + 1) % 3 === 0 && (
+                  <BannerAd 
+                    slot="1234567890"
+                    format="rectangle"
+                    className="my-6"
+                  />
+                )}
+              </div>
             ))}
           </div>
         )}

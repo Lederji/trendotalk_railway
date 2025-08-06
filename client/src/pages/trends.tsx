@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { CommentModal } from "@/components/post/comment-modal";
 import Auth from "@/pages/auth";
+import { InterstitialAd, useInterstitialAd } from "@/components/ads/interstitial-ad";
 import { useLocation } from "wouter";
 import {
   DropdownMenu,
@@ -40,6 +41,9 @@ export default function Trends() {
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
   const [interestedPosts, setInterestedPosts] = useState<Set<number>>(new Set());
   const [notInterestedPosts, setNotInterestedPosts] = useState<Set<number>>(new Set());
+  
+  // Ad management - show interstitial ad every 5 videos
+  const { showAd, triggerAd, closeAd } = useInterstitialAd(5);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts", "videos"],
@@ -206,6 +210,8 @@ export default function Trends() {
             if (currentPlayingVideo === postId) {
               console.log(`Paused video ${postId} - out of view`);
               setCurrentPlayingVideo(null);
+              // Trigger ad check when video changes (Instagram Reels style)
+              triggerAd();
             }
           }
         });
@@ -808,6 +814,15 @@ export default function Trends() {
         )}
       </div>
 
+      {/* Fullscreen Interstitial Ad - Instagram Reels style */}
+      <InterstitialAd
+        isOpen={showAd}
+        onClose={closeAd}
+        showSkipAfter={5}
+        autoClose={true}
+        autoCloseAfter={10}
+      />
+      
       <Navigation />
       
       {/* Comment Modal */}
