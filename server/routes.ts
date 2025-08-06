@@ -642,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/vibes', authenticateUser, async (req: any, res: any) => {
     try {
-      const vibes = await storage.getActiveVibes();
+      const vibes = await storage.getFriendsVibes(req.user.userId);
       res.json(vibes);
     } catch (error) {
       console.error('Error getting vibes:', error);
