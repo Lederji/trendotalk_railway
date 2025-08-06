@@ -80,10 +80,15 @@ export function PermissionCheck({ onPermissionGranted, onPermissionDenied }: Per
         <p className="text-sm text-gray-600 text-center mb-4">
           Please enable microphone permission in your device settings for TrendoTalk to enable voice calling.
         </p>
-        <Button onClick={checkPermissions} variant="outline" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Check Again
-        </Button>
+        <div className="space-y-2">
+          <Button onClick={checkPermissions} variant="outline" size="sm" className="w-full">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Check Again
+          </Button>
+          <Button onClick={onPermissionGranted} variant="ghost" size="sm" className="w-full">
+            Continue without voice calls
+          </Button>
+        </div>
       </div>
     );
   }
@@ -95,23 +100,35 @@ export function PermissionCheck({ onPermissionGranted, onPermissionDenied }: Per
       <p className="text-sm text-gray-600 text-center mb-4">
         TrendoTalk needs microphone permission to enable voice calls between users.
       </p>
-      <Button 
-        onClick={requestPermissions} 
-        disabled={isRequesting}
-        className="w-full max-w-xs"
-      >
-        {isRequesting ? (
-          <>
-            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            Requesting...
-          </>
-        ) : (
-          <>
-            <Mic className="w-4 h-4 mr-2" />
-            Allow Microphone
-          </>
-        )}
-      </Button>
+      <div className="space-y-3 w-full max-w-xs">
+        <Button 
+          onClick={requestPermissions} 
+          disabled={isRequesting}
+          className="w-full bg-pink-500 hover:bg-pink-600"
+        >
+          {isRequesting ? (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              Requesting...
+            </>
+          ) : (
+            <>
+              <Mic className="w-4 h-4 mr-2" />
+              Allow Microphone
+            </>
+          )}
+        </Button>
+        <Button 
+          onClick={onPermissionGranted} 
+          variant="outline"
+          className="w-full"
+        >
+          Skip for now
+        </Button>
+      </div>
+      <p className="text-xs text-gray-500 text-center mt-2">
+        You can enable permissions later in app settings
+      </p>
     </div>
   );
 }

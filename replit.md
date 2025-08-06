@@ -107,7 +107,9 @@ TrendoTalk is a modern social media application built for high-scale usage (10,0
 
 ## Changelog
 - August 6, 2025: 
-  - LATEST: PLAY STORE READY - Implemented automatic video management system
+  - LATEST: PERMISSION SYSTEM ENHANCED - Fixed mobile app permission handling with user-friendly skip options
+  - Instagram-style offline functionality implemented with IndexedDB caching for complete offline experience
+  - PLAY STORE READY - Implemented automatic video management system
   - Auto video trimming: All videos longer than 60 seconds are automatically trimmed for Play Store compliance
   - Auto video deletion: Videos are automatically deleted after 72 hours to optimize storage costs
   - FFmpeg integration: Professional video processing with compression and optimization
@@ -126,6 +128,9 @@ TrendoTalk is a modern social media application built for high-scale usage (10,0
   - Added comprehensive mobile permission system for microphone/camera access using Capacitor APIs
   - Implemented startup permission check for mobile apps to ensure voice calling works properly
   - Fixed like/dislike/vote button color changes and mutual exclusivity logic
+  - Enhanced permission system: Users can now skip microphone permission and use app without voice calls
+  - Improved offline functionality: Complete Instagram-style caching with previously loaded content available offline
+  - Added "Skip for now" and "Continue without voice calls" options for better user experience
 - July 10, 2025: Database connection issues with Neon PostgreSQL - temporarily switched to in-memory storage. User accounts will need to be recreated until database connection is restored.
 - June 30, 2025: Initial setup
 
