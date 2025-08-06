@@ -8,6 +8,9 @@ import { FloatingCallWidget } from "@/components/call/floating-call-widget";
 import { CallInterface } from "@/components/call/call-interface";
 import { useCallState } from "@/hooks/use-call-state";
 import { useWebRTCCall } from "@/hooks/use-webrtc-call";
+import { PermissionCheck } from "@/components/permissions/permission-check";
+import { Capacitor } from '@capacitor/core';
+import { useState } from "react";
 import HomePage from "@/pages/home";
 import Trends from "@/pages/trends";
 import Create from "@/pages/create";
@@ -106,6 +109,20 @@ function GlobalCallWidget() {
 }
 
 function App() {
+  const [permissionsGranted, setPermissionsGranted] = useState(!Capacitor.isNativePlatform());
+
+  // Show permission check only on mobile platforms
+  if (!permissionsGranted) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <PermissionCheck onPermissionsGranted={() => setPermissionsGranted(true)} />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

@@ -30,6 +30,13 @@ const config: CapacitorConfig = {
       permissions: {
         publicStorage: 'TrendoTalk needs storage access to save and access media files'
       }
+    },
+    // Add microphone permissions for voice calling
+    Device: {
+      permissions: {
+        microphone: 'TrendoTalk needs microphone access for voice calls',
+        camera: 'TrendoTalk needs camera access for video calls'
+      }
     }
   },
   android: {

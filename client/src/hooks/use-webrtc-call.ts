@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCallState } from '@/hooks/use-call-state';
+import { requestMicrophonePermission, showPermissionAlert } from '@/utils/permissions';
 
 export function useWebRTCCall() {
   const {
@@ -138,6 +139,18 @@ export function useWebRTCCall() {
 
   const startCall = useCallback(async (targetUser: { username: string; avatar?: string }) => {
     try {
+      // First check and request microphone permission
+      const hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        toast({
+          title: "Call failed",
+          description: "Could not access microphone or start call",
+          variant: "destructive"
+        });
+        showPermissionAlert();
+        return;
+      }
+
       // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
@@ -203,6 +216,19 @@ export function useWebRTCCall() {
 
   const acceptCall = useCallback(async () => {
     try {
+      // First check and request microphone permission
+      const hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        toast({
+          title: "Call failed",
+          description: "Could not access microphone",
+          variant: "destructive"
+        });
+        showPermissionAlert();
+        declineCall();
+        return;
+      }
+
       // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
