@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { ExternalLink, Star } from 'lucide-react';
 
 interface NativeAdProps {
+  slot?: string;
   className?: string;
-  variant?: 'feed' | 'home' | 'compact';
+  style?: 'instagram-feed' | 'compact' | 'large';
 }
 
 // Mock native ad data - in production, this would come from your ad network
@@ -42,33 +43,32 @@ const mockNativeAds = [
   }
 ];
 
-export function NativeAd({ className = '', variant = 'feed' }: NativeAdProps) {
-  // Randomly select an ad
-  const ad = mockNativeAds[Math.floor(Math.random() * mockNativeAds.length)];
+export function NativeAd({ 
+  slot = "ca-app-pub-5416860171942296/8661604900", 
+  className = '', 
+  style = 'instagram-feed' 
+}: NativeAdProps) {
+  React.useEffect(() => {
+    try {
+      (window.adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch (err) {
+      console.log('AdSense native ad error:', err);
+    }
+  }, []);
 
-  if (variant === 'compact') {
+  if (style === 'compact') {
     return (
       <Card className={`native-ad my-3 border border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 ${className}`}>
         <CardContent className="p-3">
-          <div className="flex items-center space-x-3">
-            <img 
-              src={ad.image} 
-              alt={ad.title}
-              className="w-16 h-16 rounded-lg object-cover"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="text-xs text-gray-500 mb-1 flex items-center">
-                <span>Sponsored</span>
-                <span className="mx-1">•</span>
-                <span>{ad.sponsor}</span>
-              </div>
-              <h4 className="font-semibold text-sm text-gray-900 truncate">{ad.title}</h4>
-              <p className="text-xs text-gray-600 line-clamp-2">{ad.description}</p>
-            </div>
-            <Button size="sm" className="shrink-0 text-xs px-3 py-1">
-              {ad.cta}
-            </Button>
-          </div>
+          <div className="text-center text-sm text-gray-500 mb-2">Advertisement</div>
+          <ins
+            className="adsbygoogle"
+            style={{ display: 'block', height: '100px' }}
+            data-ad-client="ca-app-pub-5416860171942296"
+            data-ad-slot={slot}
+            data-ad-format="fluid"
+            data-layout-key="-6t+ed+2i-1n-4w"
+          />
         </CardContent>
       </Card>
     );
@@ -76,38 +76,16 @@ export function NativeAd({ className = '', variant = 'feed' }: NativeAdProps) {
 
   return (
     <Card className={`native-ad my-4 border border-gray-200 bg-white ${className}`}>
-      <CardContent className="p-0">
-        <div className="relative">
-          <img 
-            src={ad.image} 
-            alt={ad.title}
-            className="w-full h-48 object-cover rounded-t-lg"
-          />
-          <div className="absolute top-2 left-2 bg-yellow-500 text-black px-2 py-1 rounded text-xs font-semibold">
-            AD
-          </div>
-        </div>
-        
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-500">Sponsored by {ad.sponsor}</span>
-            <div className="flex items-center text-xs text-gray-500">
-              <Star className="w-3 h-3 fill-current text-yellow-400 mr-1" />
-              {ad.rating}
-            </div>
-          </div>
-          
-          <h3 className="font-semibold text-lg text-gray-900 mb-2">{ad.title}</h3>
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{ad.description}</p>
-          
-          <div className="flex items-center justify-between">
-            <span className="text-green-600 font-semibold text-sm">{ad.price}</span>
-            <Button size="sm" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
-              <ExternalLink className="w-3 h-3 mr-1" />
-              {ad.cta}
-            </Button>
-          </div>
-        </div>
+      <CardContent className="p-4">
+        <div className="text-center text-sm text-gray-500 mb-3">Advertisement</div>
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block', width: '100%', height: '200px' }}
+          data-ad-client="ca-app-pub-5416860171942296"
+          data-ad-slot={slot}
+          data-ad-format="fluid"
+          data-layout-key="-fb+5w+4e-db+86"
+        />
       </CardContent>
     </Card>
   );

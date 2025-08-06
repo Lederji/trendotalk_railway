@@ -61,16 +61,16 @@ export function InterstitialAd({
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
       {/* Video Ad Placeholder */}
       <div className="relative w-full h-full bg-black flex items-center justify-center">
-        {/* Mock video ad content */}
-        <div className="relative w-full h-full bg-gradient-to-br from-purple-900 via-pink-900 to-red-900 flex items-center justify-center">
-          <div className="text-center text-white">
-            <Play className="w-16 h-16 mx-auto mb-4 opacity-80" />
-            <h2 className="text-2xl font-bold mb-2">TrendoTalk Premium</h2>
-            <p className="text-lg mb-4">Experience ad-free browsing</p>
-            <Button className="bg-white text-black hover:bg-gray-200">
-              Upgrade Now
-            </Button>
-          </div>
+        {/* Real AdMob Interstitial Ad */}
+        <div className="relative w-full h-full bg-black flex items-center justify-center">
+          <ins
+            className="adsbygoogle"
+            style={{ display: 'block', width: '100%', height: '100%' }}
+            data-ad-client="ca-app-pub-5416860171942296"
+            data-ad-slot="ca-app-pub-5416860171942296/3220773633"
+            data-ad-format="interstitial"
+            data-full-width-responsive="true"
+          />
         </div>
 
         {/* Skip button */}

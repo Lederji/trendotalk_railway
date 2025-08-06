@@ -33,7 +33,7 @@ export function BannerAd({ slot, format = 'auto', responsive = true, className =
           width: '100%',
           height: format === 'rectangle' ? '280px' : '90px'
         }}
-        data-ad-client={import.meta.env.VITE_GOOGLE_AD_CLIENT || "ca-pub-test"}
+        data-ad-client="ca-app-pub-5416860171942296"
         data-ad-slot={slot}
         data-ad-format={format}
         data-full-width-responsive={responsive}

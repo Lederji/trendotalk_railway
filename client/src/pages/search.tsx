@@ -599,7 +599,7 @@ export function SearchPage() {
                           {/* Show native ad after every 4 posts */}
                           {(index + 1) % 4 === 0 && (
                             <NativeAd
-                              slot="9876543210"
+                              slot="ca-app-pub-5416860171942296/8661604900"
                               className="col-span-2 my-4"
                               style="instagram-feed"
                             />
@@ -752,7 +752,7 @@ export function SearchPage() {
                         {/* Instagram-style native ad every 6 posts */}
                         {(index + 1) % 6 === 0 && (
                           <NativeAd
-                            slot="9876543210"
+                            slot="ca-app-pub-5416860171942296/8661604900"
                             className="col-span-2 my-4"
                             style="instagram-feed"
                           />

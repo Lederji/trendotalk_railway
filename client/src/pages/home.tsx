@@ -150,7 +150,7 @@ export default function HomePage() {
                 {/* Show ad after every 3 posts */}
                 {(index + 1) % 3 === 0 && (
                   <BannerAd 
-                    slot="1234567890"
+                    slot="ca-app-pub-5416860171942296/5739125765"
                     format="rectangle"
                     className="my-6"
                   />
