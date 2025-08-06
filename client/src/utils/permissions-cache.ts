@@ -53,10 +53,23 @@ export async function requestMicrophonePermission(): Promise<boolean> {
     // Check cache first
     const cached = getCachedPermissions();
     
-    // If we already have granted permission, return true
+    // If we already have granted permission, verify it still works
     if (cached.microphone === 'granted') {
       console.log('Microphone permission already granted (cached)');
-      return true;
+      try {
+        // Quick test to ensure it's still working
+        const { testMicrophoneAccess } = await import('./mobile-webrtc');
+        const isWorking = await testMicrophoneAccess();
+        if (isWorking) {
+          return true;
+        } else {
+          console.log('Cached permission not working, re-requesting...');
+          // Clear cache and try again
+          setCachedPermissions({ microphone: null });
+        }
+      } catch (e) {
+        console.log('Error testing cached permission:', e);
+      }
     }
     
     // If we already asked once and it was denied, don't ask again
@@ -93,9 +106,43 @@ export async function requestMicrophonePermission(): Promise<boolean> {
       }
     }
 
-    // For native mobile platforms
+    // For native mobile platforms - enhanced mobile audio constraints
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Use enhanced mobile audio constraints for better compatibility
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 16000,
+          // Additional mobile-specific settings for Android WebRTC
+          googEchoCancellation: true,
+          googAutoGainControl: true,
+          googNoiseSuppression: true,
+          googTypingNoiseDetection: true
+        }
+      });
+      
+      // Test that we actually got audio tracks and they're live
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        throw new Error('No audio tracks available');
+      }
+      
+      // Verify track is live and ready
+      const track = audioTracks[0];
+      if (track.readyState !== 'live') {
+        throw new Error('Microphone track is not live');
+      }
+      
+      console.log('Got working audio tracks:', {
+        count: audioTracks.length,
+        state: track.readyState,
+        settings: track.getSettings()
+      });
+      
+      // Clean up the test stream
       stream.getTracks().forEach(track => track.stop());
       
       // Cache the granted permission

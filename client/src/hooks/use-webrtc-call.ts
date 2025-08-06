@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCallState } from '@/hooks/use-call-state';
 import { requestMicrophonePermission, showPermissionAlert } from '@/utils/permissions';
+import { getMobileMediaStream, testMicrophoneAccess, getMobilePeerConnectionConfig } from '@/utils/mobile-webrtc';
 
 export function useWebRTCCall() {
   const {
@@ -108,13 +109,7 @@ export function useWebRTCCall() {
   }, [connectWebSocket]);
 
   const createPeerConnection = useCallback(() => {
-    const configuration = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
-    };
-
+    const configuration = getMobilePeerConnectionConfig();
     const peerConnection = new RTCPeerConnection(configuration);
 
     peerConnection.onicecandidate = (event) => {
@@ -151,8 +146,8 @@ export function useWebRTCCall() {
         return;
       }
 
-      // Get user media
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Get mobile-optimized media stream
+      const stream = await getMobileMediaStream();
       localStreamRef.current = stream;
 
       // Create peer connection
@@ -229,8 +224,8 @@ export function useWebRTCCall() {
         return;
       }
 
-      // Get user media
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Get mobile-optimized media stream
+      const stream = await getMobileMediaStream();
       localStreamRef.current = stream;
 
       // Create peer connection
