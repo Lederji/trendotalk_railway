@@ -69,7 +69,8 @@ export function CachedVideo({
         preload="metadata"
       />
       
-      {isCached && (
+      {/* Hide cached indicator for better UX */}
+      {false && isCached && (
         <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded opacity-75">
           Cached
         </div>
