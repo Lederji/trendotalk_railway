@@ -4,6 +4,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
+import { FloatingCallWidget } from "@/components/call/floating-call-widget";
+import { CallInterface } from "@/components/call/call-interface";
+import { useCallState } from "@/hooks/use-call-state";
+import { useWebRTCCall } from "@/hooks/use-webrtc-call";
 import HomePage from "@/pages/home";
 import Trends from "@/pages/trends";
 import Create from "@/pages/create";
@@ -50,6 +54,57 @@ function Router() {
   );
 }
 
+function GlobalCallWidget() {
+  const { 
+    isCallActive, 
+    isIncoming, 
+    callStatus, 
+    caller, 
+    duration, 
+    isMuted, 
+    isMinimized,
+    setMinimized 
+  } = useCallState();
+  
+  const { acceptCall, declineCall, endCall, toggleMute } = useWebRTCCall();
+
+  if (!isCallActive || !caller) {
+    return null;
+  }
+
+  // Show full call interface for incoming calls or when not minimized
+  if ((isIncoming && callStatus === 'incoming') || !isMinimized) {
+    return (
+      <CallInterface
+        isIncoming={isIncoming}
+        caller={caller}
+        onAccept={acceptCall}
+        onDecline={declineCall}
+        onEndCall={endCall}
+        callStatus={callStatus}
+        duration={duration}
+        onToggleMute={toggleMute}
+        isMuted={isMuted}
+        onMinimize={() => setMinimized(true)}
+      />
+    );
+  }
+
+  // Show floating widget for active calls that are minimized
+  return (
+    <FloatingCallWidget
+      caller={caller}
+      onEndCall={endCall}
+      callStatus={callStatus}
+      duration={duration}
+      onToggleMute={toggleMute}
+      isMuted={isMuted}
+      isMinimized={isMinimized}
+      onToggleMinimize={() => setMinimized(false)}
+    />
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -57,6 +112,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <GlobalCallWidget />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

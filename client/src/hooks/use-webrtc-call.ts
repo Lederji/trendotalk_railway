@@ -1,24 +1,24 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-
-interface CallState {
-  isCallActive: boolean;
-  isIncoming: boolean;
-  callStatus: 'incoming' | 'connecting' | 'connected' | 'ended';
-  caller: { username: string; avatar?: string } | null;
-  duration: number;
-  isMuted: boolean;
-}
+import { useCallState } from '@/hooks/use-call-state';
 
 export function useWebRTCCall() {
-  const [callState, setCallState] = useState<CallState>({
-    isCallActive: false,
-    isIncoming: false,
-    callStatus: 'ended',
-    caller: null,
-    duration: 0,
-    isMuted: false
-  });
+  const {
+    isCallActive,
+    isIncoming,
+    callStatus,
+    caller,
+    duration,
+    isMuted,
+    setCallActive,
+    setIncoming,
+    setCallStatus,
+    setCaller,
+    setDuration,
+    setMuted,
+    setMinimized,
+    resetCall
+  } = useCallState();
 
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -160,14 +160,13 @@ export function useWebRTCCall() {
         }));
       }
 
-      setCallState({
-        isCallActive: true,
-        isIncoming: false,
-        callStatus: 'connecting',
-        caller: targetUser,
-        duration: 0,
-        isMuted: false
-      });
+      setCallActive(true);
+      setIncoming(false);
+      setCallStatus('connecting');
+      setCaller(targetUser);
+      setDuration(0);
+      setMuted(false);
+      setMinimized(false);
 
       toast({
         title: "Calling...",
@@ -185,14 +184,13 @@ export function useWebRTCCall() {
   }, [createPeerConnection, toast]);
 
   const handleIncomingCall = useCallback((data: any) => {
-    setCallState({
-      isCallActive: true,
-      isIncoming: true,
-      callStatus: 'incoming',
-      caller: { username: data.caller, avatar: data.callerAvatar },
-      duration: 0,
-      isMuted: false
-    });
+    setCallActive(true);
+    setIncoming(true);
+    setCallStatus('incoming');
+    setCaller({ username: data.caller, avatar: data.callerAvatar });
+    setDuration(0);
+    setMuted(false);
+    setMinimized(false);
 
     // Play incoming call sound
     const audio = new Audio('/sounds/ringtone.mp3');
@@ -226,10 +224,7 @@ export function useWebRTCCall() {
         }));
       }
 
-      setCallState(prev => ({
-        ...prev,
-        callStatus: 'connecting'
-      }));
+      setCallStatus('connecting');
 
     } catch (error) {
       console.error('Error accepting call:', error);
@@ -272,21 +267,14 @@ export function useWebRTCCall() {
     }
 
     // Send end call signal
-    if (wsRef.current && callState.isCallActive) {
+    if (wsRef.current && isCallActive) {
       wsRef.current.send(JSON.stringify({
         type: 'end-call'
       }));
     }
 
-    setCallState({
-      isCallActive: false,
-      isIncoming: false,
-      callStatus: 'ended',
-      caller: null,
-      duration: 0,
-      isMuted: false
-    });
-  }, [callState.isCallActive]);
+    resetCall();
+  }, [isCallActive, resetCall]);
 
   const handleCallAccepted = useCallback(async () => {
     if (!peerConnectionRef.current) return;
@@ -303,10 +291,7 @@ export function useWebRTCCall() {
         }));
       }
 
-      setCallState(prev => ({
-        ...prev,
-        callStatus: 'connecting'
-      }));
+      setCallStatus('connecting');
 
     } catch (error) {
       console.error('Error handling call acceptance:', error);
@@ -346,10 +331,7 @@ export function useWebRTCCall() {
       }
 
       // Start call duration timer
-      setCallState(prev => ({
-        ...prev,
-        callStatus: 'connected'
-      }));
+      setCallStatus('connected');
 
       startCallTimer();
 
@@ -365,10 +347,7 @@ export function useWebRTCCall() {
     try {
       await peerConnectionRef.current.setRemoteDescription(answer);
       
-      setCallState(prev => ({
-        ...prev,
-        callStatus: 'connected'
-      }));
+      setCallStatus('connected');
 
       startCallTimer();
 
@@ -390,12 +369,9 @@ export function useWebRTCCall() {
 
   const startCallTimer = useCallback(() => {
     callDurationRef.current = setInterval(() => {
-      setCallState(prev => ({
-        ...prev,
-        duration: prev.duration + 1
-      }));
+      setDuration(duration + 1);
     }, 1000);
-  }, []);
+  }, [duration, setDuration]);
 
   const toggleMute = useCallback(() => {
     if (localStreamRef.current && peerConnectionRef.current) {
@@ -418,10 +394,7 @@ export function useWebRTCCall() {
         });
         
         // Update call state with mute status
-        setCallState(prev => ({
-          ...prev,
-          isMuted: newMutedState
-        }));
+        setMuted(newMutedState);
         
         return newMutedState;
       }
@@ -430,7 +403,6 @@ export function useWebRTCCall() {
   }, []);
 
   return {
-    callState,
     startCall,
     acceptCall,
     declineCall,

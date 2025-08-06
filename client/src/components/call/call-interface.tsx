@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Minimize2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CallInterfaceProps {
@@ -17,6 +17,7 @@ interface CallInterfaceProps {
   duration?: number;
   onToggleMute?: () => boolean;
   isMuted?: boolean;
+  onMinimize?: () => void;
 }
 
 export function CallInterface({ 
@@ -28,7 +29,8 @@ export function CallInterface({
   callStatus,
   duration = 0,
   onToggleMute,
-  isMuted = false
+  isMuted = false,
+  onMinimize
 }: CallInterfaceProps) {
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const { toast } = useToast();
@@ -63,6 +65,20 @@ export function CallInterface({
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-pink-500 via-purple-600 to-blue-600 flex flex-col items-center justify-center z-50 text-white">
+      {/* Minimize button - only show for active calls, not incoming */}
+      {callStatus !== 'incoming' && onMinimize && (
+        <div className="absolute top-6 left-6">
+          <Button
+            onClick={onMinimize}
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/20 w-10 h-10 p-0"
+          >
+            <Minimize2 className="w-5 h-5" />
+          </Button>
+        </div>
+      )}
+
       {/* Caller Info */}
       <div className="text-center mb-8">
         <Avatar className="w-32 h-32 mx-auto mb-4 ring-4 ring-white/20">
