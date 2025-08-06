@@ -224,8 +224,10 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
     },
     onSuccess: (data) => {
       // Update local state immediately - like/dislike are mutually exclusive
+      console.log('Dislike response:', data);
       setIsDisliked(data.disliked);
       setIsLiked(false); // Always remove like when disliking
+      console.log('After dislike update:', { isDisliked: data.disliked, isLiked: false });
       
       // Update post in cache with new counts
       queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
@@ -253,7 +255,9 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
     },
     onSuccess: (data) => {
       // Update local state immediately
+      console.log('Vote response:', data);
       setIsVoted(data.voted);
+      console.log('After vote update:', { isVoted: data.voted });
       
       // Update post in cache with new vote count
       queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
@@ -281,6 +285,7 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
       alert('Please login to dislike posts');
       return;
     }
+    console.log('Before dislike:', { isDisliked, isLiked });
     dislikeMutation.mutate();
   };
 
@@ -290,6 +295,7 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
       alert('Please login to vote');
       return;
     }
+    console.log('Before vote:', { isVoted });
     voteMutation.mutate();
   };
 
