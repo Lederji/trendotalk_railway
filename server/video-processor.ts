@@ -16,26 +16,51 @@ if (ffmpegInstaller) {
  */
 export async function trimVideo(inputBuffer: Buffer, maxDuration: number = 60): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const tempInputPath = path.join(process.cwd(), 'uploads', `temp_input_${Date.now()}.mp4`);
-    const tempOutputPath = path.join(process.cwd(), 'uploads', `temp_output_${Date.now()}.mp4`);
+    const tempInputPath = path.join(process.cwd(), 'uploads', `temp_input_${Date.now()}_${Math.random().toString(36).substring(7)}.mp4`);
+    const tempOutputPath = path.join(process.cwd(), 'uploads', `temp_output_${Date.now()}_${Math.random().toString(36).substring(7)}.mp4`);
+    
+    console.log(`✂️  Starting FFmpeg trim: ${maxDuration}s max duration`);
+    console.log(`📁 Temp files: ${tempInputPath} -> ${tempOutputPath}`);
     
     try {
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
       // Write buffer to temporary file
       fs.writeFileSync(tempInputPath, inputBuffer);
+      console.log(`💾 Input file written: ${(inputBuffer.length / 1024 / 1024).toFixed(2)}MB`);
       
       ffmpeg(tempInputPath)
-        .duration(maxDuration)
+        // CRITICAL: Force exact duration trimming - take only first N seconds
+        .seekInput(0) // Start from beginning
+        .duration(maxDuration) // Take only maxDuration seconds
         .videoCodec('libx264')
         .audioCodec('aac')
         .format('mp4')
         .outputOptions([
-          '-movflags faststart', // Enable fast start for web playback
-          '-preset fast',        // Fast encoding preset
-          '-crf 23'             // Good quality compression
+          '-movflags faststart',  // Enable fast start for web playback
+          '-preset fast',         // Fast encoding preset
+          '-crf 23',              // Good quality compression
+          '-avoid_negative_ts make_zero', // Handle timing issues
+          '-fflags +genpts'       // Generate presentation timestamps
         ])
+        .on('start', (commandLine) => {
+          console.log(`🎬 FFmpeg command: ${commandLine}`);
+        })
+        .on('progress', (progress) => {
+          console.log(`⏳ Trimming progress: ${progress.percent ? progress.percent.toFixed(1) + '%' : 'processing...'}`);
+        })
         .on('end', () => {
           try {
+            if (!fs.existsSync(tempOutputPath)) {
+              throw new Error(`Output file was not created: ${tempOutputPath}`);
+            }
+            
             const outputBuffer = fs.readFileSync(tempOutputPath);
+            console.log(`✅ Video trimmed successfully: ${(outputBuffer.length / 1024 / 1024).toFixed(2)}MB output`);
             
             // Clean up temporary files
             fs.unlinkSync(tempInputPath);
@@ -43,28 +68,26 @@ export async function trimVideo(inputBuffer: Buffer, maxDuration: number = 60): 
             
             resolve(outputBuffer);
           } catch (error) {
-            console.error('Error reading processed video:', error);
+            console.error('❌ Error reading processed video:', error);
             reject(error);
           }
         })
         .on('error', (err: any) => {
-          console.error('FFmpeg error:', err);
+          console.error('❌ FFmpeg processing failed:', err);
           
           // Clean up temporary files
           try {
-            fs.unlinkSync(tempInputPath);
-            if (fs.existsSync(tempOutputPath)) {
-              fs.unlinkSync(tempOutputPath);
-            }
+            if (fs.existsSync(tempInputPath)) fs.unlinkSync(tempInputPath);
+            if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
           } catch (cleanupError) {
             console.error('Error cleaning up temporary files:', cleanupError);
           }
           
-          reject(err);
+          reject(new Error(`Video trimming failed: ${err.message || err}`));
         })
         .save(tempOutputPath);
     } catch (error) {
-      console.error('Error in trimVideo:', error);
+      console.error('❌ Error setting up video trimming:', error);
       reject(error);
     }
   });
@@ -110,23 +133,37 @@ export async function getVideoDuration(inputBuffer: Buffer): Promise<number> {
  */
 export async function processVideo(inputBuffer: Buffer): Promise<Buffer> {
   try {
+    console.log(`🎬 Processing video (size: ${(inputBuffer.length / 1024 / 1024).toFixed(2)}MB)...`);
+    
     // Get video duration
     const duration = await getVideoDuration(inputBuffer);
-    console.log(`Video duration: ${duration} seconds`);
+    console.log(`📏 Video duration detected: ${duration} seconds`);
     
-    // If video is longer than 60 seconds, trim it
+    // ALWAYS trim videos longer than 60 seconds for Play Store compliance
     if (duration > 60) {
-      console.log(`✂️ Video is ${duration}s long, trimming to 60s for Play Store compliance...`);
-      return await trimVideo(inputBuffer, 60);
+      console.log(`✂️  VIDEO TOO LONG: ${duration}s detected - FORCE TRIMMING to first 60s for Play Store compliance`);
+      const trimmedBuffer = await trimVideo(inputBuffer, 60);
+      console.log(`✅ Video successfully trimmed from ${duration}s to 60s (new size: ${(trimmedBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
+      return trimmedBuffer;
     }
     
     // If video is 60 seconds or less, return as is
-    console.log(`✅ Video is ${duration}s - within 60s limit, uploading without changes`);
+    console.log(`✅ Video duration OK: ${duration}s is within 60s limit - uploading without changes`);
     return inputBuffer;
   } catch (error) {
-    console.error('Error processing video:', error);
-    // If processing fails, return original buffer
-    return inputBuffer;
+    console.error('❌ CRITICAL ERROR processing video - this might allow long videos to upload:', error);
+    
+    // CRITICAL: If duration detection fails, ALWAYS trim to 60s for Play Store compliance
+    try {
+      console.log('🔄 CRITICAL FALLBACK: Duration detection failed - FORCE TRIMMING to 60s for Play Store safety...');
+      const fallbackTrimmed = await trimVideo(inputBuffer, 60);
+      console.log('✅ Fallback trim successful - video guaranteed to be ≤60s');
+      return fallbackTrimmed;
+    } catch (fallbackError) {
+      console.error('❌ COMPLETE FAILURE: Both duration detection AND trimming failed. This video may violate Play Store policy:', fallbackError);
+      // Last resort: still return the original, but this should be investigated
+      throw new Error(`Video processing completely failed: ${fallbackError.message}. Upload blocked for Play Store compliance.`);
+    }
   }
 }
 

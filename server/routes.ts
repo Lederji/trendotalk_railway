@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import { uploadToCloudinary } from "./cloudinary";
 import sgMail from "@sendgrid/mail";
 import { processVideo, startVideoCleanupJob } from "./video-processor";
+import { validateAndProcessVideo, getVideoProcessingMessage } from "./video-validator";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -270,22 +271,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         if (files.video1 && files.video1[0]) {
-          // Process video (trim if longer than 60 seconds)
-          const processedBuffer = await processVideo(files.video1[0].buffer);
+          // MANDATORY: Validate and trim video for Play Store compliance
+          console.log('🎬 Processing admin video 1...');
+          const { buffer: processedBuffer, wasTrimmed } = await validateAndProcessVideo(files.video1[0].buffer);
           const processedFile = { ...files.video1[0], buffer: processedBuffer };
           video1Url = await uploadToCloudinary(processedFile);
+          if (wasTrimmed) console.log('✂️  Admin video 1 trimmed to 60s');
         }
         if (files.video2 && files.video2[0]) {
-          // Process video (trim if longer than 60 seconds)
-          const processedBuffer = await processVideo(files.video2[0].buffer);
+          // MANDATORY: Validate and trim video for Play Store compliance
+          console.log('🎬 Processing admin video 2...');
+          const { buffer: processedBuffer, wasTrimmed } = await validateAndProcessVideo(files.video2[0].buffer);
           const processedFile = { ...files.video2[0], buffer: processedBuffer };
           video2Url = await uploadToCloudinary(processedFile);
+          if (wasTrimmed) console.log('✂️  Admin video 2 trimmed to 60s');
         }
         if (files.video3 && files.video3[0]) {
-          // Process video (trim if longer than 60 seconds)
-          const processedBuffer = await processVideo(files.video3[0].buffer);
+          // MANDATORY: Validate and trim video for Play Store compliance
+          console.log('🎬 Processing admin video 3...');
+          const { buffer: processedBuffer, wasTrimmed } = await validateAndProcessVideo(files.video3[0].buffer);
           const processedFile = { ...files.video3[0], buffer: processedBuffer };
           video3Url = await uploadToCloudinary(processedFile);
+          if (wasTrimmed) console.log('✂️  Admin video 3 trimmed to 60s');
         }
       } catch (uploadError) {
         console.error('Video upload error:', uploadError);
@@ -337,12 +344,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (req.file) {
         try {
-          // If it's a video file, process it first (trim if longer than 60 seconds)
+          // If it's a video file, MANDATORY validation and trimming for Play Store
           if (req.file.mimetype.startsWith('video/')) {
-            console.log('Processing video for regular post...');
-            const processedBuffer = await processVideo(req.file.buffer);
+            console.log('🎬 Processing user video post...');
+            const { buffer: processedBuffer, wasTrimmed } = await validateAndProcessVideo(req.file.buffer);
             const processedFile = { ...req.file, buffer: processedBuffer };
             mediaUrl = await uploadToCloudinary(processedFile);
+            if (wasTrimmed) console.log('✂️  User video post trimmed to 60s for Play Store compliance');
           } else {
             mediaUrl = await uploadToCloudinary(req.file);
           }
@@ -573,13 +581,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.file) {
         try {
           let cloudinaryUrl;
-          // If it's a video file, process it first (trim if longer than 60 seconds)
+          // If it's a video file, MANDATORY validation and trimming for Play Store
           if (req.file.mimetype.startsWith('video')) {
-            console.log('Processing video for story...');
-            const processedBuffer = await processVideo(req.file.buffer);
+            console.log('🎬 Processing story video...');
+            const { buffer: processedBuffer, wasTrimmed } = await validateAndProcessVideo(req.file.buffer);
             const processedFile = { ...req.file, buffer: processedBuffer };
             cloudinaryUrl = await uploadToCloudinary(processedFile);
             videoUrl = cloudinaryUrl;
+            if (wasTrimmed) console.log('✂️  Story video trimmed to 60s for Play Store compliance');
           } else if (req.file.mimetype.startsWith('image')) {
             cloudinaryUrl = await uploadToCloudinary(req.file);
             imageUrl = cloudinaryUrl;
@@ -637,13 +646,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.file) {
         try {
           let cloudinaryUrl;
-          // If it's a video file, process it first (trim if longer than 60 seconds)
+          // If it's a video file, MANDATORY validation and trimming for Play Store
           if (req.file.mimetype.startsWith('video')) {
-            console.log('Processing video for vibe...');
-            const processedBuffer = await processVideo(req.file.buffer);
+            console.log('🎬 Processing vibe video...');
+            const { buffer: processedBuffer, wasTrimmed } = await validateAndProcessVideo(req.file.buffer);
             const processedFile = { ...req.file, buffer: processedBuffer };
             cloudinaryUrl = await uploadToCloudinary(processedFile);
             videoUrl = cloudinaryUrl;
+            if (wasTrimmed) console.log('✂️  Vibe video trimmed to 60s for Play Store compliance');
           } else if (req.file.mimetype.startsWith('image')) {
             cloudinaryUrl = await uploadToCloudinary(req.file);
             imageUrl = cloudinaryUrl;
