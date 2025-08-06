@@ -1,0 +1,203 @@
+Here's a complete script + guide for showing Google AdMob ads in your React Native + Expo app, with 3 ad formats for 3 sections:
+
+
+---
+
+✅ Overview of Your App Ad Placement:
+
+Page	Ad Type	Placement Rule
+
+Home Page	Banner or Native Ad	Every 3–4 posts
+Reels Page	Fullscreen Rewarded or Interstitial Video Ad	Before some reels, or on swipe
+Feeds Page	Native or Banner Image Ad	Every 3–4 posts
+
+
+
+---
+
+✅ Prerequisites (One-Time Setup):
+
+1. Go to AdMob → Add your app → Get your App ID and Ad Unit IDs for:
+
+Banner Ad (feeds, home)
+
+Native Ad (recommended over banner)
+
+Interstitial or Rewarded Video Ad (reels)
+
+
+
+2. Add your app ID in app.json for Expo:
+
+
+
+"expo": {
+  ...
+  "android": {
+    "config": {
+      "googleMobileAdsAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx"
+    }
+  }
+}
+
+3. Install required packages:
+
+
+
+npx expo install expo-ads-admob
+
+
+---
+
+✅ Step-by-Step Script Examples for Each Page
+
+
+---
+
+1. 🏠 Home Page - Show Ad after every 3 posts
+
+import { AdMobBanner } from 'expo-ads-admob';
+
+const HomeScreen = () => {
+  const posts = [...]; // Your array of posts
+  const bannerAdUnitID = 'ca-app-pub-xxx/xxx';
+
+  const renderItems = () => {
+    return posts.map((post, index) => (
+      <View key={index}>
+        <PostCard data={post} />
+        { (index + 1) % 3 === 0 && (
+          <AdMobBanner
+            bannerSize="mediumRectangle"
+            adUnitID={bannerAdUnitID}
+            servePersonalizedAds // true/false based on GDPR
+            onDidFailToReceiveAdWithError={(error) => console.log(error)}
+          />
+        )}
+      </View>
+    ));
+  };
+
+  return (
+    <ScrollView>
+      {renderItems()}
+    </ScrollView>
+  );
+};
+
+
+---
+
+2. 🎬 Reels Page – Fullscreen Interstitial / Rewarded Ad on Swipe or Every X Reels
+
+import { useEffect } from 'react';
+import { AdMobInterstitial } from 'expo-ads-admob';
+
+const ReelsScreen = () => {
+  const interstitialAdUnitID = 'ca-app-pub-xxx/xxx';
+
+  useEffect(() => {
+    AdMobInterstitial.setAdUnitID(interstitialAdUnitID);
+    loadAd();
+
+    return () => {
+      AdMobInterstitial.removeAllListeners();
+    };
+  }, []);
+
+  const loadAd = async () => {
+    await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
+  };
+
+  const showAd = async () => {
+    await AdMobInterstitial.showAdAsync();
+  };
+
+  const onReelSwipe = (index) => {
+    // show ad every 4th reel
+    if (index % 4 === 0) {
+      showAd();
+    }
+  };
+
+  return (
+    <ReelSwiper onSwipe={onReelSwipe} />
+  );
+};
+
+> Replace ReelSwiper with your reel scroll/swipe logic.
+
+
+
+
+---
+
+3. 📡 Feeds Page - Native/Banner Ads Every 3–4 Posts
+
+import { AdMobBanner } from 'expo-ads-admob';
+
+const FeedsScreen = () => {
+  const feeds = [...]; // Feed array
+  const bannerAdUnitID = 'ca-app-pub-xxx/xxx';
+
+  const renderFeeds = () => {
+    return feeds.map((item, index) => (
+      <View key={index}>
+        <FeedCard data={item} />
+        {(index + 1) % 4 === 0 && (
+          <AdMobBanner
+            bannerSize="mediumRectangle"
+            adUnitID={bannerAdUnitID}
+            servePersonalizedAds
+            onDidFailToReceiveAdWithError={(error) => console.log(error)}
+          />
+        )}
+      </View>
+    ));
+  };
+
+  return (
+    <ScrollView>
+      {renderFeeds()}
+    </ScrollView>
+  );
+};
+
+
+---
+
+✅ For Testing on Replit + Expo:
+
+1. Develop your app with this logic.
+
+
+2. Use Expo Go to preview locally.
+
+
+3. Replace test ad units with real AdMob unit IDs before production.
+
+
+4. Build final APK via:
+
+eas build -p android --profile preview
+
+
+
+
+---
+
+🧠 Tips:
+
+Don't overuse ads — respect user experience.
+
+Avoid showing full-screen ads too frequently.
+
+Monitor earnings and user retention through AdMob dashboard.
+
+Make sure your app complies with AdMob policies.
+
+
+
+---
+
+Do you want me to prepare a full working code structure with all 3 ad types integrated in one sample app?
