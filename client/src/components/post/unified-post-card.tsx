@@ -194,15 +194,22 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
       return response.json();
     },
     onSuccess: (data) => {
-      // Update local state immediately
+      // Update local state immediately - like/dislike are mutually exclusive
       setIsLiked(data.liked);
+      setIsDisliked(false); // Always remove dislike when liking
       
-      // Update post in cache with new like count
+      // Update post in cache with new counts
       queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
         if (!oldPosts) return oldPosts;
         return oldPosts.map(p => 
           p.id === post.id 
-            ? { ...p, likesCount: data.likesCount, isLiked: data.liked }
+            ? { 
+                ...p, 
+                likesCount: data.likesCount, 
+                dislikesCount: data.dislikesCount || 0, 
+                isLiked: data.liked,
+                isDisliked: false 
+              }
             : p
         );
       });
@@ -216,15 +223,22 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
       return response.json();
     },
     onSuccess: (data) => {
-      // Update local state immediately
+      // Update local state immediately - like/dislike are mutually exclusive
       setIsDisliked(data.disliked);
+      setIsLiked(false); // Always remove like when disliking
       
-      // Update post in cache with new dislike count
+      // Update post in cache with new counts
       queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
         if (!oldPosts) return oldPosts;
         return oldPosts.map(p => 
           p.id === post.id 
-            ? { ...p, dislikesCount: data.dislikesCount, isDisliked: data.disliked }
+            ? { 
+                ...p, 
+                likesCount: data.likesCount || 0, 
+                dislikesCount: data.dislikesCount, 
+                isLiked: false,
+                isDisliked: data.disliked 
+              }
             : p
         );
       });

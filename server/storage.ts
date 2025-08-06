@@ -548,9 +548,14 @@ export class MemStorage implements IStorage {
     return true;
   }
 
-  async toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number }> {
+  async toggleLike(postId: number, userId: number): Promise<{ liked: boolean; likesCount: number; dislikesCount: number }> {
     const existingLike = Array.from(this.likes.values()).find(
       like => like.postId === postId && like.userId === userId && like.type === 'like'
+    );
+    
+    // Check for existing dislike (for mutual exclusivity)
+    const existingDislike = Array.from(this.likes.values()).find(
+      like => like.postId === postId && like.userId === userId && like.type === 'dislike'
     );
     
     const post = this.posts.get(postId);
@@ -561,8 +566,14 @@ export class MemStorage implements IStorage {
       this.likes.delete(existingLike.id);
       post.likesCount = Math.max(0, post.likesCount - 1);
       this.posts.set(postId, post);
-      return { liked: false, likesCount: post.likesCount };
+      return { liked: false, likesCount: post.likesCount, dislikesCount: post.dislikesCount || 0 };
     } else {
+      // Remove dislike if exists (mutual exclusivity)
+      if (existingDislike) {
+        this.likes.delete(existingDislike.id);
+        post.dislikesCount = Math.max(0, (post.dislikesCount || 0) - 1);
+      }
+      
       // Like
       const like: Like = {
         id: this.currentLikeId++,
@@ -590,13 +601,18 @@ export class MemStorage implements IStorage {
         }
       }
       
-      return { liked: true, likesCount: post.likesCount };
+      return { liked: true, likesCount: post.likesCount, dislikesCount: post.dislikesCount || 0 };
     }
   }
 
-  async toggleDislike(postId: number, userId: number): Promise<{ disliked: boolean; dislikesCount: number }> {
+  async toggleDislike(postId: number, userId: number): Promise<{ disliked: boolean; dislikesCount: number; likesCount: number }> {
     const existingDislike = Array.from(this.likes.values()).find(
       like => like.postId === postId && like.userId === userId && like.type === 'dislike'
+    );
+    
+    // Check for existing like (for mutual exclusivity)
+    const existingLike = Array.from(this.likes.values()).find(
+      like => like.postId === postId && like.userId === userId && like.type === 'like'
     );
     
     const post = this.posts.get(postId);
@@ -606,8 +622,14 @@ export class MemStorage implements IStorage {
       this.likes.delete(existingDislike.id);
       post.dislikesCount = Math.max(0, (post.dislikesCount || 0) - 1);
       this.posts.set(postId, post);
-      return { disliked: false, dislikesCount: post.dislikesCount || 0 };
+      return { disliked: false, dislikesCount: post.dislikesCount || 0, likesCount: post.likesCount };
     } else {
+      // Remove like if exists (mutual exclusivity)
+      if (existingLike) {
+        this.likes.delete(existingLike.id);
+        post.likesCount = Math.max(0, post.likesCount - 1);
+      }
+      
       const dislike: Like = {
         id: this.currentLikeId++,
         postId,
@@ -619,7 +641,7 @@ export class MemStorage implements IStorage {
       
       post.dislikesCount = (post.dislikesCount || 0) + 1;
       this.posts.set(postId, post);
-      return { disliked: true, dislikesCount: post.dislikesCount };
+      return { disliked: true, dislikesCount: post.dislikesCount, likesCount: post.likesCount };
     }
   }
 
@@ -2331,7 +2353,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(posts.id, postId));
           
         const [post] = await db.select().from(posts).where(eq(posts.id, postId));
-        return { liked: false, likesCount: post?.likesCount || 0 };
+        return { liked: false, likesCount: post?.likesCount || 0, dislikesCount: post?.dislikesCount || 0 };
       } else {
         // Remove dislike if exists (mutual exclusivity)
         if (existingDislike) {
@@ -2379,7 +2401,7 @@ export class DatabaseStorage implements IStorage {
           }
         }
         
-        return { liked: true, likesCount: post?.likesCount || 1 };
+        return { liked: true, likesCount: post?.likesCount || 1, dislikesCount: post?.dislikesCount || 0 };
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -2413,7 +2435,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(posts.id, postId));
           
         const [post] = await db.select().from(posts).where(eq(posts.id, postId));
-        return { disliked: false, dislikesCount: post?.dislikesCount || 0 };
+        return { disliked: false, dislikesCount: post?.dislikesCount || 0, likesCount: post?.likesCount || 0 };
       } else {
         // Remove like if exists (mutual exclusivity)
         if (existingLike) {
@@ -2438,7 +2460,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(posts.id, postId));
           
         const [post] = await db.select().from(posts).where(eq(posts.id, postId));
-        return { disliked: true, dislikesCount: post?.dislikesCount || 1 };
+        return { disliked: true, dislikesCount: post?.dislikesCount || 1, likesCount: post?.likesCount || 0 };
       }
     } catch (error) {
       console.error('Error toggling dislike:', error);
