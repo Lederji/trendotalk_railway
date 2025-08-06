@@ -495,31 +495,36 @@ export default function Circle() {
             </div>
           </div>
 
-          {/* Content */}
+          {/* Content - Portrait 9:16 format like Instagram Reels/WhatsApp Status */}
           <div className="relative w-full h-full flex items-center justify-center z-10">
-            {selectedVibe.videoUrl ? (
-              <video
-                src={selectedVibe.videoUrl}
-                className="max-w-full max-h-full object-contain"
-                controls
-                autoPlay
-                loop
-                muted
-              />
-            ) : selectedVibe.imageUrl ? (
-              <img
-                src={selectedVibe.imageUrl}
-                alt="Vibe"
-                className="max-w-full max-h-full object-contain"
-              />
-            ) : (
-              <div className="text-white text-center">
-                <p className="text-lg mb-4">No media content</p>
-                {selectedVibe.title && (
-                  <p className="text-gray-300">{selectedVibe.title}</p>
-                )}
-              </div>
-            )}
+            <div className="relative w-full max-w-[400px] aspect-[9/16] bg-black overflow-hidden rounded-lg">
+              {selectedVibe.videoUrl ? (
+                <video
+                  src={selectedVibe.videoUrl}
+                  className="w-full h-full object-cover"
+                  controls
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              ) : selectedVibe.imageUrl ? (
+                <img
+                  src={selectedVibe.imageUrl}
+                  alt="Vibe"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white text-center">
+                  <div>
+                    <p className="text-lg mb-4">No media content</p>
+                    {selectedVibe.title && (
+                      <p className="text-gray-300">{selectedVibe.title}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Title/Caption */}

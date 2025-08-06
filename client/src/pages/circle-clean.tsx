@@ -255,18 +255,24 @@ export default function Circle() {
                             <p className="text-gray-800 dark:text-gray-200 mb-3">{vibe.text}</p>
                           )}
                           {vibe.imageUrl && (
-                            <img
-                              src={vibe.imageUrl}
-                              alt="Vibe"
-                              className="w-full h-48 object-cover rounded-lg mb-3"
-                            />
+                            <div className="relative w-full aspect-[9/16] bg-black rounded-lg mb-3 overflow-hidden">
+                              <img
+                                src={vibe.imageUrl}
+                                alt="Vibe"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                           )}
                           {vibe.videoUrl && (
-                            <video
-                              src={vibe.videoUrl}
-                              controls
-                              className="w-full h-48 object-cover rounded-lg"
-                            />
+                            <div className="relative w-full aspect-[9/16] bg-black rounded-lg overflow-hidden">
+                              <video
+                                src={vibe.videoUrl}
+                                controls
+                                className="w-full h-full object-cover"
+                                playsInline
+                                loop
+                              />
+                            </div>
                           )}
                         </div>
                       </div>
