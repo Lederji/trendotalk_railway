@@ -106,7 +106,13 @@ TrendoTalk is a modern social media application built for high-scale usage (10,0
 - Real-time features use polling (WebSocket upgrade planned)
 
 ## Changelog
-- August 6, 2025: Updated Circle vibes to be private - vibes are now only visible to friends (users connected via chats). Updated display format to portrait 16:9 aspect ratio (Instagram Reels/WhatsApp Status style).
+- August 6, 2025: 
+  - Fixed critical calling system state management errors - resolved all TypeScript compilation issues
+  - Implemented proper zustand store integration for WhatsApp-style calling functionality
+  - Updated trends page layout - moved username, profile icon, and follow button higher to create space for video titles
+  - Enhanced floating call widget functionality for seamless app navigation during calls
+  - Updated Circle vibes to be private - vibes are now only visible to friends (users connected via chats)
+  - Updated display format to portrait 16:9 aspect ratio (Instagram Reels/WhatsApp Status style)
 - July 10, 2025: Database connection issues with Neon PostgreSQL - temporarily switched to in-memory storage. User accounts will need to be recreated until database connection is restored.
 - June 30, 2025: Initial setup
 

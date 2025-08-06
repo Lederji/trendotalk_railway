@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, Send, Camera, Mic, Paperclip, Image, Phone, Video, MoreVertical, FileText, MapPin, User, Calendar, Headphones, ImageIcon } from "lucide-react";
 import { CallInterface } from "@/components/call/call-interface";
 import { useWebRTCCall } from "@/hooks/use-webrtc-call";
+import { useCallState } from "@/hooks/use-call-state";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ChatPage() {
@@ -34,7 +35,8 @@ export default function ChatPage() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // WebRTC Call functionality
-  const { callState, startCall, acceptCall, declineCall, endCall, toggleMute } = useWebRTCCall();
+  const { startCall, acceptCall, declineCall, endCall, toggleMute } = useWebRTCCall();
+  const { isCallActive, isIncoming, callStatus, caller, duration } = useCallState();
 
   // Fetch chat data
   const { data: chat, isLoading } = useQuery({
@@ -586,15 +588,15 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Call Interface Overlay */}
-      {callState.isCallActive && (
+      {isCallActive && (
         <CallInterface
-          isIncoming={callState.isIncoming}
-          caller={callState.caller!}
+          isIncoming={isIncoming}
+          caller={caller!}
           onAccept={acceptCall}
           onDecline={declineCall}
           onEndCall={endCall}
-          callStatus={callState.callStatus}
-          duration={callState.duration}
+          callStatus={callStatus}
+          duration={duration}
           onToggleMute={toggleMute}
         />
       )}

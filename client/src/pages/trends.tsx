@@ -763,9 +763,9 @@ export default function Trends() {
               </div>
               
               {/* Bottom Content */}
-              <div className="absolute bottom-8 left-4 right-20">
+              <div className="absolute bottom-16 left-4 right-20">
                 {/* Username, Avatar and Follow Button */}
-                <div className="flex items-center space-x-3 mb-3">
+                <div className="flex items-center space-x-3 mb-4">
                   <Avatar className="w-8 h-8 ring-2 ring-white">
                     <AvatarImage src={post.user.avatar} alt={post.user.username} />
                     <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
@@ -791,7 +791,7 @@ export default function Trends() {
                 </div>
                 
                 {/* Caption */}
-                <p className="text-white text-sm mb-2 line-clamp-2">{post.caption}</p>
+                <p className="text-white text-sm mb-3 line-clamp-2">{post.caption}</p>
                 
                 {/* Link indicator */}
                 {post.link && (
