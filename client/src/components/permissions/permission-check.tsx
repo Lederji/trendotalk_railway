@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Camera, AlertCircle } from 'lucide-react';
-import { requestAllCallPermissions, checkMicrophonePermission } from '@/utils/permissions';
+import { requestAllCallPermissions, checkMicrophonePermission, hasRequestedPermissions } from '@/utils/permissions';
 import { useToast } from '@/hooks/use-toast';
 
 interface PermissionCheckProps {
@@ -24,6 +24,14 @@ export function PermissionCheck({ onPermissionsGranted }: PermissionCheckProps) 
     try {
       // Only check permissions on mobile platforms
       if (!Capacitor.isNativePlatform()) {
+        setIsChecking(false);
+        onPermissionsGranted();
+        return;
+      }
+
+      // If permissions have already been requested before, don't ask again
+      if (hasRequestedPermissions()) {
+        console.log('Permissions already requested previously, skipping permission check');
         setIsChecking(false);
         onPermissionsGranted();
         return;

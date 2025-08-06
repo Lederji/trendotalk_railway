@@ -32,6 +32,13 @@ export function InterstitialAd({
       return;
     }
 
+    // Initialize AdSense ad when component opens
+    try {
+      (window.adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch (err) {
+      console.log('AdSense interstitial ad error:', err);
+    }
+
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -67,7 +74,7 @@ export function InterstitialAd({
             className="adsbygoogle"
             style={{ display: 'block', width: '100%', height: '100%' }}
             data-ad-client="ca-app-pub-5416860171942296"
-            data-ad-slot="ca-app-pub-5416860171942296/3220773633"
+            data-ad-slot="3220773633"
             data-ad-format="interstitial"
             data-full-width-responsive="true"
           />

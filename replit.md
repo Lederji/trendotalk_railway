@@ -107,6 +107,11 @@ TrendoTalk is a modern social media application built for high-scale usage (10,0
 
 ## Changelog
 - August 6, 2025: 
+  - LATEST: Integrated real Google AdMob ads across all main pages with user's actual ad IDs
+  - Banner ads on Home page (ca-app-pub-5416860171942296/5739125765) - shows every 3 posts
+  - Interstitial ads on Trends page (ca-app-pub-5416860171942296/3220773633) - shows every 5 videos  
+  - Native ads on Search page (ca-app-pub-5416860171942296/8661604900) - shows every 4-6 posts
+  - Implemented permission caching system to prevent repeated microphone/camera permission requests
   - Fixed critical calling system state management errors - resolved all TypeScript compilation issues
   - Implemented proper zustand store integration for WhatsApp-style calling functionality
   - Updated trends page layout - moved username, profile icon, and follow button higher to create space for video titles
