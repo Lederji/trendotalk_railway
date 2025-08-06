@@ -14,6 +14,7 @@ import fs from "fs";
 import bcrypt from "bcryptjs";
 import { uploadToCloudinary } from "./cloudinary";
 import sgMail from "@sendgrid/mail";
+import { processVideo, startVideoCleanupJob } from "./video-processor";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -108,6 +109,9 @@ async function authenticateUser(req: any, res: any, next: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Start the video cleanup job
+  startVideoCleanupJob();
   
   // Make storage globally accessible for session validation
   (global as any).storage = storage;
@@ -266,13 +270,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         if (files.video1 && files.video1[0]) {
-          video1Url = await uploadToCloudinary(files.video1[0]);
+          // Process video (trim if longer than 60 seconds)
+          const processedBuffer = await processVideo(files.video1[0].buffer);
+          const processedFile = { ...files.video1[0], buffer: processedBuffer };
+          video1Url = await uploadToCloudinary(processedFile);
         }
         if (files.video2 && files.video2[0]) {
-          video2Url = await uploadToCloudinary(files.video2[0]);
+          // Process video (trim if longer than 60 seconds)
+          const processedBuffer = await processVideo(files.video2[0].buffer);
+          const processedFile = { ...files.video2[0], buffer: processedBuffer };
+          video2Url = await uploadToCloudinary(processedFile);
         }
         if (files.video3 && files.video3[0]) {
-          video3Url = await uploadToCloudinary(files.video3[0]);
+          // Process video (trim if longer than 60 seconds)
+          const processedBuffer = await processVideo(files.video3[0].buffer);
+          const processedFile = { ...files.video3[0], buffer: processedBuffer };
+          video3Url = await uploadToCloudinary(processedFile);
         }
       } catch (uploadError) {
         console.error('Video upload error:', uploadError);
@@ -324,7 +337,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (req.file) {
         try {
-          mediaUrl = await uploadToCloudinary(req.file);
+          // If it's a video file, process it first (trim if longer than 60 seconds)
+          if (req.file.mimetype.startsWith('video/')) {
+            console.log('Processing video for regular post...');
+            const processedBuffer = await processVideo(req.file.buffer);
+            const processedFile = { ...req.file, buffer: processedBuffer };
+            mediaUrl = await uploadToCloudinary(processedFile);
+          } else {
+            mediaUrl = await uploadToCloudinary(req.file);
+          }
         } catch (uploadError) {
           console.error('Media upload error:', uploadError);
           return res.status(500).json({ message: 'Media upload failed' });
@@ -551,11 +572,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (req.file) {
         try {
-          const cloudinaryUrl = await uploadToCloudinary(req.file);
-          if (req.file.mimetype.startsWith('image')) {
-            imageUrl = cloudinaryUrl;
-          } else if (req.file.mimetype.startsWith('video')) {
+          let cloudinaryUrl;
+          // If it's a video file, process it first (trim if longer than 60 seconds)
+          if (req.file.mimetype.startsWith('video')) {
+            console.log('Processing video for story...');
+            const processedBuffer = await processVideo(req.file.buffer);
+            const processedFile = { ...req.file, buffer: processedBuffer };
+            cloudinaryUrl = await uploadToCloudinary(processedFile);
             videoUrl = cloudinaryUrl;
+          } else if (req.file.mimetype.startsWith('image')) {
+            cloudinaryUrl = await uploadToCloudinary(req.file);
+            imageUrl = cloudinaryUrl;
           }
         } catch (uploadError) {
           console.error('Cloudinary upload error:', uploadError);
@@ -609,11 +636,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (req.file) {
         try {
-          const cloudinaryUrl = await uploadToCloudinary(req.file);
-          if (req.file.mimetype.startsWith('image')) {
-            imageUrl = cloudinaryUrl;
-          } else if (req.file.mimetype.startsWith('video')) {
+          let cloudinaryUrl;
+          // If it's a video file, process it first (trim if longer than 60 seconds)
+          if (req.file.mimetype.startsWith('video')) {
+            console.log('Processing video for vibe...');
+            const processedBuffer = await processVideo(req.file.buffer);
+            const processedFile = { ...req.file, buffer: processedBuffer };
+            cloudinaryUrl = await uploadToCloudinary(processedFile);
             videoUrl = cloudinaryUrl;
+          } else if (req.file.mimetype.startsWith('image')) {
+            cloudinaryUrl = await uploadToCloudinary(req.file);
+            imageUrl = cloudinaryUrl;
           }
         } catch (uploadError) {
           console.error('Vibe media upload error:', uploadError);
