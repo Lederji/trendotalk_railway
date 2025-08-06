@@ -472,7 +472,7 @@ export default function Trends() {
       </div>
       
       {/* Video Feed */}
-      <div className="h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide" style={{ scrollBehavior: 'smooth', scrollSnapType: 'y mandatory' }}>
+      <div className="h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide pb-nav" style={{ scrollBehavior: 'smooth', scrollSnapType: 'y mandatory' }}>
         {isLoading ? (
           <div className="h-screen flex items-center justify-center">
             <div className="text-white">Loading trends...</div>

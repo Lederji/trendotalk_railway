@@ -79,7 +79,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="px-4 pb-20">
+      <div className="px-4 pb-nav">
         {/* Tags Bar */}
         <Card className="my-4">
           <CardContent className="p-3">
