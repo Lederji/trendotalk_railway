@@ -1,50 +1,37 @@
 #!/bin/bash
 
-echo "🚀 Building TrendoTalk Mobile App with Permissions Fix..."
+# TrendoTalk Mobile Build - Play Store Ready
+echo "🎬 TrendoTalk Mobile Build Started"
 
-# Step 1: Clean and build the web app
-echo "📦 Building web application..."
-npm run build
+# Clean and build
+echo "Building web app..."
+NODE_ENV=production npm run build
 
-# Step 2: Sync with Capacitor
-echo "🔄 Syncing with Capacitor..."
-npx cap sync android
+echo "Syncing Capacitor..."
+npx cap copy
+npx cap sync
 
-# Step 3: Copy updated files
-echo "📋 Copying updated Android configuration..."
-npx cap copy android
-
-# Step 4: Open Android Studio for final build
-echo "🎯 Opening Android Studio for APK build..."
+# Show completion
 echo ""
-echo "📱 MOBILE APP UPDATES COMPLETED:"
-echo "✅ Fixed mobile navigation overlap with safe area handling"
-echo "✅ Added microphone permission requests for voice calls"
-echo "✅ Implemented startup permission check screen"
-echo "✅ Updated button colors and interactions"
-echo "✅ Instagram-style navigation layout"
+echo "✅ Build Complete!"
 echo ""
-echo "🏗️ To complete the mobile app build:"
-echo "1. Android Studio will open with the project"
-echo "2. Build → Generate Signed Bundle/APK"
-echo "3. Follow the signing process"
-echo "4. Upload to Google Play Store"
+echo "🚀 Next Steps for Google Play Store:"
+echo "1. npx cap open android"
+echo "2. Build > Generate Signed Bundle/APK"
+echo "3. Upload to Google Play Console"
 echo ""
-echo "📋 Manual Android Manifest Check:"
-echo "- Microphone permission: ✅ android.permission.RECORD_AUDIO"
-echo "- Camera permission: ✅ android.permission.CAMERA"
-echo "- Internet permission: ✅ android.permission.INTERNET"
+echo "💰 AdMob Revenue Ready:"
+echo "- Banner ads on Home page"
+echo "- Interstitial ads on Trends"
+echo "- Native ads on Search"
+echo ""
+echo "🎯 Auto Video Management:"
+echo "- Videos auto-trimmed to 60 seconds"
+echo "- Videos auto-deleted after 72 hours"
 echo ""
 
-# Open Android Studio if available
-if command -v android-studio &> /dev/null; then
-    echo "Opening Android Studio..."
+# Open Android Studio if requested
+if [ "$1" = "--open" ]; then
+    echo "📱 Opening Android Studio..."
     npx cap open android
-else
-    echo "⚠️ Android Studio not found. Please manually open the android/ folder in Android Studio"
-    echo "📂 Project location: $(pwd)/android"
 fi
-
-echo ""
-echo "🎉 Mobile app is ready for deployment!"
-echo "🔧 Voice calling permissions will now work properly on mobile devices"
