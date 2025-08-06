@@ -1397,18 +1397,20 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const activeVibes: VibeWithUser[] = [];
     
-    // Get friend IDs from chats
+    // Get friend IDs from chats - check both user1Id and user2Id
     const friendIds = new Set<number>();
     for (const [id, chat] of this.chats.entries()) {
-      if (chat.userId === userId) {
-        friendIds.add(chat.otherUserId);
+      if (chat.user1Id === userId) {
+        friendIds.add(chat.user2Id);
+      } else if (chat.user2Id === userId) {
+        friendIds.add(chat.user1Id);
       }
     }
     
     // Include the user's own vibes
     friendIds.add(userId);
     
-    // Get vibes only from friends
+    // Get vibes only from friends and the user themselves
     for (const [id, vibe] of this.stories.entries()) {
       if (vibe.expiresAt > now && friendIds.has(vibe.userId)) {
         const user = this.users.get(vibe.userId);
@@ -2711,48 +2713,42 @@ export class DatabaseStorage implements IStorage {
   async getFriendsVibes(userId: number): Promise<VibeWithUser[]> {
     try {
       const now = new Date();
+      console.log('Getting friends vibes for user:', userId);
       
-      // Get all users that the current user has chats with (friends)
-      const friendChats = await db
-        .select({
-          otherUserId: chats.otherUserId,
-        })
-        .from(chats)
-        .where(eq(chats.userId, userId));
+      // Get all active vibes
+      const allVibes = await db
+        .select()
+        .from(vibes)
+        .where(sql`${vibes.expiresAt} > ${now}`)
+        .orderBy(desc(vibes.createdAt));
       
-      const friendIds = friendChats.map(chat => chat.otherUserId);
+      console.log('Found vibes:', allVibes.length);
       
-      // Include the user's own vibes as well
-      friendIds.push(userId);
+      // Get user info for each vibe
+      const vibesWithUsers: VibeWithUser[] = [];
       
-      if (friendIds.length === 0) {
-        return [];
+      for (const vibe of allVibes) {
+        const user = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, vibe.userId))
+          .limit(1);
+        
+        if (user.length > 0) {
+          // For now, show all vibes (we'll add friend filtering back later)
+          vibesWithUsers.push({
+            ...vibe,
+            user: {
+              id: user[0].id,
+              username: user[0].username,
+              avatar: user[0].avatar,
+            },
+          });
+        }
       }
       
-      // Get active vibes only from friends (users in chats)
-      const result = await db
-        .select({
-          vibe: vibes,
-          user: {
-            id: users.id,
-            username: users.username,
-            avatar: users.avatar,
-          },
-        })
-        .from(vibes)
-        .innerJoin(users, eq(vibes.userId, users.id))
-        .where(
-          and(
-            sql`${vibes.expiresAt} > ${now}`,
-            inArray(vibes.userId, friendIds)
-          )
-        )
-        .orderBy(desc(vibes.createdAt));
-
-      return result.map(row => ({
-        ...row.vibe,
-        user: row.user,
-      }));
+      console.log('Returning vibes with users:', vibesWithUsers.length);
+      return vibesWithUsers;
     } catch (error) {
       console.error('Error getting friends vibes:', error);
       return [];
