@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown, MessageCircle, ExternalLink, ChevronDown, ChevronUp, Play, Pause, VolumeX, Volume2, Share2, Edit, Trash2 } from "lucide-react";
@@ -49,6 +49,12 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
   const [isMuted, setIsMuted] = useState(true);
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  
+  // Track interaction states
+  const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
+  const [isVoted, setIsVoted] = useState(false);
+  
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const singleVideoRef = useRef<HTMLVideoElement | null>(null);
   
@@ -70,6 +76,40 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
   // Determine if this is an admin video post or regular post
   const isAdminVideoPost = post.isAdminPost && (post.video1Url || post.video2Url || post.video3Url);
   const isRegularPost = !post.isAdminPost;
+  
+  // Initialize interaction states from post data
+  useEffect(() => {
+    setIsLiked((post as any).isLiked || false);
+    setIsDisliked((post as any).isDisliked || false);
+    setIsVoted((post as any).isVoted || false);
+  }, [post]);
+
+  // Auto-start videos when component mounts
+  useEffect(() => {
+    const startAutoplay = () => {
+      if (isAdminVideoPost && videoRefs.current[0]) {
+        // Auto-start first admin video muted
+        const firstVideo = videoRefs.current[0];
+        firstVideo.muted = true;
+        firstVideo.play().catch(() => {
+          // Autoplay failed, which is normal on some browsers
+        });
+        setActiveVideo(0);
+        setIsPlaying(true);
+      } else if (singleVideoRef.current) {
+        // Auto-start regular video muted
+        const video = singleVideoRef.current;
+        video.muted = true;
+        video.play().catch(() => {
+          // Autoplay failed, which is normal on some browsers
+        });
+        setIsPlaying(true);
+      }
+    };
+    
+    // Small delay to ensure video elements are ready
+    setTimeout(startAutoplay, 200);
+  }, [isAdminVideoPost]);
 
   // For admin video posts
   const adminVideos = [post.video1Url, post.video2Url, post.video3Url].filter(Boolean);
@@ -154,6 +194,9 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
       return response.json();
     },
     onSuccess: (data) => {
+      // Update local state immediately
+      setIsLiked(data.liked);
+      
       // Update post in cache with new like count
       queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
         if (!oldPosts) return oldPosts;
@@ -173,6 +216,9 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
       return response.json();
     },
     onSuccess: (data) => {
+      // Update local state immediately
+      setIsDisliked(data.disliked);
+      
       // Update post in cache with new dislike count
       queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
         if (!oldPosts) return oldPosts;
@@ -192,6 +238,9 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
       return response.json();
     },
     onSuccess: (data) => {
+      // Update local state immediately
+      setIsVoted(data.voted);
+      
       // Update post in cache with new vote count
       queryClient.setQueryData(["/api/posts"], (oldPosts: any[]) => {
         if (!oldPosts) return oldPosts;
@@ -301,7 +350,7 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
                       className="w-full h-full object-cover cursor-pointer"
                       loop
                       muted
-                      autoPlay={false}
+                      autoPlay
                       playsInline
                       onClick={() => handleAdminVideoClick(index)}
                     />
@@ -381,9 +430,14 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
                   size="sm" 
                   onClick={handleLike}
                   disabled={likeMutation.isPending}
-                  className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs"
+                  className={cn(
+                    "flex items-center space-x-1 text-xs transition-colors",
+                    isLiked 
+                      ? "bg-green-100 text-green-700 hover:bg-green-150" 
+                      : "hover:bg-green-50 hover:text-green-600"
+                  )}
                 >
-                  <ThumbsUp className="w-3 h-3" />
+                  <ThumbsUp className={cn("w-3 h-3", isLiked && "fill-current")} />
                   <span>{post.likesCount || 0}</span>
                 </Button>
                 <Button 
@@ -391,9 +445,14 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
                   size="sm" 
                   onClick={handleDislike}
                   disabled={dislikeMutation.isPending}
-                  className="flex items-center space-x-1 hover:bg-red-50 hover:text-red-600 text-xs"
+                  className={cn(
+                    "flex items-center space-x-1 text-xs transition-colors",
+                    isDisliked 
+                      ? "bg-red-100 text-red-700 hover:bg-red-150" 
+                      : "hover:bg-red-50 hover:text-red-600"
+                  )}
                 >
-                  <ThumbsDown className="w-3 h-3" />
+                  <ThumbsDown className={cn("w-3 h-3", isDisliked && "fill-current")} />
                   <span>{post.dislikesCount || 0}</span>
                 </Button>
                 <Button 
@@ -401,7 +460,12 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
                   size="sm" 
                   onClick={handleVote}
                   disabled={voteMutation.isPending}
-                  className="flex items-center space-x-1 hover:bg-blue-50 hover:text-blue-600 text-xs"
+                  className={cn(
+                    "flex items-center space-x-1 text-xs transition-colors",
+                    isVoted 
+                      ? "bg-blue-100 text-blue-700 hover:bg-blue-150" 
+                      : "hover:bg-blue-50 hover:text-blue-600"
+                  )}
                 >
                   <span>vote</span>
                   <span>{post.votesCount || 0}</span>
@@ -543,8 +607,19 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
         {/* Interaction Line: Likes, Link, Share */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" className="flex items-center space-x-1 hover:bg-green-50 hover:text-green-600 text-xs">
-              <ThumbsUp className="w-3 h-3" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLike}
+              disabled={likeMutation.isPending}
+              className={cn(
+                "flex items-center space-x-1 text-xs transition-colors",
+                isLiked 
+                  ? "bg-green-100 text-green-700 hover:bg-green-150" 
+                  : "hover:bg-green-50 hover:text-green-600"
+              )}
+            >
+              <ThumbsUp className={cn("w-3 h-3", isLiked && "fill-current")} />
               <span>{post.likesCount || 0}</span>
             </Button>
           </div>
