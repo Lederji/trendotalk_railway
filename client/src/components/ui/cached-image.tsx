@@ -36,12 +36,7 @@ export function CachedImage({ src, alt, className, fallbackClassName }: CachedIm
         className={className}
         loading="lazy"
       />
-      {/* Hide cached indicator for better UX */}
-      {false && isCached && (
-        <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded opacity-75">
-          Cached
-        </div>
-      )}
+
     </div>
   );
 }

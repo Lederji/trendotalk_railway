@@ -111,24 +111,12 @@ function GlobalCallWidget() {
 }
 
 function App() {
-  const [permissionsGranted, setPermissionsGranted] = useState(!Capacitor.isNativePlatform());
-
   // Initialize offline cache on app start
   useEffect(() => {
     offlineCache.init();
   }, []);
 
-  // Show permission check only on mobile platforms
-  if (!permissionsGranted) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <PermissionCheck onPermissionsGranted={() => setPermissionsGranted(true)} />
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  }
+  // Skip permission check - allow users to access app directly
 
   return (
     <QueryClientProvider client={queryClient}>
