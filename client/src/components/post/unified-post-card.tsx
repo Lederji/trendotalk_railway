@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown, MessageCircle, ExternalLink, ChevronDown, ChevronUp, Play, Pause, VolumeX, Volume2, Share2, Edit, Trash2 } from "lucide-react";
+import { CachedImage } from "@/components/ui/cached-image";
+import { CachedVideo } from "@/components/ui/cached-video";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -358,19 +360,13 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
               <div className={cn("grid h-full", getVideoLayout())}>
                 {adminVideos.map((videoUrl, index) => (
                   <div key={`video-${post.id}-${index}`} className="relative h-full overflow-hidden">
-                    <video
-                      ref={(el) => {
-                        videoRefs.current[index] = el;
-                        if (el) {
-                          // Collect video refs when mounted
-                          setTimeout(collectVideoRefs, 100);
-                        }
-                      }}
+                    <CachedVideo
                       src={videoUrl || ""}
                       className="w-full h-full object-cover cursor-pointer"
-                      loop
-                      muted
-                      autoPlay
+                      controls={false}
+                      autoPlay={false}
+                      muted={true}
+                      loop={true}
                       playsInline
                       onClick={() => handleAdminVideoClick(index)}
                     />
@@ -565,21 +561,13 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
             <>
               {post.videoUrl ? (
                 <div className="relative h-full overflow-hidden">
-                  <video
-                    ref={(el) => {
-                      singleVideoRef.current = el;
-                      if (el) {
-                        // Collect video refs when mounted
-                        setTimeout(collectVideoRefs, 100);
-                      }
-                    }}
+                  <CachedVideo
                     src={post.videoUrl}
                     className="w-full h-full object-cover cursor-pointer"
-                    loop
-                    muted
-                    autoPlay
-                    playsInline
-                    onClick={handleRegularVideoClick}
+                    controls={false}
+                    autoPlay={false}
+                    muted={true}
+                    loop={true}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                     <div className="text-white pointer-events-auto">
@@ -592,7 +580,7 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
                   </div>
                 </div>
               ) : (
-                <img
+                <CachedImage
                   src={post.imageUrl}
                   alt="Post content"
                   className="w-full h-full object-cover"

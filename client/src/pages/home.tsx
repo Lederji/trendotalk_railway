@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useOfflineQuery } from "@/hooks/use-offline-query";
 import { Header } from "@/components/layout/header";
 import { Navigation } from "@/components/layout/navigation";
 import { UnifiedPostCard } from "@/components/post/unified-post-card";
@@ -25,18 +26,11 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
 
-  const { data: allPosts = [], isLoading } = useQuery({
-    queryKey: ["/api/posts", "admin-only"],
-    queryFn: async () => {
-      const response = await fetch("/api/posts?adminOnly=true", {
-        headers: isAuthenticated ? {
-          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
-        } : {}
-      });
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      return response.json();
-    },
-  });
+  // Use offline-capable query for posts
+  const { data: allPosts = [], isLoading, isOffline, isCached } = useOfflineQuery(
+    ["/api/posts", "admin-only"],
+    "post"
+  );
 
   // Filter admin posts based on active category
   const filteredPosts = allPosts.filter((post: any) => {

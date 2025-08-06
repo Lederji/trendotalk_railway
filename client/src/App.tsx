@@ -9,8 +9,10 @@ import { CallInterface } from "@/components/call/call-interface";
 import { useCallState } from "@/hooks/use-call-state";
 import { useWebRTCCall } from "@/hooks/use-webrtc-call";
 import { PermissionCheck } from "@/components/permissions/permission-check";
+import { OfflineIndicator } from "@/components/ui/offline-indicator";
 import { Capacitor } from '@capacitor/core';
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { offlineCache } from "@/lib/offline-cache";
 import HomePage from "@/pages/home";
 import Trends from "@/pages/trends";
 import Create from "@/pages/create";
@@ -111,6 +113,11 @@ function GlobalCallWidget() {
 function App() {
   const [permissionsGranted, setPermissionsGranted] = useState(!Capacitor.isNativePlatform());
 
+  // Initialize offline cache on app start
+  useEffect(() => {
+    offlineCache.init();
+  }, []);
+
   // Show permission check only on mobile platforms
   if (!permissionsGranted) {
     return (
@@ -127,6 +134,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
+          <OfflineIndicator />
           <Toaster />
           <Router />
           <GlobalCallWidget />

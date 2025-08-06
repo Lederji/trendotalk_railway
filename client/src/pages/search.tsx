@@ -8,6 +8,8 @@ import { Search, Hash, Users, Image, Video, Bookmark, Heart, MessageCircle, Volu
 import { DMButton } from "@/components/ui/dm-button";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useOfflineQuery } from "@/hooks/use-offline-query";
+import { CachedImage } from "@/components/ui/cached-image";
 import { Navigation } from "@/components/layout/navigation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiRequest } from "@/lib/queryClient";
