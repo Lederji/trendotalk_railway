@@ -43,7 +43,7 @@ const setupGlobalObserver = () => {
         
         if (!videoElement || !videoId) return;
         
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.75) {
+        if (entry.isIntersecting) {
           // Pause all other videos first (EXACTLY like trends page)
           globalVideoRefs.forEach((v, id) => {
             if (id !== videoId && v) {
@@ -66,13 +66,16 @@ const setupGlobalObserver = () => {
           videoElement
             .play()
             .then(() => {
-              console.log(`Autoplay: video ${videoId} ${videoElement.muted ? '(muted)' : '(with sound)'}`);
+              console.log(`Home page autoplay: video ${videoId} ${videoElement.muted ? '(muted)' : '(with sound)'}`);
             })
             .catch((err) => {
+              // Fallback to muted autoplay
               console.log(`Autoplay blocked for video ${videoId}, trying muted:`, err);
               videoElement.muted = true;
               videoElement.volume = 0;
-              videoElement.play().catch(console.error);
+              videoElement.play().catch((retryErr) => {
+                console.warn(`Failed to autoplay video ${videoId} even muted:`, retryErr);
+              });
             });
         } else {
           // Pause and reset when out of view (EXACTLY like trends page)
@@ -89,7 +92,7 @@ const setupGlobalObserver = () => {
       });
     },
     {
-      threshold: 0.75, // Same as trends page
+      threshold: 0.75, // Only when 75% is visible (Instagram-like)
       rootMargin: '0px'
     }
   );
@@ -123,13 +126,14 @@ export function CachedVideo({
       containerRef.current.setAttribute('data-video-id', videoId.current);
       
       // Observe the container
-      if (globalObserver) {
+      if (globalObserver && containerRef.current) {
         globalObserver.observe(containerRef.current);
+        console.log(`Registered video for observation: ${videoId.current}`);
       }
     }
 
     return () => {
-      // Cleanup
+      // Cleanup - exactly like trends page
       if (containerRef.current && globalObserver) {
         globalObserver.unobserve(containerRef.current);
       }
@@ -223,15 +227,24 @@ export function CachedVideo({
         loop={loop}
         onClick={toggleGlobalMute}
         onLoadedData={() => {
-          // Video ready - observer will handle autoplay, just set initial state
+          // Ensure video is ready for Instagram-style autoplay
           if (videoRef.current) {
-            videoRef.current.muted = true; // Start muted, observer will adjust
+            videoRef.current.muted = true;
             videoRef.current.playsInline = true;
             videoRef.current.loop = true;
           }
         }}
         onCanPlay={() => {
-          // Video can play - observer will handle when to actually play
+          // Additional trigger when video can play
+          const video = videoRef.current;
+          if (video && currentPlayingVideo === videoId.current && video.paused) {
+            const globalUnmuted = getGlobalUnmuteState();
+            video.muted = !globalUnmuted;
+            video.play().catch(() => {
+              video.muted = true;
+              video.play().catch(console.error);
+            });
+          }
         }}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
