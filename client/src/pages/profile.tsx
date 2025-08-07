@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Navigation } from "@/components/layout/navigation";
-import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp, User, Clock, HelpCircle, Info, LogOut, MessageSquare, CheckCircle, AtSign, Megaphone, Send, MoreHorizontal, Flag, UserX } from "lucide-react";
+import { Settings, Grid, Heart, MessageCircle, Share, Edit, Camera, Users, UserPlus, UserMinus, FileText, Menu, TrendingUp, User, Clock, HelpCircle, Info, LogOut, MessageSquare, CheckCircle, AtSign, Megaphone, Send, MoreHorizontal, Flag, UserX, Shield } from "lucide-react";
 import { DMButton } from "@/components/ui/dm-button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -406,6 +406,14 @@ export default function ProfilePage() {
               <DropdownMenuItem onClick={() => {/* Help and Support */}}>
                 <HelpCircle className="mr-2 h-4 w-4" />
                 <span>Help and Support</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/privacy-policy')}>
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Privacy Policy</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/terms-conditions')}>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Terms & Conditions</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {/* About */}}>
                 <Info className="mr-2 h-4 w-4" />

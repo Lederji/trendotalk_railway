@@ -107,7 +107,7 @@ TrendoTalk is a modern social media application built for high-scale usage (10,0
 
 ## Changelog
 - August 6, 2025: 
-  - LATEST: PERMISSION SYSTEM REMOVED - Completely eliminated permission blocks, users can now access app and use voice calls directly
+  - LATEST: LEGAL PAGES ADDED - Added Privacy Policy and Terms & Conditions pages to profile menu with complete legal documentation
   - Instagram-style offline functionality implemented with IndexedDB caching for complete offline experience
   - PLAY STORE READY - Implemented automatic video management system
   - Auto video trimming: All videos longer than 60 seconds are automatically trimmed for Play Store compliance
@@ -132,6 +132,8 @@ TrendoTalk is a modern social media application built for high-scale usage (10,0
   - CACHED INDICATORS REMOVED: Completely removed "Cached" text from all videos and images for clean UI
   - Direct voice calling access: Users can make calls in chat without any permission prompts
   - Enhanced user experience: No barriers or confusing permission screens
+  - Added comprehensive Privacy Policy and Terms & Conditions pages accessible from profile menu
+  - Legal documentation includes data collection, usage policies, user conduct rules, and contact information
 - July 10, 2025: Database connection issues with Neon PostgreSQL - temporarily switched to in-memory storage. User accounts will need to be recreated until database connection is restored.
 - June 30, 2025: Initial setup
 

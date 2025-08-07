@@ -30,6 +30,8 @@ import AccountCenter from "@/pages/account-center";
 import CVPage from "@/pages/cv";
 import { Messages } from "@/pages/messages";
 import BannedPage from "@/pages/banned";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import TermsConditions from "@/pages/terms-conditions";
 
 function Router() {
   return (
@@ -50,6 +52,8 @@ function Router() {
       <Route path="/account-center" component={AccountCenter} />
       <Route path="/cv" component={CVPage} />
       <Route path="/cv/:userId" component={CVPage} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-conditions" component={TermsConditions} />
       <Route path="/auth" component={Auth} />
       <Route path="/login" component={Auth} />
       <Route path="/banned" component={BannedPage} />
