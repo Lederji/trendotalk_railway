@@ -47,6 +47,8 @@ export function CachedVideo({
   const { src: cachedSrc, isLoading, isCached } = useCachedMedia(src);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showingThumbnail, setShowingThumbnail] = useState(showThumbnail);
+  const [seekTime, setSeekTime] = useState<number | null>(null);
+  const [showSeekPreview, setShowSeekPreview] = useState(false);
   const { src: cachedThumbnailSrc } = useCachedMedia(thumbnailUrl);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -198,12 +200,52 @@ export function CachedVideo({
     }
   };
 
-  // Simple click handler for regular videos
-  const handleVideoClick = () => {
-    if (showThumbnail) {
+  // Instagram Reels-style seeking by tapping left/right
+  const handleVideoSeek = (e: React.MouseEvent) => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    const rect = video.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const clickPosition = x / width; // 0 to 1
+    
+    // Calculate seek time based on click position
+    const duration = video.duration || 0;
+    const newTime = clickPosition * duration;
+    
+    // Seek to the new time
+    video.currentTime = newTime;
+    
+    // Show seek preview briefly
+    setSeekTime(newTime);
+    setShowSeekPreview(true);
+    setTimeout(() => setShowSeekPreview(false), 1000);
+    
+    console.log(`Seeking to ${newTime.toFixed(1)}s (${Math.round(clickPosition * 100)}% through video)`);
+  };
+
+  // Handle video click - play/seek or mute toggle
+  const handleVideoClick = (e: React.MouseEvent) => {
+    if (showThumbnail && showingThumbnail) {
       handleThumbnailClick();
+    } else if (isPlaying) {
+      // If playing, handle seeking like Instagram Reels
+      handleVideoSeek(e);
     } else {
-      toggleVideoMute();
+      // If paused, start playing with audio
+      const video = videoRef.current;
+      if (video) {
+        video.muted = false;
+        video.volume = 1;
+        videoMuteStates.set(videoId.current, false);
+        setGlobalUnmuteState(true);
+        video.play().catch((err) => {
+          console.log('Failed to play with audio, trying muted:', err);
+          video.muted = true;
+          video.play().catch(console.error);
+        });
+      }
     }
   };
 
@@ -230,14 +272,28 @@ export function CachedVideo({
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Show thumbnail if specified and not playing yet */}
-      {showThumbnail && showingThumbnail && cachedThumbnailSrc ? (
+      {/* Show thumbnail or video frame if not playing */}
+      {showThumbnail && showingThumbnail ? (
         <div className="relative cursor-pointer" onClick={handleThumbnailClick}>
-          <img
-            src={cachedThumbnailSrc}
-            alt="Video thumbnail"
-            className={cn(className, "w-full h-full object-cover")}
-          />
+          {cachedThumbnailSrc ? (
+            // Custom thumbnail uploaded by admin
+            <img
+              src={cachedThumbnailSrc}
+              alt="Video thumbnail"
+              className={cn(className, "w-full h-full object-cover")}
+            />
+          ) : (
+            // Show video frame as thumbnail (first frame)
+            <video
+              ref={videoRef}
+              src={cachedSrc}
+              className={cn(className, "w-full h-full object-cover")}
+              muted
+              preload="metadata"
+              playsInline
+              style={{ pointerEvents: 'none' }}
+            />
+          )}
           {/* Play button overlay */}
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-40 transition-opacity">
             <div className="bg-white bg-opacity-90 rounded-full p-4 shadow-lg">
@@ -280,6 +336,13 @@ export function CachedVideo({
               }
             }}
             onClick={handleVideoClick}
+            onLoadedMetadata={() => {
+              // When metadata is loaded, we can show first frame
+              const video = videoRef.current;
+              if (video && showThumbnail) {
+                video.currentTime = 0.1; // Show first frame
+              }
+            }}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
           />
@@ -300,6 +363,13 @@ export function CachedVideo({
                 <Volume2 className="w-5 h-5 text-white" />
               )}
             </button>
+          )}
+          
+          {/* Instagram Reels-style seek preview */}
+          {showSeekPreview && seekTime !== null && (
+            <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm">
+              {Math.floor(seekTime / 60)}:{String(Math.floor(seekTime % 60)).padStart(2, '0')}
+            </div>
           )}
         </>
       )}
