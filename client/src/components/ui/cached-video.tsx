@@ -1,7 +1,7 @@
 import { useCachedMedia } from '@/hooks/use-offline-query';
 import { cn } from '@/lib/utils';
-import { Play, Loader2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { Play, Loader2, Volume2, VolumeX } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
 
 interface CachedVideoProps {
   src: string | undefined;
@@ -11,6 +11,20 @@ interface CachedVideoProps {
   muted?: boolean;
   loop?: boolean;
 }
+
+// Global unmute state - once user unmutes, all videos play unmuted
+const getGlobalUnmuteState = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('videoUnmuted') === 'true';
+  }
+  return false;
+};
+
+const setGlobalUnmuteState = (unmuted: boolean) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('videoUnmuted', unmuted.toString());
+  }
+};
 
 export function CachedVideo({ 
   src, 
@@ -22,8 +36,20 @@ export function CachedVideo({
 }: CachedVideoProps) {
   const { src: cachedSrc, isLoading, isCached } = useCachedMedia(src);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
-  const [isMuted, setIsMuted] = useState(muted);
+  const [globalUnmuted, setGlobalUnmuted] = useState(getGlobalUnmuteState());
+  const [isMuted, setIsMuted] = useState(!globalUnmuted); // If globally unmuted, start unmuted
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Sync with global unmute state on mount
+  useEffect(() => {
+    const globalState = getGlobalUnmuteState();
+    setGlobalUnmuted(globalState);
+    setIsMuted(!globalState);
+    
+    if (videoRef.current) {
+      videoRef.current.muted = !globalState;
+    }
+  }, []);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -44,17 +70,19 @@ export function CachedVideo({
     }
   };
 
-  const handleVideoClick = (e: React.MouseEvent) => {
-    // Prevent default video pause/play behavior
+  const toggleGlobalMute = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Video clicked - toggling mute like other videos');
-    
-    // Use same approach as working video components
     if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
+      const newMutedState = !videoRef.current.muted;
+      videoRef.current.muted = newMutedState;
+      setIsMuted(newMutedState);
+      
+      // Update global state - once unmuted, all videos play unmuted
+      const newGlobalUnmuted = !newMutedState;
+      setGlobalUnmuted(newGlobalUnmuted);
+      setGlobalUnmuteState(newGlobalUnmuted);
       
       // Ensure video keeps playing
       if (videoRef.current.paused) {
@@ -92,20 +120,25 @@ export function CachedVideo({
         autoPlay={true} // Force autoplay for all videos
         muted={isMuted}
         loop={loop}
-        onClick={handleVideoClick}
+        onClick={toggleGlobalMute}
         onLoadedData={() => {
           // Ensure autoplay starts when video loads
           if (videoRef.current && autoPlay) {
+            // Respect global unmute state
+            videoRef.current.muted = !globalUnmuted;
+            setIsMuted(!globalUnmuted);
             videoRef.current.play().catch(console.log);
           }
         }}
         onCanPlay={() => {
           // Auto-start playing when ready (like other video components)
           if (videoRef.current && autoPlay) {
-            videoRef.current.muted = true; // Start muted like trends
+            // Start with global unmute state
+            videoRef.current.muted = !globalUnmuted;
+            setIsMuted(!globalUnmuted);
             videoRef.current.play().catch(() => {
               // Fallback if autoplay fails
-              videoRef.current && (videoRef.current.muted = true);
+              videoRef.current && (videoRef.current.muted = !globalUnmuted);
               videoRef.current && videoRef.current.play().catch(console.log);
             });
           }
@@ -116,7 +149,18 @@ export function CachedVideo({
         playsInline
       />
       
-      {/* No visual indicators - clean interface */}
+      {/* Unmute Button - Always visible */}
+      <button
+        onClick={toggleGlobalMute}
+        className="absolute top-4 right-4 bg-black bg-opacity-60 hover:bg-opacity-80 rounded-full p-2 transition-opacity z-10"
+        title={isMuted ? "Unmute video" : "Mute video"}
+      >
+        {isMuted ? (
+          <VolumeX className="w-5 h-5 text-white" />
+        ) : (
+          <Volume2 className="w-5 h-5 text-white" />
+        )}
+      </button>
       
       {!controls && (
         <button
