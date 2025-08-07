@@ -47,8 +47,9 @@ export function CachedVideo({
   const { src: cachedSrc, isLoading, isCached } = useCachedMedia(src);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showingThumbnail, setShowingThumbnail] = useState(showThumbnail);
-  const [seekTime, setSeekTime] = useState<number | null>(null);
-  const [showSeekPreview, setShowSeekPreview] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const { src: cachedThumbnailSrc } = useCachedMedia(thumbnailUrl);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -200,51 +201,65 @@ export function CachedVideo({
     }
   };
 
-  // Instagram Reels-style seeking by tapping left/right
-  const handleVideoSeek = (e: React.MouseEvent) => {
+  // Handle progress bar seeking
+  const handleProgressSeek = (e: React.MouseEvent) => {
     if (!videoRef.current) return;
     
-    const video = videoRef.current;
-    const rect = video.getBoundingClientRect();
+    const progressBar = e.currentTarget;
+    const rect = progressBar.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
-    const clickPosition = x / width; // 0 to 1
+    const clickPosition = Math.max(0, Math.min(1, x / width)); // Clamp between 0 and 1
     
-    // Calculate seek time based on click position
-    const duration = video.duration || 0;
+    const video = videoRef.current;
     const newTime = clickPosition * duration;
     
     // Seek to the new time
     video.currentTime = newTime;
+    setCurrentTime(newTime);
     
-    // Show seek preview briefly
-    setSeekTime(newTime);
-    setShowSeekPreview(true);
-    setTimeout(() => setShowSeekPreview(false), 1000);
-    
-    console.log(`Seeking to ${newTime.toFixed(1)}s (${Math.round(clickPosition * 100)}% through video)`);
+    console.log(`Seeking to ${newTime.toFixed(1)}s via progress bar`);
   };
 
-  // Handle video click - play/seek or mute toggle
+  // Handle progress bar dragging
+  const handleProgressDrag = (e: React.MouseEvent) => {
+    if (!isDragging || !videoRef.current) return;
+    
+    const progressBar = e.currentTarget;
+    const rect = progressBar.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const clickPosition = Math.max(0, Math.min(1, x / width));
+    
+    const video = videoRef.current;
+    const newTime = clickPosition * duration;
+    
+    video.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  // Handle video click - just toggle play/pause
   const handleVideoClick = (e: React.MouseEvent) => {
     if (showThumbnail && showingThumbnail) {
       handleThumbnailClick();
-    } else if (isPlaying) {
-      // If playing, handle seeking like Instagram Reels
-      handleVideoSeek(e);
     } else {
-      // If paused, start playing with audio
       const video = videoRef.current;
       if (video) {
-        video.muted = false;
-        video.volume = 1;
-        videoMuteStates.set(videoId.current, false);
-        setGlobalUnmuteState(true);
-        video.play().catch((err) => {
-          console.log('Failed to play with audio, trying muted:', err);
-          video.muted = true;
-          video.play().catch(console.error);
-        });
+        if (video.paused) {
+          // Start playing with audio
+          video.muted = false;
+          video.volume = 1;
+          videoMuteStates.set(videoId.current, false);
+          setGlobalUnmuteState(true);
+          video.play().catch((err) => {
+            console.log('Failed to play with audio, trying muted:', err);
+            video.muted = true;
+            video.play().catch(console.error);
+          });
+        } else {
+          // Pause video
+          video.pause();
+        }
       }
     }
   };
@@ -337,40 +352,43 @@ export function CachedVideo({
             }}
             onClick={handleVideoClick}
             onLoadedMetadata={() => {
-              // When metadata is loaded, we can show first frame
+              // When metadata is loaded, we can show first frame and get duration
               const video = videoRef.current;
-              if (video && showThumbnail) {
-                video.currentTime = 0.1; // Show first frame
+              if (video) {
+                setDuration(video.duration || 0);
+                if (showThumbnail) {
+                  video.currentTime = 0.1; // Show first frame
+                }
+              }
+            }}
+            onTimeUpdate={() => {
+              // Update current time for progress bar
+              const video = videoRef.current;
+              if (video && !isDragging) {
+                setCurrentTime(video.currentTime);
               }
             }}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
           />
           
-          {/* Mute/Unmute Button - only show when not using thumbnail mode */}
-          {!showThumbnail && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleVideoMute();
-              }}
-              className="absolute top-4 right-4 bg-black bg-opacity-60 hover:bg-opacity-80 rounded-full p-2 transition-opacity z-10"
-              title={currentMuteState ? "Unmute video" : "Mute video"}
+          {/* Instagram Reels-style Progress Bar */}
+          {!showThumbnail && duration > 0 && (
+            <div 
+              className="absolute bottom-0 left-0 right-0 h-1 bg-white bg-opacity-30 cursor-pointer z-10"
+              onClick={handleProgressSeek}
+              onMouseDown={() => setIsDragging(true)}
+              onMouseMove={handleProgressDrag}
+              onMouseUp={() => setIsDragging(false)}
+              onMouseLeave={() => setIsDragging(false)}
             >
-              {currentMuteState ? (
-                <VolumeX className="w-5 h-5 text-white" />
-              ) : (
-                <Volume2 className="w-5 h-5 text-white" />
-              )}
-            </button>
-          )}
-          
-          {/* Instagram Reels-style seek preview */}
-          {showSeekPreview && seekTime !== null && (
-            <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm">
-              {Math.floor(seekTime / 60)}:{String(Math.floor(seekTime % 60)).padStart(2, '0')}
+              <div 
+                className="h-full bg-white transition-all duration-100"
+                style={{ width: `${Math.min(100, (currentTime / duration) * 100)}%` }}
+              />
             </div>
           )}
+          
         </>
       )}
     </div>
