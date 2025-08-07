@@ -1,0 +1,117 @@
+Here’s a general Privacy Policy and Terms & Conditions article that you can include in your app and Play Store listing for TrendoTalk — a platform where users can discover what's trending and engage with others.
+
+
+---
+
+Privacy Policy for TrendoTalk
+
+Effective Date: [Insert Date]
+
+At TrendoTalk, your privacy is important to us. This Privacy Policy outlines how we collect, use, and protect your information when you use our mobile application.
+
+1. Information We Collect
+
+We may collect the following types of information:
+
+Personal Information: Such as your username or profile picture (we do not require email, phone, or full name).
+
+Usage Data: Information on how you interact with the app (trends viewed, interactions, app preferences).
+
+Device Information: Your device type, OS version, and app version to improve performance and fix bugs.
+
+
+2. How We Use Your Information
+
+We use the data collected to:
+
+Provide and maintain our services.
+
+Show you relevant trends and content.
+
+Improve app functionality and fix errors or bugs.
+
+Prevent fraud and ensure a safe environment.
+
+
+3. Data Sharing
+
+We do not sell or share your personal data with third parties except:
+
+When required by law.
+
+To prevent fraud or harmful activity.
+
+With service providers helping us run the app (analytics, crash reporting).
+
+
+4. Data Security
+
+We use modern security measures to protect your data. However, no system is 100% secure, and we encourage users to use the app responsibly.
+
+5. Children’s Privacy
+
+TrendoTalk is not intended for users under the age of 13. We do not knowingly collect data from children under 13.
+
+6. Changes to This Policy
+
+We may update our Privacy Policy occasionally. You will be notified of any significant changes.
+
+7. Contact Us
+
+If you have any questions or concerns: email on : trendotalk@gmail.com 
+
+
+---
+
+Terms and Conditions for TrendoTalk
+
+Effective Date: [Insert Date]
+
+By using TrendoTalk, you agree to be bound by the following terms:
+
+1. Use of Service
+
+You must be at least 13 years old to use this app.
+
+You agree not to use the app for illegal activities or to spread hate, violence, or harassment.
+
+
+2. Content
+
+You are responsible for the content you share (text, media, comments).
+
+TrendoTalk reserves the right to remove inappropriate or harmful content without prior notice.
+
+
+3. User Conduct
+
+You agree:
+
+Not to impersonate others.
+
+Not to use bots or scripts to access or interact with the app.
+
+Not to spam or harm the experience of other users.
+
+
+4. Intellectual Property
+
+All trademarks, app design, and content are property of TrendoTalk.
+
+You may not copy, modify, or distribute app content without written permission.
+
+
+5. Account Suspension
+
+We may suspend or terminate accounts that violate our policies or terms.
+
+6. Disclaimer
+
+TrendoTalk is provided "as is." We do not guarantee uninterrupted service or that all features will always be available.
+
+7. Updates
+
+We may update these terms from time to time. Continued use of the app means you accept the new terms.
+
+
+---
