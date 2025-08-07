@@ -31,14 +31,7 @@ export function useVideoAutoplay(): VideoAutoplayHook {
           video.muted = !userUnmutedGlobal.current; // Use global unmute state
           video.play().catch(console.error);
           
-          // Add click handler to toggle mute and persist state
-          const handleVideoClick = () => {
-            video.muted = !video.muted;
-            userUnmutedGlobal.current = !video.muted;
-          };
-          
-          video.removeEventListener('click', handleVideoClick);
-          video.addEventListener('click', handleVideoClick);
+          // Remove conflicting click handler - let CachedVideo component handle clicks
         }
       });
     }

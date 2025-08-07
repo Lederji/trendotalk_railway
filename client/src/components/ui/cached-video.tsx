@@ -49,16 +49,14 @@ export function CachedVideo({
     e.preventDefault();
     e.stopPropagation();
     
-    // On click, unmute the video (Instagram/TikTok style)
-    if (isMuted && videoRef.current) {
-      toggleMute();
-      // Ensure video keeps playing after unmute
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-      }
-    } else {
-      // If already unmuted, toggle mute
-      toggleMute();
+    console.log('Video clicked - Current muted state:', isMuted);
+    
+    // Always toggle mute state on click
+    toggleMute();
+    
+    // Ensure video keeps playing after click
+    if (videoRef.current && videoRef.current.paused) {
+      videoRef.current.play().catch(console.log);
     }
   };
 
@@ -94,6 +92,12 @@ export function CachedVideo({
         onClick={handleVideoClick}
         onLoadedData={() => {
           // Ensure autoplay starts when video loads
+          if (videoRef.current && autoPlay) {
+            videoRef.current.play().catch(console.log);
+          }
+        }}
+        onCanPlay={() => {
+          // Auto-start playing when ready
           if (videoRef.current && autoPlay) {
             videoRef.current.play().catch(console.log);
           }
