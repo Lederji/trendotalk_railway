@@ -26,106 +26,74 @@ const setGlobalUnmuteState = (unmuted: boolean) => {
   }
 };
 
-// Global video manager - ensures only one video plays at a time
-class VideoManager {
-  private static instance: VideoManager;
-  private videoRefs = new Map<string, HTMLVideoElement>();
-  private observer: IntersectionObserver | null = null;
-  private currentPlayingVideo: string | null = null;
+// Global video refs and observer - same pattern as trends page
+const globalVideoRefs = new Map<string, HTMLVideoElement>();
+let globalObserver: IntersectionObserver | null = null;
+let currentPlayingVideo: string | null = null;
 
-  static getInstance(): VideoManager {
-    if (!VideoManager.instance) {
-      VideoManager.instance = new VideoManager();
-    }
-    return VideoManager.instance;
-  }
-
-  private constructor() {
-    this.setupObserver();
-  }
-
-  private setupObserver() {
-    if (typeof window === 'undefined') return;
-
-    this.observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const videoId = entry.target.getAttribute('data-video-id');
-          const video = videoId ? this.videoRefs.get(videoId) : null;
+// Setup observer exactly like trends page
+const setupGlobalObserver = () => {
+  if (globalObserver || typeof window === 'undefined') return;
+  
+  globalObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const videoElement = entry.target.querySelector('video');
+        const videoId = entry.target.getAttribute('data-video-id') || '';
+        
+        if (!videoElement || !videoId) return;
+        
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.75) {
+          // Pause all other videos first (EXACTLY like trends page)
+          globalVideoRefs.forEach((v, id) => {
+            if (id !== videoId && v) {
+              v.pause();
+              v.currentTime = 0;
+              v.volume = 0;
+              v.muted = true;
+            }
+          });
           
-          if (!video || !videoId) return;
-
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-            // Video is mostly visible - play it and pause others
-            this.playVideo(videoId);
-          } else if (entry.intersectionRatio < 0.3) {
-            // Video is mostly out of view - pause it
-            this.pauseVideo(videoId);
+          // Set current playing video
+          currentPlayingVideo = videoId;
+          
+          // Auto-play the visible video
+          videoElement.currentTime = 0;
+          const globalUnmuted = getGlobalUnmuteState();
+          videoElement.muted = !globalUnmuted;
+          videoElement.volume = videoElement.muted ? 0 : 1;
+          
+          videoElement
+            .play()
+            .then(() => {
+              console.log(`Autoplay: video ${videoId} ${videoElement.muted ? '(muted)' : '(with sound)'}`);
+            })
+            .catch((err) => {
+              console.log(`Autoplay blocked for video ${videoId}, trying muted:`, err);
+              videoElement.muted = true;
+              videoElement.volume = 0;
+              videoElement.play().catch(console.error);
+            });
+        } else {
+          // Pause and reset when out of view (EXACTLY like trends page)
+          videoElement.pause();
+          videoElement.currentTime = 0;
+          videoElement.volume = 0;
+          videoElement.muted = true;
+          
+          if (currentPlayingVideo === videoId) {
+            console.log(`Paused video ${videoId} - out of view`);
+            currentPlayingVideo = null;
           }
-        });
-      },
-      {
-        threshold: [0.3, 0.6],
-        rootMargin: '-20px'
-      }
-    );
-  }
-
-  registerVideo(videoId: string, videoElement: HTMLVideoElement, containerElement: HTMLElement) {
-    this.videoRefs.set(videoId, videoElement);
-    
-    if (this.observer && containerElement) {
-      containerElement.setAttribute('data-video-id', videoId);
-      this.observer.observe(containerElement);
+        }
+      });
+    },
+    {
+      threshold: 0.75, // Same as trends page
+      rootMargin: '0px'
     }
-  }
-
-  unregisterVideo(videoId: string) {
-    const containerElement = document.querySelector(`[data-video-id="${videoId}"]`);
-    if (this.observer && containerElement) {
-      this.observer.unobserve(containerElement);
-    }
-    this.videoRefs.delete(videoId);
-    
-    if (this.currentPlayingVideo === videoId) {
-      this.currentPlayingVideo = null;
-    }
-  }
-
-  private playVideo(videoId: string) {
-    // Pause all other videos first
-    this.videoRefs.forEach((video, id) => {
-      if (id !== videoId && !video.paused) {
-        video.pause();
-      }
-    });
-
-    // Play the target video
-    const video = this.videoRefs.get(videoId);
-    if (video && video.paused) {
-      this.currentPlayingVideo = videoId;
-      
-      // Respect global unmute state
-      const globalUnmuted = getGlobalUnmuteState();
-      video.muted = !globalUnmuted;
-      
-      video.play().catch(console.error);
-    }
-  }
-
-  private pauseVideo(videoId: string) {
-    const video = this.videoRefs.get(videoId);
-    if (video && !video.paused) {
-      video.pause();
-      
-      if (this.currentPlayingVideo === videoId) {
-        this.currentPlayingVideo = null;
-      }
-    }
-  }
-}
-
-const videoManager = VideoManager.getInstance();
+  );
+};
 
 export function CachedVideo({ 
   src, 
@@ -136,21 +104,40 @@ export function CachedVideo({
   loop = true // Loop videos for social media feel
 }: CachedVideoProps) {
   const { src: cachedSrc, isLoading, isCached } = useCachedMedia(src);
-  const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [globalUnmuted, setGlobalUnmuted] = useState(getGlobalUnmuteState());
   const [isMuted, setIsMuted] = useState(!globalUnmuted); // If globally unmuted, start unmuted
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoId = useRef(`video-${Math.random().toString(36).substr(2, 9)}`);
+  const videoId = useRef(`video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
 
-  // Register video with global manager
+  // Setup observer and register video (same pattern as trends)
   useEffect(() => {
+    setupGlobalObserver();
+    
     if (videoRef.current && containerRef.current && cachedSrc) {
-      videoManager.registerVideo(videoId.current, videoRef.current, containerRef.current);
+      // Register video in global refs
+      globalVideoRefs.set(videoId.current, videoRef.current);
+      
+      // Set data attribute for observer
+      containerRef.current.setAttribute('data-video-id', videoId.current);
+      
+      // Observe the container
+      if (globalObserver) {
+        globalObserver.observe(containerRef.current);
+      }
     }
 
     return () => {
-      videoManager.unregisterVideo(videoId.current);
+      // Cleanup
+      if (containerRef.current && globalObserver) {
+        globalObserver.unobserve(containerRef.current);
+      }
+      globalVideoRefs.delete(videoId.current);
+      
+      if (currentPlayingVideo === videoId.current) {
+        currentPlayingVideo = null;
+      }
     };
   }, [cachedSrc]);
 
@@ -231,24 +218,20 @@ export function CachedVideo({
         src={cachedSrc}
         className={cn(className, "cursor-pointer")}
         controls={false} // Always disable controls for autoplay experience
-        autoPlay={true} // Force autoplay for all videos
+        autoPlay={false} // Observer handles autoplay
         muted={isMuted}
         loop={loop}
         onClick={toggleGlobalMute}
         onLoadedData={() => {
-          // Video ready - let intersection observer handle autoplay
+          // Video ready - observer will handle autoplay, just set initial state
           if (videoRef.current) {
-            // Set initial mute state based on global preference
-            videoRef.current.muted = !globalUnmuted;
-            setIsMuted(!globalUnmuted);
+            videoRef.current.muted = true; // Start muted, observer will adjust
+            videoRef.current.playsInline = true;
+            videoRef.current.loop = true;
           }
         }}
         onCanPlay={() => {
-          // Video can play - intersection observer will handle play/pause
-          if (videoRef.current) {
-            videoRef.current.muted = !globalUnmuted;
-            setIsMuted(!globalUnmuted);
-          }
+          // Video can play - observer will handle when to actually play
         }}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
