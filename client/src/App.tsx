@@ -8,7 +8,6 @@ import { FloatingCallWidget } from "@/components/call/floating-call-widget";
 import { CallInterface } from "@/components/call/call-interface";
 import { useCallState } from "@/hooks/use-call-state";
 import { useWebRTCCall } from "@/hooks/use-webrtc-call";
-import { PermissionCheck } from "@/components/permissions/permission-check";
 import { OfflineIndicator } from "@/components/ui/offline-indicator";
 import { Capacitor } from '@capacitor/core';
 import { useState, useEffect } from "react";
@@ -32,6 +31,7 @@ import { Messages } from "@/pages/messages";
 import BannedPage from "@/pages/banned";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsConditions from "@/pages/terms-conditions";
+import AboutPage from "@/pages/about";
 
 function Router() {
   return (
@@ -54,6 +54,7 @@ function Router() {
       <Route path="/cv/:userId" component={CVPage} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-conditions" component={TermsConditions} />
+      <Route path="/about" component={AboutPage} />
       <Route path="/auth" component={Auth} />
       <Route path="/login" component={Auth} />
       <Route path="/banned" component={BannedPage} />

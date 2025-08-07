@@ -48,6 +48,8 @@ export default function ProfilePage() {
   });
   const [showDMDialog, setShowDMDialog] = useState(false);
   const [dmMessage, setDmMessage] = useState('');
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [helpMessage, setHelpMessage] = useState('');
 
   // Check if userId is a number or username
   const isNumericId = userId && !isNaN(parseInt(userId));
@@ -296,6 +298,32 @@ export default function ProfilePage() {
     }
   });
 
+  // Send help message to admin
+  const sendHelpMutation = useMutation({
+    mutationFn: async (message: string) => {
+      return apiRequest('POST', '/api/admin/help-request', {
+        message: message,
+        userEmail: 'trendotalk@gmail.com', // Contact email
+        subject: 'Help & Support Request'
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message sent",
+        description: "Your message has been sent to our support team. We'll get back to you soon!",
+      });
+      setShowHelpDialog(false);
+      setHelpMessage('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send message",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -403,7 +431,7 @@ export default function ProfilePage() {
                 <span>Service Request</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {/* Help and Support */}}>
+              <DropdownMenuItem onClick={() => setShowHelpDialog(true)}>
                 <HelpCircle className="mr-2 h-4 w-4" />
                 <span>Help and Support</span>
               </DropdownMenuItem>
@@ -415,7 +443,7 @@ export default function ProfilePage() {
                 <FileText className="mr-2 h-4 w-4" />
                 <span>Terms & Conditions</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {/* About */}}>
+              <DropdownMenuItem onClick={() => setLocation('/about')}>
                 <Info className="mr-2 h-4 w-4" />
                 <span>About</span>
               </DropdownMenuItem>
@@ -1375,6 +1403,61 @@ export default function ProfilePage() {
               disabled={reportUserMutation.isPending || !reportForm.reason}
             >
               {reportUserMutation.isPending ? "Submitting..." : "Submit Report"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Help & Support Dialog */}
+      <Dialog open={showHelpDialog} onOpenChange={setShowHelpDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Help & Support</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">
+                Need help? Contact us directly:
+              </p>
+              <a 
+                href="mailto:trendotalk@gmail.com" 
+                className="text-blue-600 hover:underline text-sm font-medium"
+              >
+                trendotalk@gmail.com
+              </a>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Or send us a message:
+              </label>
+              <Textarea
+                placeholder="Describe your issue or question..."
+                value={helpMessage}
+                onChange={(e) => setHelpMessage(e.target.value)}
+                className="w-full min-h-[100px]"
+              />
+            </div>
+          </div>
+          
+          <div className="flex space-x-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setShowHelpDialog(false);
+                setHelpMessage('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-pink-500 hover:bg-pink-600"
+              onClick={() => sendHelpMutation.mutate(helpMessage)}
+              disabled={sendHelpMutation.isPending || !helpMessage.trim()}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {sendHelpMutation.isPending ? "Sending..." : "Send Message"}
             </Button>
           </div>
         </DialogContent>

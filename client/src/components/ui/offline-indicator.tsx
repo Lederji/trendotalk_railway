@@ -57,7 +57,7 @@ export function OfflineIndicator({ className }: OfflineIndicatorProps) {
       ) : (
         <>
           <WifiOff className="w-4 h-4" />
-          <span>Offline - showing cached content</span>
+          <span>Offline</span>
           <Database className="w-4 h-4" />
         </>
       )}
