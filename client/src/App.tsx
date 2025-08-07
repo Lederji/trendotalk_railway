@@ -32,6 +32,7 @@ import BannedPage from "@/pages/banned";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsConditions from "@/pages/terms-conditions";
 import AboutPage from "@/pages/about";
+import HelpSupportPage from "@/pages/help-support";
 
 function Router() {
   return (
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-conditions" component={TermsConditions} />
       <Route path="/about" component={AboutPage} />
+      <Route path="/help-support" component={HelpSupportPage} />
       <Route path="/auth" component={Auth} />
       <Route path="/login" component={Auth} />
       <Route path="/banned" component={BannedPage} />

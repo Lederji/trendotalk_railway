@@ -2,7 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
-export default function About() {
+function AboutPage() {
   const [, setLocation] = useLocation();
 
   return (
@@ -104,3 +104,5 @@ export default function About() {
     </div>
   );
 }
+
+export default AboutPage;

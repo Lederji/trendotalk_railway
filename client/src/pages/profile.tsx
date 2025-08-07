@@ -431,7 +431,7 @@ export default function ProfilePage() {
                 <span>Service Request</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowHelpDialog(true)}>
+              <DropdownMenuItem onClick={() => setLocation('/help-support')}>
                 <HelpCircle className="mr-2 h-4 w-4" />
                 <span>Help and Support</span>
               </DropdownMenuItem>
