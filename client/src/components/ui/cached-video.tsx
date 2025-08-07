@@ -5,11 +5,13 @@ import { useRef, useState, useEffect } from 'react';
 
 interface CachedVideoProps {
   src: string | undefined;
+  thumbnailUrl?: string; // Thumbnail for click-to-play
   className?: string;
   controls?: boolean;
   autoPlay?: boolean;
   muted?: boolean;
   loop?: boolean;
+  showThumbnail?: boolean; // If true, show thumbnail instead of autoplay
 }
 
 // Global state - EXACTLY like trends page
@@ -34,14 +36,18 @@ const setGlobalUnmuteState = (unmuted: boolean) => {
 
 export function CachedVideo({ 
   src, 
+  thumbnailUrl,
   className, 
   controls = true, 
   autoPlay = true,
   muted = true,
-  loop = true
+  loop = true,
+  showThumbnail = false
 }: CachedVideoProps) {
   const { src: cachedSrc, isLoading, isCached } = useCachedMedia(src);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showingThumbnail, setShowingThumbnail] = useState(showThumbnail);
+  const { src: cachedThumbnailSrc } = useCachedMedia(thumbnailUrl);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const videoId = useRef(`video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
@@ -171,9 +177,34 @@ export function CachedVideo({
     }
   };
 
-  // Simple click handler
+  // Handle thumbnail click - start playing with audio
+  const handleThumbnailClick = () => {
+    if (showingThumbnail && videoRef.current) {
+      setShowingThumbnail(false);
+      const video = videoRef.current;
+      
+      // Start playing with audio (not muted)
+      video.muted = false;
+      video.volume = 1;
+      videoMuteStates.set(videoId.current, false);
+      setGlobalUnmuteState(true); // Set global unmute state
+      
+      video.play().catch((err) => {
+        console.log('Failed to play with audio, trying muted:', err);
+        video.muted = true;
+        videoMuteStates.set(videoId.current, true);
+        video.play().catch(console.error);
+      });
+    }
+  };
+
+  // Simple click handler for regular videos
   const handleVideoClick = () => {
-    toggleVideoMute();
+    if (showThumbnail) {
+      handleThumbnailClick();
+    } else {
+      toggleVideoMute();
+    }
   };
 
   if (isLoading) {
@@ -199,53 +230,79 @@ export function CachedVideo({
 
   return (
     <div ref={containerRef} className="relative">
-      <video
-        ref={videoRef}
-        src={cachedSrc}
-        className={cn(className, "cursor-pointer")}
-        muted={currentMuteState}
-        loop
-        playsInline
-        preload="auto"
-        onLoadedData={() => {
-          // Ensure video is ready for Instagram-style autoplay
-          const video = videoRef.current;
-          if (video) {
-            video.muted = true;
-            video.playsInline = true;
-            video.loop = true;
-          }
-        }}
-        onCanPlay={() => {
-          // Additional trigger when video can play
-          const video = videoRef.current;
-          if (video && currentPlayingVideo === videoId.current && video.paused) {
-            video.play().catch(() => {
-              video.muted = true;
-              video.play().catch(console.error);
-            });
-          }
-        }}
-        onClick={handleVideoClick}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-      />
-      
-      {/* Mute/Unmute Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleVideoMute();
-        }}
-        className="absolute top-4 right-4 bg-black bg-opacity-60 hover:bg-opacity-80 rounded-full p-2 transition-opacity z-10"
-        title={currentMuteState ? "Unmute video" : "Mute video"}
-      >
-        {currentMuteState ? (
-          <VolumeX className="w-5 h-5 text-white" />
-        ) : (
-          <Volume2 className="w-5 h-5 text-white" />
-        )}
-      </button>
+      {/* Show thumbnail if specified and not playing yet */}
+      {showThumbnail && showingThumbnail && cachedThumbnailSrc ? (
+        <div className="relative cursor-pointer" onClick={handleThumbnailClick}>
+          <img
+            src={cachedThumbnailSrc}
+            alt="Video thumbnail"
+            className={cn(className, "w-full h-full object-cover")}
+          />
+          {/* Play button overlay */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-40 transition-opacity">
+            <div className="bg-white bg-opacity-90 rounded-full p-4 shadow-lg">
+              <Play className="w-8 h-8 text-black fill-current" />
+            </div>
+          </div>
+          {/* Audio indicator */}
+          <div className="absolute top-4 right-4 bg-black bg-opacity-60 rounded-full p-2">
+            <Volume2 className="w-5 h-5 text-white" />
+          </div>
+        </div>
+      ) : (
+        <>
+          <video
+            ref={videoRef}
+            src={cachedSrc}
+            className={cn(className, "cursor-pointer")}
+            muted={currentMuteState}
+            loop
+            playsInline
+            preload="auto"
+            style={{ display: showThumbnail && showingThumbnail ? 'none' : 'block' }}
+            onLoadedData={() => {
+              // Ensure video is ready for Instagram-style autoplay
+              const video = videoRef.current;
+              if (video) {
+                video.muted = true;
+                video.playsInline = true;
+                video.loop = true;
+              }
+            }}
+            onCanPlay={() => {
+              // Additional trigger when video can play
+              const video = videoRef.current;
+              if (video && currentPlayingVideo === videoId.current && video.paused) {
+                video.play().catch(() => {
+                  video.muted = true;
+                  video.play().catch(console.error);
+                });
+              }
+            }}
+            onClick={handleVideoClick}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+          />
+          
+          {/* Mute/Unmute Button - only show when not using thumbnail mode */}
+          {!showThumbnail && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleVideoMute();
+              }}
+              className="absolute top-4 right-4 bg-black bg-opacity-60 hover:bg-opacity-80 rounded-full p-2 transition-opacity z-10"
+              title={currentMuteState ? "Unmute video" : "Mute video"}
+            >
+              {currentMuteState ? (
+                <VolumeX className="w-5 h-5 text-white" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-white" />
+              )}
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }

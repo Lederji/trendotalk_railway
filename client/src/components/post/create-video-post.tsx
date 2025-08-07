@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, X, ExternalLink } from "lucide-react";
+import { Upload, X, ExternalLink, Play } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,7 @@ export function CreateVideoPost() {
     { file: null, url: "" },
     { file: null, url: "" }
   ]);
+  const [thumbnail, setThumbnail] = useState<{ file: File | null; url: string }>({ file: null, url: "" });
 
   const createPostMutation = useMutation({
     mutationFn: async (postData: any) => {
@@ -47,6 +48,11 @@ export function CreateVideoPost() {
           formData.append(`video${index + 1}`, video.file);
         }
       });
+      
+      // Add thumbnail if provided
+      if (postData.thumbnail) {
+        formData.append('thumbnail', postData.thumbnail);
+      }
 
       const response = await fetch('/api/admin/posts', {
         method: 'POST',
@@ -92,6 +98,10 @@ export function CreateVideoPost() {
       { file: null, url: "" },
       { file: null, url: "" }
     ]);
+    if (thumbnail.url) {
+      URL.revokeObjectURL(thumbnail.url);
+    }
+    setThumbnail({ file: null, url: "" });
   };
 
   const handleVideoUpload = (index: number, file: File) => {
@@ -107,6 +117,20 @@ export function CreateVideoPost() {
     }
     newVideos[index] = { file: null, url: "" };
     setVideos(newVideos);
+  };
+
+  const handleThumbnailUpload = (file: File) => {
+    if (thumbnail.url) {
+      URL.revokeObjectURL(thumbnail.url);
+    }
+    setThumbnail({ file, url: URL.createObjectURL(file) });
+  };
+
+  const removeThumbnail = () => {
+    if (thumbnail.url) {
+      URL.revokeObjectURL(thumbnail.url);
+    }
+    setThumbnail({ file: null, url: "" });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -134,6 +158,7 @@ export function CreateVideoPost() {
       otherRank,
       type: type.trim() || undefined,
       detailsLink: detailsLink.trim() || undefined,
+      thumbnail: thumbnail.file,
     });
   };
 
@@ -192,6 +217,53 @@ export function CreateVideoPost() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Thumbnail Upload */}
+      <div className="space-y-2">
+        <Label className="text-base font-semibold">Thumbnail (Optional)</Label>
+        <p className="text-sm text-gray-600">Upload a thumbnail image that will show before users click to play the video</p>
+        <div className="relative aspect-video max-w-md border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
+          {thumbnail.url ? (
+            <div className="relative w-full h-full">
+              <img
+                src={thumbnail.url}
+                alt="Thumbnail preview"
+                className="w-full h-full object-cover"
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2"
+                onClick={removeThumbnail}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              {/* Play icon overlay to show it's a thumbnail */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20">
+                <div className="bg-white bg-opacity-90 rounded-full p-3 shadow-lg">
+                  <Upload className="w-6 h-6 text-gray-700" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer hover:bg-gray-50">
+              <Upload className="w-8 h-8 text-gray-400 mb-2" />
+              <span className="text-sm text-gray-500">Upload Thumbnail</span>
+              <span className="text-xs text-gray-400">JPG, PNG, GIF</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleThumbnailUpload(file);
+                }}
+              />
+            </label>
+          )}
         </div>
       </div>
 

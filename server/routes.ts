@@ -249,7 +249,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/posts', authenticateUser, upload.fields([
     { name: 'video1', maxCount: 1 },
     { name: 'video2', maxCount: 1 },
-    { name: 'video3', maxCount: 1 }
+    { name: 'video3', maxCount: 1 },
+    { name: 'thumbnail', maxCount: 1 }
   ]), async (req: any, res: any) => {
     try {
       const user = await storage.getUser(req.user.userId);
@@ -268,6 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let video1Url: string | undefined;
       let video2Url: string | undefined;
       let video3Url: string | undefined;
+      let thumbnailUrl: string | undefined;
 
       try {
         if (files.video1 && files.video1[0]) {
@@ -294,9 +296,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           video3Url = await uploadToCloudinary(processedFile);
           if (wasTrimmed) console.log('✂️  Admin video 3 trimmed to 60s');
         }
+
+        // Upload thumbnail if provided
+        if (files.thumbnail && files.thumbnail[0]) {
+          console.log('🖼️ Uploading thumbnail...');
+          thumbnailUrl = await uploadToCloudinary(files.thumbnail[0]);
+        }
       } catch (uploadError) {
-        console.error('Video upload error:', uploadError);
-        return res.status(500).json({ message: 'Video upload failed' });
+        console.error('Video/thumbnail upload error:', uploadError);
+        return res.status(500).json({ message: 'Upload failed' });
       }
 
       if (!video1Url && !video2Url && !video3Url) {
@@ -313,6 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         video1Url,
         video2Url,
         video3Url,
+        thumbnailUrl,
         userId: user.id,
         isAdminPost: true,
       });

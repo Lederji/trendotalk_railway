@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown, Vote, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CachedVideo } from "@/components/ui/cached-video";
 
 interface VideoPostCardProps {
   post: {
@@ -11,6 +12,7 @@ interface VideoPostCardProps {
     video1Url?: string;
     video2Url?: string;
     video3Url?: string;
+    thumbnailUrl?: string; // Thumbnail for video posts
     rank: number;
     otherRank?: string;
     category: string;
@@ -94,24 +96,15 @@ export function VideoPostCard({ post }: VideoPostCardProps) {
           <div className={cn("grid h-full", getVideoLayout())}>
             {videos.map((videoUrl, index) => (
               <div key={index} className="relative h-full">
-                <video
-                  ref={(el) => (videoRefs.current[index] = el)}
+                <CachedVideo
                   src={videoUrl || ""}
+                  thumbnailUrl={post.thumbnailUrl}
                   className={getVideoClass(videoUrl || "")}
-                  loop
-                  muted
-                  autoPlay
-                  playsInline
-                  onClick={() => handleVideoClick(index)}
+                  showThumbnail={true}
+                  autoPlay={false}
+                  loop={true}
+                  controls={false}
                 />
-                {/* Mute indicator */}
-                {activeVideo !== index && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                    <div className="w-8 h-8 bg-white bg-opacity-80 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold">🔇</span>
-                    </div>
-                  </div>
-                )}
                 {/* Details link overlay at video end */}
                 {post.detailsLink && (
                   <div className="absolute bottom-2 right-2">

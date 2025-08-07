@@ -34,6 +34,7 @@ export const posts = pgTable("posts", {
   video1Url: text("video1_url"),
   video2Url: text("video2_url"),
   video3Url: text("video3_url"),
+  thumbnailUrl: text("thumbnail_url"), // Thumbnail for admin video posts
   rank: integer("rank"),
   otherRank: text("other_rank"), // e.g., "on yt:#2", "on memes:#4"
   category: text("category"), // memes, reels, model, news, dialogue, etc.
