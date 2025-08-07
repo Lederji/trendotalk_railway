@@ -183,6 +183,19 @@ export function CachedVideo({
   // Handle thumbnail click - start playing with audio
   const handleThumbnailClick = () => {
     if (showingThumbnail && videoRef.current) {
+      // FIRST: Pause all other videos when starting a new one
+      globalVideoRefs.forEach((v, id) => {
+        if (id !== videoId.current && v) {
+          v.pause();
+          v.currentTime = 0;
+          v.volume = 0;
+          v.muted = true;
+        }
+      });
+      
+      // Set this as the current playing video
+      currentPlayingVideo = videoId.current;
+      
       setShowingThumbnail(false);
       const video = videoRef.current;
       
@@ -198,6 +211,8 @@ export function CachedVideo({
         videoMuteStates.set(videoId.current, true);
         video.play().catch(console.error);
       });
+      
+      console.log(`Started playing video ${videoId.current} from thumbnail, stopped all others`);
     }
   };
 
@@ -246,6 +261,19 @@ export function CachedVideo({
       const video = videoRef.current;
       if (video) {
         if (video.paused) {
+          // FIRST: Pause all other videos when starting a new one
+          globalVideoRefs.forEach((v, id) => {
+            if (id !== videoId.current && v) {
+              v.pause();
+              v.currentTime = 0;
+              v.volume = 0;
+              v.muted = true;
+            }
+          });
+          
+          // Set this as the current playing video
+          currentPlayingVideo = videoId.current;
+          
           // Start playing with audio
           video.muted = false;
           video.volume = 1;
@@ -256,9 +284,15 @@ export function CachedVideo({
             video.muted = true;
             video.play().catch(console.error);
           });
+          
+          console.log(`Started playing video ${videoId.current}, stopped all others`);
         } else {
           // Pause video
           video.pause();
+          if (currentPlayingVideo === videoId.current) {
+            currentPlayingVideo = null;
+          }
+          console.log(`Paused video ${videoId.current}`);
         }
       }
     }
