@@ -44,9 +44,20 @@ export function CachedVideo({
     }
   };
 
-  const handleVideoClick = () => {
+  const handleVideoClick = (e: React.MouseEvent) => {
+    // Prevent default video pause/play behavior
+    e.preventDefault();
+    e.stopPropagation();
+    
     // On click, unmute the video (Instagram/TikTok style)
     if (isMuted && videoRef.current) {
+      toggleMute();
+      // Ensure video keeps playing after unmute
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+      }
+    } else {
+      // If already unmuted, toggle mute
       toggleMute();
     }
   };
@@ -76,11 +87,17 @@ export function CachedVideo({
         ref={videoRef}
         src={cachedSrc}
         className={cn(className, "cursor-pointer")}
-        controls={controls}
-        autoPlay={autoPlay}
+        controls={false} // Always disable controls for autoplay experience
+        autoPlay={true} // Force autoplay for all videos
         muted={isMuted}
         loop={loop}
         onClick={handleVideoClick}
+        onLoadedData={() => {
+          // Ensure autoplay starts when video loads
+          if (videoRef.current && autoPlay) {
+            videoRef.current.play().catch(console.log);
+          }
+        }}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         preload="metadata"
