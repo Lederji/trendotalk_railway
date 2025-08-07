@@ -3365,6 +3365,60 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     }
   });
 
+  // Help Requests endpoints
+  app.post('/api/admin/help-request', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { message, subject } = req.body;
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+      
+      const helpRequest = await storage.createHelpRequest(
+        userId, 
+        message.trim(), 
+        subject || "Help & Support Request"
+      );
+      
+      res.json({ success: true, helpRequest });
+    } catch (error) {
+      console.error('Error creating help request:', error);
+      res.status(500).json({ error: "Failed to send help request" });
+    }
+  });
+  
+  app.get('/api/admin/help-requests', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const helpRequests = await storage.getHelpRequests();
+      res.json(helpRequests);
+    } catch (error) {
+      console.error('Error getting help requests:', error);
+      res.status(500).json({ error: "Failed to get help requests" });
+    }
+  });
+  
+  app.post('/api/admin/help-requests/:id/read', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      
+      if (!requestId || isNaN(requestId)) {
+        return res.status(400).json({ error: "Invalid request ID" });
+      }
+      
+      const success = await storage.markHelpRequestAsRead(requestId);
+      
+      if (success) {
+        res.json({ success: true, message: "Help request marked as read and deleted" });
+      } else {
+        res.status(404).json({ error: "Help request not found" });
+      }
+    } catch (error) {
+      console.error('Error marking help request as read:', error);
+      res.status(500).json({ error: "Failed to mark help request as read" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // WebSocket server for audio calls

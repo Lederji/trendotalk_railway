@@ -1,8 +1,8 @@
 import { 
-  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications, vibes, cvs, reports, circleMessages, circleMessageLikes,
+  users, posts, comments, likes, dislikes, votes, stories, follows, friendRequests, chats, messages, notifications, vibes, cvs, reports, circleMessages, circleMessageLikes, helpRequests,
   type User, type InsertUser, type Post, type InsertPost, 
   type Comment, type InsertComment, type Like, type Dislike, type Vote, type Story, 
-  type InsertStory, type Vibe, type InsertVibe, type CV, type Report, type InsertReport, type Follow, type PostWithUser, type StoryWithUser, type VibeWithUser, type UserProfile, type CircleMessage 
+  type InsertStory, type Vibe, type InsertVibe, type CV, type Report, type InsertReport, type Follow, type PostWithUser, type StoryWithUser, type VibeWithUser, type UserProfile, type CircleMessage, type HelpRequest, type InsertHelpRequest, type HelpRequestWithUser
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
@@ -4505,6 +4505,73 @@ class HybridStorage extends DatabaseStorage {
     } catch (error) {
       console.error('Error toggling circle message like:', error);
       throw error;
+    }
+  }
+
+  // Help Requests methods
+  async createHelpRequest(userId: number, message: string, subject: string = "Help & Support Request"): Promise<HelpRequest> {
+    try {
+      const [helpRequest] = await db
+        .insert(helpRequests)
+        .values({
+          userId,
+          message,
+          subject
+        })
+        .returning();
+      
+      return helpRequest;
+    } catch (error) {
+      console.error('Error creating help request:', error);
+      throw error;
+    }
+  }
+
+  async getHelpRequests(): Promise<HelpRequestWithUser[]> {
+    try {
+      const requests = await db
+        .select({
+          id: helpRequests.id,
+          userId: helpRequests.userId,
+          message: helpRequests.message,
+          subject: helpRequests.subject,
+          isRead: helpRequests.isRead,
+          createdAt: helpRequests.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            displayName: users.displayName,
+            avatar: users.avatar
+          }
+        })
+        .from(helpRequests)
+        .leftJoin(users, eq(helpRequests.userId, users.id))
+        .where(eq(helpRequests.isRead, false))
+        .orderBy(desc(helpRequests.createdAt));
+      
+      return requests as HelpRequestWithUser[];
+    } catch (error) {
+      console.error('Error getting help requests:', error);
+      return [];
+    }
+  }
+
+  async markHelpRequestAsRead(requestId: number): Promise<boolean> {
+    try {
+      await db
+        .update(helpRequests)
+        .set({ isRead: true })
+        .where(eq(helpRequests.id, requestId));
+      
+      // Auto-delete after marking as read
+      await db
+        .delete(helpRequests)
+        .where(eq(helpRequests.id, requestId));
+      
+      return true;
+    } catch (error) {
+      console.error('Error marking help request as read:', error);
+      return false;
     }
   }
 }

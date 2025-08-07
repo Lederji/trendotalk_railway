@@ -385,3 +385,21 @@ export type UserProfile = User & {
   isFollowing?: boolean;
   posts?: Post[];
 };
+
+// Help Requests table
+export const helpRequests = pgTable("help_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  subject: text("subject").notNull().default("Help & Support Request"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertHelpRequestSchema = createInsertSchema(helpRequests);
+export type InsertHelpRequest = z.infer<typeof insertHelpRequestSchema>;
+export type HelpRequest = typeof helpRequests.$inferSelect;
+
+export type HelpRequestWithUser = HelpRequest & {
+  user: Pick<User, 'id' | 'username' | 'avatar' | 'displayName'>;
+};

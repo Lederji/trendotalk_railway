@@ -107,7 +107,8 @@ TrendoTalk is a modern social media application built for high-scale usage (10,0
 
 ## Changelog
 - August 6, 2025: 
-  - LATEST: LEGAL PAGES ADDED - Added Privacy Policy and Terms & Conditions pages to profile menu with complete legal documentation
+  - LATEST: HELP & SUPPORT SYSTEM - Complete help request system implemented with user-to-admin messaging, admin panel integration showing user ID, and auto-deletion after admin reads messages
+  - LEGAL PAGES ADDED - Added Privacy Policy and Terms & Conditions pages to profile menu with complete legal documentation
   - Instagram-style offline functionality implemented with IndexedDB caching for complete offline experience
   - PLAY STORE READY - Implemented automatic video management system
   - Auto video trimming: All videos longer than 60 seconds are automatically trimmed for Play Store compliance

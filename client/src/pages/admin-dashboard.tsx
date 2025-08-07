@@ -146,6 +146,20 @@ export default function AdminDashboard() {
     },
   });
 
+  // Fetch help requests
+  const { data: helpRequests = [] } = useQuery({
+    queryKey: ["/api/admin/help-requests"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/help-requests", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('sessionId')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch help requests');
+      return response.json();
+    },
+  });
+
   // Fetch user reports
   const { data: reports = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/reports"],
@@ -206,6 +220,28 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    }
+  });
+
+  // Mark help request as read mutation
+  const markHelpRequestAsReadMutation = useMutation({
+    mutationFn: async (requestId: number) => {
+      const response = await apiRequest("POST", `/api/admin/help-requests/${requestId}/read`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/help-requests"] });
+      toast({
+        title: "Success",
+        description: "Help request marked as read and deleted",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to mark help request as read",
+        variant: "destructive",
+      });
     }
   });
 
@@ -399,6 +435,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="posts" className="whitespace-nowrap px-3 py-1.5 text-sm">Posts</TabsTrigger>
               <TabsTrigger value="analytics" className="whitespace-nowrap px-3 py-1.5 text-sm">Analytics</TabsTrigger>
               <TabsTrigger value="moderation" className="whitespace-nowrap px-3 py-1.5 text-sm">Moderation</TabsTrigger>
+              <TabsTrigger value="help-requests" className="whitespace-nowrap px-3 py-1.5 text-sm">Help Requests</TabsTrigger>
               <TabsTrigger value="notifications" className="relative whitespace-nowrap px-3 py-1.5 text-sm">
                 Post Reports
                 {notifications.filter((n: AdminNotification) => n.type === 'post_report').length > 0 && (
@@ -916,6 +953,84 @@ export default function AdminDashboard() {
                     )}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Help Requests Tab */}
+          <TabsContent value="help-requests" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Help & Support Requests
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  User support messages - automatically deleted after reading
+                </p>
+              </CardHeader>
+              <CardContent>
+                {helpRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No help requests at this time</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Message</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {helpRequests.map((request: any) => (
+                        <TableRow key={request.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                {request.user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                              </div>
+                              <div>
+                                <p className="font-medium">
+                                  {request.user?.displayName || request.user?.username || 'Unknown User'}
+                                </p>
+                                <p className="text-sm text-gray-500">ID: {request.userId}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-xs">
+                              <p className="text-sm text-gray-900 line-clamp-3">
+                                {request.message}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{request.subject}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(request.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              onClick={() => markHelpRequestAsReadMutation.mutate(request.id)}
+                              disabled={markHelpRequestAsReadMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              {markHelpRequestAsReadMutation.isPending ? "Processing..." : "Mark as Read & Delete"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
