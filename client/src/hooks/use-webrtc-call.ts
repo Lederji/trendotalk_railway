@@ -134,9 +134,13 @@ export function useWebRTCCall() {
 
   const startCall = useCallback(async (targetUser: { username: string; avatar?: string }) => {
     try {
-      // Get mobile-optimized media stream directly (no permission barriers)
+      console.log('📞 Starting call to:', targetUser.username);
+      
+      // Get mobile-optimized media stream with proper permission handling
       const stream = await getMobileMediaStream();
       localStreamRef.current = stream;
+      
+      console.log('✅ Got microphone access for call');
 
       // Create peer connection
       peerConnectionRef.current = createPeerConnection();
@@ -170,10 +174,12 @@ export function useWebRTCCall() {
       });
 
     } catch (error) {
-      console.error('Error starting call:', error);
+      console.error('❌ Error starting call:', error);
+      const errorMessage = (error as any)?.message || "Could not access microphone or start call";
+      
       toast({
         title: "Call failed",
-        description: "Could not access microphone or start call",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -199,9 +205,13 @@ export function useWebRTCCall() {
 
   const acceptCall = useCallback(async () => {
     try {
-      // Get mobile-optimized media stream directly
+      console.log('📞 Accepting incoming call');
+      
+      // Get mobile-optimized media stream with proper permission handling
       const stream = await getMobileMediaStream();
       localStreamRef.current = stream;
+      
+      console.log('✅ Got microphone access for accepting call');
 
       // Create peer connection
       peerConnectionRef.current = createPeerConnection();
@@ -223,10 +233,12 @@ export function useWebRTCCall() {
       setCallStatus('connecting');
 
     } catch (error) {
-      console.error('Error accepting call:', error);
+      console.error('❌ Error accepting call:', error);
+      const errorMessage = (error as any)?.message || "Could not access microphone";
+      
       toast({
         title: "Call failed",
-        description: "Could not access microphone",
+        description: errorMessage,
         variant: "destructive",
       });
       declineCall();
