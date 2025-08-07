@@ -117,7 +117,7 @@ export async function requestMicrophonePermission(): Promise<boolean> {
           channelCount: 1,
           sampleRate: 16000,
           // Additional mobile-specific settings for Android WebRTC
-          googEchoCancellation: true,
+          echoCancellation: true,
           googAutoGainControl: true,
           googNoiseSuppression: true,
           googTypingNoiseDetection: true

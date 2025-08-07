@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCallState } from '@/hooks/use-call-state';
-import { requestMicrophonePermission, showPermissionAlert } from '@/utils/permissions';
+// Removed permission imports - direct access for seamless calling
 import { getMobileMediaStream, testMicrophoneAccess, getMobilePeerConnectionConfig } from '@/utils/mobile-webrtc';
 
 export function useWebRTCCall() {
@@ -134,19 +134,7 @@ export function useWebRTCCall() {
 
   const startCall = useCallback(async (targetUser: { username: string; avatar?: string }) => {
     try {
-      // First check and request microphone permission
-      const hasPermission = await requestMicrophonePermission();
-      if (!hasPermission) {
-        toast({
-          title: "Call failed",
-          description: "Could not access microphone or start call",
-          variant: "destructive"
-        });
-        showPermissionAlert();
-        return;
-      }
-
-      // Get mobile-optimized media stream
+      // Get mobile-optimized media stream directly (no permission barriers)
       const stream = await getMobileMediaStream();
       localStreamRef.current = stream;
 
@@ -211,20 +199,7 @@ export function useWebRTCCall() {
 
   const acceptCall = useCallback(async () => {
     try {
-      // First check and request microphone permission
-      const hasPermission = await requestMicrophonePermission();
-      if (!hasPermission) {
-        toast({
-          title: "Call failed",
-          description: "Could not access microphone",
-          variant: "destructive"
-        });
-        showPermissionAlert();
-        declineCall();
-        return;
-      }
-
-      // Get mobile-optimized media stream
+      // Get mobile-optimized media stream directly
       const stream = await getMobileMediaStream();
       localStreamRef.current = stream;
 

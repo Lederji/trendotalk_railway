@@ -1,6 +1,6 @@
 import { useCachedMedia } from '@/hooks/use-offline-query';
 import { cn } from '@/lib/utils';
-import { Play, Loader2 } from 'lucide-react';
+import { Play, Loader2, Volume2, VolumeX } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 interface CachedVideoProps {
@@ -16,12 +16,13 @@ export function CachedVideo({
   src, 
   className, 
   controls = true, 
-  autoPlay = false, 
+  autoPlay = true, // Default autoplay for home page 
   muted = true,
-  loop = false 
+  loop = true // Loop videos for social media feel
 }: CachedVideoProps) {
   const { src: cachedSrc, isLoading, isCached } = useCachedMedia(src);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [isMuted, setIsMuted] = useState(muted);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const togglePlay = () => {
@@ -32,6 +33,21 @@ export function CachedVideo({
         videoRef.current.play();
       }
       setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      const newMutedState = !isMuted;
+      videoRef.current.muted = newMutedState;
+      setIsMuted(newMutedState);
+    }
+  };
+
+  const handleVideoClick = () => {
+    // On click, unmute the video (Instagram/TikTok style)
+    if (isMuted && videoRef.current) {
+      toggleMute();
     }
   };
 
@@ -59,15 +75,31 @@ export function CachedVideo({
       <video
         ref={videoRef}
         src={cachedSrc}
-        className={className}
+        className={cn(className, "cursor-pointer")}
         controls={controls}
         autoPlay={autoPlay}
-        muted={muted}
+        muted={isMuted}
         loop={loop}
+        onClick={handleVideoClick}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         preload="metadata"
+        playsInline
       />
+      
+      {/* Volume indicator - shows when muted */}
+      {isMuted && (
+        <div className="absolute top-3 right-3 bg-black bg-opacity-60 rounded-full p-2">
+          <VolumeX className="w-4 h-4 text-white" />
+        </div>
+      )}
+      
+      {/* Unmute indicator */}
+      {!isMuted && (
+        <div className="absolute top-3 right-3 bg-black bg-opacity-60 rounded-full p-2">
+          <Volume2 className="w-4 h-4 text-white" />
+        </div>
+      )}
       
       {!controls && (
         <button

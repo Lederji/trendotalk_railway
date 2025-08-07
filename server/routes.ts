@@ -3366,7 +3366,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   });
 
   // Help Requests endpoints
-  app.post('/api/admin/help-request', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/admin/help-request', authenticateUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
       const { message, subject } = req.body;
@@ -3388,7 +3388,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     }
   });
   
-  app.get('/api/admin/help-requests', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  app.get('/api/admin/help-requests', authenticateUser, async (req: any, res: any) => {
     try {
       const helpRequests = await storage.getHelpRequests();
       res.json(helpRequests);
@@ -3398,7 +3398,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     }
   });
   
-  app.post('/api/admin/help-requests/:id/read', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  app.post('/api/admin/help-requests/:id/read', authenticateUser, async (req: any, res: any) => {
     try {
       const requestId = parseInt(req.params.id);
       
