@@ -49,12 +49,12 @@ export function CachedVideo({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Video clicked - unmuting directly');
+    console.log('Video clicked - toggling mute like other videos');
     
-    // Directly unmute on click
+    // Use same approach as working video components
     if (videoRef.current) {
-      videoRef.current.muted = false;
-      setIsMuted(false);
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
       
       // Ensure video keeps playing
       if (videoRef.current.paused) {
@@ -100,9 +100,14 @@ export function CachedVideo({
           }
         }}
         onCanPlay={() => {
-          // Auto-start playing when ready
+          // Auto-start playing when ready (like other video components)
           if (videoRef.current && autoPlay) {
-            videoRef.current.play().catch(console.log);
+            videoRef.current.muted = true; // Start muted like trends
+            videoRef.current.play().catch(() => {
+              // Fallback if autoplay fails
+              videoRef.current && (videoRef.current.muted = true);
+              videoRef.current && videoRef.current.play().catch(console.log);
+            });
           }
         }}
         onPlay={() => setIsPlaying(true)}
