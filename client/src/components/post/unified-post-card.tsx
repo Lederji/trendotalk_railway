@@ -368,7 +368,6 @@ export function UnifiedPostCard({ post, currentUser, onVideoRefsReady }: Unified
                       muted={true}
                       loop={true}
                       playsInline
-                      onClick={() => handleAdminVideoClick(index)}
                     />
                     {/* Video Controls Overlay */}
                     <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
