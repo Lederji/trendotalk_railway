@@ -1,6 +1,6 @@
 import { useCachedMedia } from '@/hooks/use-offline-query';
 import { cn } from '@/lib/utils';
-import { Play, Loader2, Volume2, VolumeX } from 'lucide-react';
+import { Play, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 interface CachedVideoProps {
@@ -49,14 +49,17 @@ export function CachedVideo({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Video clicked - Current muted state:', isMuted);
+    console.log('Video clicked - unmuting directly');
     
-    // Always toggle mute state on click
-    toggleMute();
-    
-    // Ensure video keeps playing after click
-    if (videoRef.current && videoRef.current.paused) {
-      videoRef.current.play().catch(console.log);
+    // Directly unmute on click
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      setIsMuted(false);
+      
+      // Ensure video keeps playing
+      if (videoRef.current.paused) {
+        videoRef.current.play().catch(console.log);
+      }
     }
   };
 
@@ -108,19 +111,7 @@ export function CachedVideo({
         playsInline
       />
       
-      {/* Volume indicator - shows when muted */}
-      {isMuted && (
-        <div className="absolute top-3 right-3 bg-black bg-opacity-60 rounded-full p-2">
-          <VolumeX className="w-4 h-4 text-white" />
-        </div>
-      )}
-      
-      {/* Unmute indicator */}
-      {!isMuted && (
-        <div className="absolute top-3 right-3 bg-black bg-opacity-60 rounded-full p-2">
-          <Volume2 className="w-4 h-4 text-white" />
-        </div>
-      )}
+      {/* No visual indicators - clean interface */}
       
       {!controls && (
         <button
