@@ -26,6 +26,107 @@ const setGlobalUnmuteState = (unmuted: boolean) => {
   }
 };
 
+// Global video manager - ensures only one video plays at a time
+class VideoManager {
+  private static instance: VideoManager;
+  private videoRefs = new Map<string, HTMLVideoElement>();
+  private observer: IntersectionObserver | null = null;
+  private currentPlayingVideo: string | null = null;
+
+  static getInstance(): VideoManager {
+    if (!VideoManager.instance) {
+      VideoManager.instance = new VideoManager();
+    }
+    return VideoManager.instance;
+  }
+
+  private constructor() {
+    this.setupObserver();
+  }
+
+  private setupObserver() {
+    if (typeof window === 'undefined') return;
+
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const videoId = entry.target.getAttribute('data-video-id');
+          const video = videoId ? this.videoRefs.get(videoId) : null;
+          
+          if (!video || !videoId) return;
+
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            // Video is mostly visible - play it and pause others
+            this.playVideo(videoId);
+          } else if (entry.intersectionRatio < 0.3) {
+            // Video is mostly out of view - pause it
+            this.pauseVideo(videoId);
+          }
+        });
+      },
+      {
+        threshold: [0.3, 0.6],
+        rootMargin: '-20px'
+      }
+    );
+  }
+
+  registerVideo(videoId: string, videoElement: HTMLVideoElement, containerElement: HTMLElement) {
+    this.videoRefs.set(videoId, videoElement);
+    
+    if (this.observer && containerElement) {
+      containerElement.setAttribute('data-video-id', videoId);
+      this.observer.observe(containerElement);
+    }
+  }
+
+  unregisterVideo(videoId: string) {
+    const containerElement = document.querySelector(`[data-video-id="${videoId}"]`);
+    if (this.observer && containerElement) {
+      this.observer.unobserve(containerElement);
+    }
+    this.videoRefs.delete(videoId);
+    
+    if (this.currentPlayingVideo === videoId) {
+      this.currentPlayingVideo = null;
+    }
+  }
+
+  private playVideo(videoId: string) {
+    // Pause all other videos first
+    this.videoRefs.forEach((video, id) => {
+      if (id !== videoId && !video.paused) {
+        video.pause();
+      }
+    });
+
+    // Play the target video
+    const video = this.videoRefs.get(videoId);
+    if (video && video.paused) {
+      this.currentPlayingVideo = videoId;
+      
+      // Respect global unmute state
+      const globalUnmuted = getGlobalUnmuteState();
+      video.muted = !globalUnmuted;
+      
+      video.play().catch(console.error);
+    }
+  }
+
+  private pauseVideo(videoId: string) {
+    const video = this.videoRefs.get(videoId);
+    if (video && !video.paused) {
+      video.pause();
+      
+      if (this.currentPlayingVideo === videoId) {
+        this.currentPlayingVideo = null;
+      }
+    }
+  }
+}
+
+const videoManager = VideoManager.getInstance();
+
 export function CachedVideo({ 
   src, 
   className, 
@@ -39,6 +140,19 @@ export function CachedVideo({
   const [globalUnmuted, setGlobalUnmuted] = useState(getGlobalUnmuteState());
   const [isMuted, setIsMuted] = useState(!globalUnmuted); // If globally unmuted, start unmuted
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const videoId = useRef(`video-${Math.random().toString(36).substr(2, 9)}`);
+
+  // Register video with global manager
+  useEffect(() => {
+    if (videoRef.current && containerRef.current && cachedSrc) {
+      videoManager.registerVideo(videoId.current, videoRef.current, containerRef.current);
+    }
+
+    return () => {
+      videoManager.unregisterVideo(videoId.current);
+    };
+  }, [cachedSrc]);
 
   // Sync with global unmute state on mount
   useEffect(() => {
@@ -111,7 +225,7 @@ export function CachedVideo({
   }
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <video
         ref={videoRef}
         src={cachedSrc}
@@ -122,25 +236,18 @@ export function CachedVideo({
         loop={loop}
         onClick={toggleGlobalMute}
         onLoadedData={() => {
-          // Ensure autoplay starts when video loads
-          if (videoRef.current && autoPlay) {
-            // Respect global unmute state
+          // Video ready - let intersection observer handle autoplay
+          if (videoRef.current) {
+            // Set initial mute state based on global preference
             videoRef.current.muted = !globalUnmuted;
             setIsMuted(!globalUnmuted);
-            videoRef.current.play().catch(console.log);
           }
         }}
         onCanPlay={() => {
-          // Auto-start playing when ready (like other video components)
-          if (videoRef.current && autoPlay) {
-            // Start with global unmute state
+          // Video can play - intersection observer will handle play/pause
+          if (videoRef.current) {
             videoRef.current.muted = !globalUnmuted;
             setIsMuted(!globalUnmuted);
-            videoRef.current.play().catch(() => {
-              // Fallback if autoplay fails
-              videoRef.current && (videoRef.current.muted = !globalUnmuted);
-              videoRef.current && videoRef.current.play().catch(console.log);
-            });
           }
         }}
         onPlay={() => setIsPlaying(true)}
