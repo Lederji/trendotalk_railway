@@ -1,3 +1,4 @@
+console.log("DATABASE_URL in Render:", process.env.DATABASE_URL);
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { registerAdminRoutes } from "./admin-routes";
