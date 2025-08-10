@@ -1,4 +1,5 @@
-console.log("DATABASE_URL in Render:", process.env.DATABASE_URL);
+console.log("Starting backend service...");
+console.log("DATABASE_URL is:", process.env.DATABASE_URL ?? "not set");
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { registerAdminRoutes } from "./admin-routes";
